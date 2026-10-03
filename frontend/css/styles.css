@@ -121,7 +121,7 @@ h1 {
 label, legend { display: block; margin-bottom: 0.35rem; font-weight: 500; }
 .optional { font-weight: 400; color: var(--color-muted); }
 
-select, input[type="text"], input[type="password"] {
+select, input[type="text"], input[type="email"], input[type="password"] {
   width: 100%;
   padding: 0.7rem 0.75rem;
   font: inherit;
@@ -130,10 +130,10 @@ select, input[type="text"], input[type="password"] {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
-select:hover, input[type="text"]:hover, input[type="password"]:hover { border-color: var(--color-muted); }
+select:hover, input[type="text"]:hover, input[type="email"]:hover, input[type="password"]:hover { border-color: var(--color-muted); }
 
-select:focus-visible, input[type="text"]:focus-visible, input[type="password"]:focus-visible,
-.btn:focus-visible, .link:focus-visible {
+select:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible,
+input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible, .link-btn:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -157,6 +157,21 @@ select:focus-visible, input[type="text"]:focus-visible, input[type="password"]:f
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .link { color: var(--color-primary); font-weight: 500; }
+
+/* A button that looks like .link, for actions that don't navigate. */
+.link-btn {
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Sign-in page: "New here? Create an account" under the form. */
+.form-switch { margin: var(--space) 0 0; text-align: center; color: var(--color-muted); }
 
 /* Answers carried forward from earlier steps */
 .summary-group { margin-bottom: calc(var(--space) * 1.25); }

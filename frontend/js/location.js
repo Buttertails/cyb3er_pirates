@@ -1,4 +1,6 @@
 // Step 1: collect the user's location, save it, then move on to choose an office.
+// Asked once: sign-in skips this page when the backend already has a location.
+// The "Change" link on the review page still comes back here to update it.
 (function () {
   // Nothing before this step is required except being signed in.
   if (!requireSteps([])) return;
@@ -59,9 +61,12 @@
     if (zipMessage) { zipInput.focus(); return; }
 
     saveStep('location', { state: state, zip: zip });
-    // A blank ZIP is sent as null so a ZIP sent earlier gets cleared on the other end.
-    sendSteps(form.querySelector('button[type="submit"]'),
-      [{ step: 'location', parameters: { state: state, zip: zip || null } }],
-      'office.html');
+    // Save it to the user's profile so later sign-ins skip this step, then send
+    // it as the intake message that returns the offices. A blank ZIP is sent as
+    // null so a ZIP sent earlier gets cleared on the other end.
+    submitThenGo(form.querySelector('button[type="submit"]'), async function () {
+      await saveProfileLocation(state, zip || null);
+      await sendStep('location', { state: state, zip: zip || null });
+    }, 'office.html');
   });
 })();

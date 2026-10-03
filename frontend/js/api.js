@@ -15,14 +15,25 @@
 // The event names and this shape are a proposal. specs/001-dental-benefits-assistant/
 // contracts/api.md defines POST /api/chat as taking one of `text` or `event`, but
 // doesn't define these step events, so reconcile them with the Dialogflow flow.
+//
+// Every backend call carries the signed-in user's Firebase ID token (see
+// firebase.js). The profile routes (/api/me) are always live; the mode below only
+// covers the intake.* messages.
 
 const API_CONFIG = {
   // 'local_demo': nothing leaves the browser; messages are logged and acknowledged locally.
   // 'live': POST each message to `endpoint` on the same origin.
   mode: 'local_demo',
   endpoint: '/api/chat',
+  profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
 };
+
+// The backend says nobody is signed in (401), or Firebase has no user.
+class SignedOutError extends Error {}
+
+// The backend rejected the input (422). The message is safe to show the user.
+class RejectedError extends Error {}
 
 const STEP_EVENTS = {
   location: 'intake.location',
@@ -41,15 +52,41 @@ function buildStepMessage(step, parameters, autoSet) {
   return message;
 }
 
-async function postMessage(message) {
-  const response = await fetch(API_CONFIG.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(message),
+// Call a backend route as the signed-in user and return the JSON response.
+async function apiFetch(path, method, body) {
+  if (!window.appAuth) throw new Error('Sign-in did not load');
+  const token = await window.appAuth.idToken();
+  if (!token) throw new SignedOutError('Not signed in');
+
+  const headers = { Authorization: 'Bearer ' + token };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const response = await fetch(path, {
+    method: method,
+    headers: headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
   });
+  if (response.status === 401) throw new SignedOutError('Sign-in rejected');
+  if (response.status === 422) {
+    const data = await response.json().catch(function () { return {}; });
+    throw new RejectedError(data.error || 'That was not accepted. Check your answer.');
+  }
   if (!response.ok) throw new Error('Request failed with status ' + response.status);
   return response.json();
+}
+
+// { uid, email, location: { state, zip } or null }
+function fetchProfile() {
+  return apiFetch(API_CONFIG.profileEndpoint, 'GET');
+}
+
+// Save the user's location so later sign-ins don't ask again. Returns the profile.
+function saveProfileLocation(state, zip) {
+  return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+}
+
+function postMessage(message) {
+  return apiFetch(API_CONFIG.endpoint, 'POST', message);
 }
 
 // Stand-in for the backend: hands back a session the first time, like the real one will.
@@ -114,20 +151,37 @@ function showSendError(button, text) {
   error.hidden = !text;
 }
 
-// Send each piece in order, then go to nextPage. If one fails, stay on the page
-// with a retry message so the user's answer isn't silently lost.
-// A piece is { step, parameters, autoSet }.
-async function sendSteps(button, pieces, nextPage) {
+// Run `work` (an async function), then go to nextPage, or to the page `work`
+// returns instead. If it fails, stay on the page with a retry message so the
+// user's answer isn't silently lost. If the user turns out to be signed out,
+// send them back to sign in.
+async function submitThenGo(button, work, nextPage) {
   button.disabled = true;
   showSendError(button, '');
+  let destination;
   try {
+    destination = await work();
+  } catch (e) {
+    if (e instanceof SignedOutError) {
+      await signOut();
+      window.location.href = 'index.html?signed-out=1';
+      return;
+    }
+    button.disabled = false;
+    showSendError(button, e instanceof RejectedError
+      ? e.message
+      : "We couldn't send that just now. Please try again.");
+    return;
+  }
+  window.location.href = destination || nextPage;
+}
+
+// Send each piece in order, then go to nextPage.
+// A piece is { step, parameters, autoSet }.
+function sendSteps(button, pieces, nextPage) {
+  return submitThenGo(button, async function () {
     for (const piece of pieces) {
       await sendStep(piece.step, piece.parameters, piece.autoSet);
     }
-  } catch (e) {
-    button.disabled = false;
-    showSendError(button, "We couldn't send that just now. Please try again.");
-    return;
-  }
-  window.location.href = nextPage;
+  }, nextPage);
 }

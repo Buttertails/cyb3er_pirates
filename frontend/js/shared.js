@@ -34,11 +34,20 @@ function clearAnswers() {
   if (user) saveStep('user', user);
 }
 
-// Forget everything, including who is signed in.
-function signOut() {
+// Forget everything this tab saved, including who is signed in. Firebase's own
+// sign-in is untouched; signOut() ends that too.
+function clearSession() {
   try {
     sessionStorage.clear();
   } catch (e) { /* ignore */ }
+}
+
+// Sign out of Firebase and forget everything this tab saved.
+async function signOut() {
+  try {
+    if (window.appAuth) await window.appAuth.signOut();
+  } catch (e) { /* still forget everything locally */ }
+  clearSession();
 }
 
 function answeredSteps() {
@@ -208,7 +217,11 @@ function renderAccount() {
   link.className = 'link';
   link.href = 'index.html';
   link.textContent = 'Sign out';
-  link.addEventListener('click', signOut);
+  link.addEventListener('click', async function (event) {
+    event.preventDefault();
+    await signOut();
+    window.location.href = link.href;
+  });
 
   wrapper.append(name, ' \u00b7 ', link);
   header.appendChild(wrapper);

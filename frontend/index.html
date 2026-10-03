@@ -13,21 +13,25 @@
   </header>
 
   <main class="card">
-    <!-- MOCK LOGIN: nothing is verified. Replace with real authentication. -->
-    <p class="temp-banner">
-      <strong>Mock login.</strong> Any username and password works. Nothing is checked
-      or sent anywhere, and the password is never kept.
-    </p>
+    <p class="note" id="signed-out" role="status" hidden>You were signed out. Please sign in again.</p>
 
-    <h1>Sign in</h1>
-    <p class="lead">Sign in to find a dental office and get started.</p>
+    <h1 id="auth-title">Sign in</h1>
+    <p class="lead" id="auth-lead">Sign in to find a dental office and get started.</p>
 
-    <form id="login-form" novalidate>
+    <!-- One form for both modes: "Create an account" reveals the confirm fields. -->
+    <form id="auth-form" novalidate>
       <div class="field">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" autocomplete="username"
-               autocapitalize="none" spellcheck="false" aria-describedby="username-error">
-        <p class="error" id="username-error" role="alert" hidden></p>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email"
+               autocapitalize="none" spellcheck="false" aria-describedby="email-error">
+        <p class="error" id="email-error" role="alert" hidden></p>
+      </div>
+
+      <div class="field" id="confirm-email-field" hidden>
+        <label for="confirm-email">Confirm email</label>
+        <input id="confirm-email" name="confirm-email" type="email" autocomplete="email"
+               autocapitalize="none" spellcheck="false" aria-describedby="confirm-email-error">
+        <p class="error" id="confirm-email-error" role="alert" hidden></p>
       </div>
 
       <div class="field">
@@ -37,12 +41,26 @@
         <p class="error" id="password-error" role="alert" hidden></p>
       </div>
 
-      <button type="submit" class="btn">Sign in</button>
+      <div class="field" id="confirm-password-field" hidden>
+        <label for="confirm-password">Confirm password</label>
+        <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password"
+               aria-describedby="confirm-password-error">
+        <p class="error" id="confirm-password-error" role="alert" hidden></p>
+      </div>
+
+      <button type="submit" class="btn" id="auth-submit">Sign in</button>
     </form>
+
+    <p class="form-switch">
+      <span id="switch-text">New here?</span>
+      <button type="button" class="link-btn" id="switch-mode">Create an account</button>
+    </p>
   </main>
 
   <script src="js/options.js"></script>
   <script src="js/shared.js"></script>
+  <script src="js/api.js"></script>
+  <script type="module" src="js/firebase.js"></script>
   <script src="js/login.js"></script>
 </body>
 </html>
