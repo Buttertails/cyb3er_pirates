@@ -24,7 +24,10 @@ The backend answers each with JSON. Five messages are sent on every path.
 | 4 | `intake.procedure` | Picks a procedure within the category | `session_id` |
 | 5 | `intake.timing` | Picks when they need it, or the app sets it to `asap` for emergencies | `session_id` |
 
-The review page and the temporary summary page send nothing.
+The review page and the temporary summary page send nothing. The sign-in page and
+the location step also call the profile routes, which are not `intake.*`
+messages; see [Authentication](#authentication) and
+[Profile and location](#profile-and-location).
 
 ## How messages are sent
 
@@ -37,6 +40,8 @@ The review page and the temporary summary page send nothing.
   locally, and fictional placeholder offices are generated. Set the mode to
   `'live'` to send real requests.
 - The 18-second timeout comes from the API contract.
+- Every request carries the signed-in user's Firebase ID token as
+  `Authorization: Bearer <token>`. See [Authentication](#authentication).
 
 ### Request envelope
 
@@ -58,7 +63,8 @@ The review page and the temporary summary page send nothing.
 | `event.parameters` | object | The answer. Keys are listed per step below. |
 | `auto_set` | boolean | Present only as `true`, on the emergency timing message. It means the app chose the value, not the user. |
 
-The frontend sends no employee ID, user name or credentials.
+The message body carries no employee ID, user name or credentials. The backend
+learns who is asking from the ID token in the `Authorization` header.
 
 ### Response envelope
 
@@ -76,9 +82,15 @@ Every successful response is `200` with a JSON body:
 
 Any non-2xx status, network failure or timeout is treated as "not sent". The
 user stays on the page, sees "We couldn't send that just now. Please try again.",
-and can resend the same message. The frontend does not yet read the error body or
-tell a `422` from a `503`. The contract's `{ "error": { "code", "message", "fields" } }`
-envelope is welcome and will be used once the frontend shows field-level messages.
+and can resend the same message. Two statuses are handled differently:
+
+- `401`: the user is signed out of Firebase and sent back to the sign-in page,
+  which says they were signed out.
+- `422`: the `error` text from the body is shown instead of the retry message.
+
+Otherwise the frontend does not read the error body. The contract's
+`{ "error": { "code", "message", "fields" } }` envelope is welcome and will be
+used once the frontend shows field-level messages.
 
 ### Rules that apply to every step
 
@@ -97,7 +109,11 @@ envelope is welcome and will be used once the frontend shows field-level message
 
 ## Step 1: Location, `intake.location`
 
-Sent when the user submits "Where are you located?".
+Sent when the user submits "Where are you located?". The location is saved to
+the user's profile first (`PUT /api/me/location`, see
+[Profile and location](#profile-and-location)), so the page is shown only once
+per user. On later sign-ins the saved location is sent as this message straight
+away, without showing the page, so the backend still returns the offices.
 
 ```json
 {
@@ -344,6 +360,64 @@ their messages again, so the same event can arrive more than once in a session.
 - [ ] `422` for invalid input and `503` when the service is unavailable
 - [ ] Idle-session expiry
 
+## Authentication
+
+Users sign in on `index.html` with Firebase Authentication, using email and
+password. The same page creates accounts. `frontend/js/firebase.js` loads the
+Firebase JS SDK from the gstatic CDN, with no build step:
+
+- On `localhost` or `127.0.0.1` it uses the Auth emulator
+  (`firebase emulators:start`), so no real accounts or config file are needed.
+- Deployed on Firebase Hosting, it reads the web config from the reserved
+  `/__/firebase/init.json` URL. The Email/Password provider must be enabled in
+  the Firebase console.
+
+The browser keeps only the signed-in email in `sessionStorage`, to show who is
+signed in. Firebase keeps its own sign-in state. "Sign out" ends both and discards
+the session's answers.
+
+How the backend sees the user:
+
+- **Credentials never travel in the `intake.*` messages.** Every backend call
+  sends `Authorization: Bearer <Firebase ID token>`. The backend verifies it
+  (`backend/auth.py`) and uses the token's `uid` to identify the user.
+- A missing, invalid or expired token gets `401 {"error": "sign-in required"}`.
+  The frontend then signs the user out and returns to the sign-in page.
+
+## Profile and location
+
+The backend remembers each user's location in Firestore at `users/{uid}`, so it
+is asked for once. These routes are always live, even in local demo mode, and
+both need the `Authorization` header.
+
+### `GET /api/me`
+
+```json
+{ "uid": "Xy12...", "email": "pat@example.com", "location": { "state": "TX", "zip": "78701" } }
+```
+
+`location` is `null` until the user has saved one. After signing in, the frontend
+calls this route:
+
+- With no location, it shows the location step.
+- With a location, it skips that step. It sends the location as
+  `intake.location` to get the offices, then goes to the office step.
+
+### `PUT /api/me/location`
+
+```json
+{ "state": "TX", "zip": "78701" }
+```
+
+Same rules as [Step 1](#step-1-location-intakelocation): `state` is one of the
+51 codes, and `zip` is 5 digits or `null`. The backend re-checks the ZIP against
+the state with a copy of the frontend's prefix table (`backend/dental/locations.py`).
+
+- Invalid input returns `422` with a readable `error`.
+- On success it returns the same shape as `GET /api/me`.
+- Last write wins. The "Change" link on the review page leads back to the
+  location step, which saves the new location.
+
 ## Open points to settle with the API contract
 
 The frontend was built on its own flow, so these differ from
@@ -353,8 +427,9 @@ The frontend was built on its own flow, so these differ from
    `text` or `event`, and does not define step events. The `intake.*` names, and
    `event` being an object with `parameters`, are proposed here and need agreeing
    with the Dialogflow flow.
-2. **`employee_id`.** The contract requires it on `/api/chat`. This frontend has no
-   employee concept and sends none.
+2. **`employee_id`.** The contract requires it on `/api/chat`. The frontend sends
+   none: the Firebase `uid` from the ID token identifies the user. Mapping a user
+   to an employee and plan is still open.
 3. **Offices vs. `choices`.** The contract returns options as a `choices`
    array of label/value pairs. Offices need an address and distance, so this doc
    uses a richer `offices` array. They could be merged, or offices could ride in
