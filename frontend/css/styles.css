@@ -230,6 +230,10 @@ legend { padding: 0; }
 .answers dt { color: var(--color-muted); }
 .answers dd { margin: 0; font-weight: 500; text-align: right; }
 
+.sent-list { margin: 0; padding-left: 1.25rem; }
+.sent-list li { margin-bottom: 0.75rem; }
+.sent-list pre { margin-top: 0.35rem; }
+
 pre {
   margin: 0;
   padding: 0.75rem;

@@ -1,7 +1,7 @@
-// TEMPORARY page: lists every answer plus the raw values behind them.
+// TEMPORARY page: lists every answer plus the messages that were sent for them.
 // Delete alongside summary.html once the real post-submit screen exists.
 (function () {
-  const saved = requireSteps(['location', 'category', 'procedure']);
+  const saved = requireSteps(['location', 'office', 'category', 'procedure']);
   if (!saved) return;
 
   const category = categoryById(saved.category);
@@ -20,6 +20,7 @@
   const rows = [
     ['State', (state ? state.name : saved.location.state) + ' (' + saved.location.state + ')'],
     ['ZIP code', saved.location.zip || 'Not provided'],
+    ['Office', officeLabel(saved.office) + ' (' + saved.office + ')'],
     ['Care type', category.label],
     ['Procedure', labelFor(category.procedures, saved.procedure)],
     ['Timing', labelFor(TIMEFRAMES, timingId) +
@@ -37,13 +38,27 @@
     list.appendChild(wrapper);
   });
 
-  document.getElementById('payload').textContent = JSON.stringify({
-    location: { state: saved.location.state, zip: saved.location.zip || null },
-    category: category.id,
-    procedure: saved.procedure,
-    timing: timingId,
-    timingAutoSet: Boolean(category.skipTiming),
-  }, null, 2);
+  // The messages are logged by api.js as each step is sent, in order.
+  const sent = readStep('sent_log') || [];
+  const modeNote = document.getElementById('sent-mode');
+  if (sent.length === 0) {
+    modeNote.textContent = 'No messages were recorded for this session.';
+  } else if (sent[0].mode === 'local_demo') {
+    modeNote.textContent = 'Local demo: nothing left this browser. Each message was logged and acknowledged locally.';
+  } else {
+    modeNote.textContent = 'Each message was sent to the backend in this order.';
+  }
+
+  const sentList = document.getElementById('sent-list');
+  sent.forEach(function (entry) {
+    const item = document.createElement('li');
+    const name = document.createElement('strong');
+    name.textContent = entry.request.event.name;
+    const body = document.createElement('pre');
+    body.textContent = JSON.stringify(entry.request, null, 2);
+    item.append(name, body);
+    sentList.appendChild(item);
+  });
 
   document.getElementById('progress').style.width = '100%';
   document.getElementById('start-over').addEventListener('click', clearAnswers);

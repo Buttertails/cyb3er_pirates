@@ -1,6 +1,6 @@
-// Step 3: pick a procedure from within the chosen category.
+// Step 4: pick a procedure from within the chosen category.
 (function () {
-  const saved = requireSteps(['location', 'category']);
+  const saved = requireSteps(['location', 'office', 'category']);
   if (!saved) return;
 
   const category = categoryById(saved.category);
@@ -9,9 +9,10 @@
     return;
   }
 
-  renderStep(3);
+  renderStep(4);
   document.getElementById('heading').textContent = category.prompt;
   renderSummary('location-text', formatLocation(saved.location));
+  renderSummary('office-text', officeLabel(saved.office));
   renderSummary('category-text', category.label);
 
   const form = document.getElementById('procedure-form');
@@ -22,15 +23,18 @@
 
   setupChoiceForm(form, document.getElementById('continue'), 'procedure',
     inCategory ? saved.procedure : null,
-    function (id) {
+    function (id, button) {
       saveStep('procedure', id);
+      const pieces = [{ step: 'procedure', parameters: { procedure: id } }];
 
-      // Emergency work is ASAP by definition, so skip the timing question.
+      // Emergency work is ASAP by definition, so skip the timing question. The
+      // timing is still sent so the flow gets every answer, flagged as auto-set.
       if (category.skipTiming) {
         saveStep('timing', 'asap');
-        window.location.href = 'confirm.html';
+        pieces.push({ step: 'timing', parameters: { timing: 'asap' }, autoSet: true });
+        sendSteps(button, pieces, 'confirm.html');
       } else {
-        window.location.href = 'timing.html';
+        sendSteps(button, pieces, 'timing.html');
       }
     });
 })();

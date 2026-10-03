@@ -1,16 +1,17 @@
-// Step 2: pick one of the three care categories.
+// Step 3: pick one of the three care categories.
 (function () {
-  const saved = requireSteps(['location']);
+  const saved = requireSteps(['location', 'office']);
   if (!saved) return;
 
-  renderStep(2);
+  renderStep(3);
   renderSummary('location-text', formatLocation(saved.location));
+  renderSummary('office-text', officeLabel(saved.office));
 
   const form = document.getElementById('category-form');
   renderRadioCards(document.getElementById('category-options'), 'category', CATEGORIES);
 
   setupChoiceForm(form, document.getElementById('continue'), 'category', saved.category,
-    function (id) {
+    function (id, button) {
       if (id !== saved.category) {
         // A procedure picked under the old category no longer applies.
         saveStep('procedure', null);
@@ -20,6 +21,6 @@
         if (previous && previous.skipTiming) saveStep('timing', null);
       }
       saveStep('category', id);
-      window.location.href = 'procedure.html';
+      sendSteps(button, [{ step: 'category', parameters: { category: id } }], 'procedure.html');
     });
 })();

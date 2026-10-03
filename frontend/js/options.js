@@ -30,7 +30,7 @@ const STATES = [
   { code: 'WY', name: 'Wyoming' },
 ];
 
-// Steps 2 and 3: the three categories, each holding the procedures that fall under it.
+// Steps 3 and 4: the three categories, each holding the procedures that fall under it.
 // `prompt` is the heading shown on step 3. `skipTiming` ends the flow after step 3
 // and records the timing as ASAP, which is what emergency work uses.
 const CATEGORIES = [
@@ -79,7 +79,7 @@ const CATEGORIES = [
   },
 ];
 
-// Step 4: when the user needs it done. Emergency work skips this and is recorded as ASAP.
+// Step 5: when the user needs it done. Emergency work skips this and is recorded as ASAP.
 const TIMEFRAMES = [
   { id: 'asap', label: 'As soon as possible', description: "I'm in pain or it's urgent" },
   { id: 'two-weeks', label: 'Within 2 weeks', description: 'Soon, but not an emergency' },
@@ -87,4 +87,71 @@ const TIMEFRAMES = [
   { id: 'three-to-six-months', label: '3 to 6 months', description: 'Planning for later this year' },
   { id: 'six-months-plus', label: '6 months or more', description: 'No rush' },
   { id: 'not-sure', label: 'Not sure yet', description: 'Still deciding' },
+];
+
+// ZIP check on step 1: the first three digits of a ZIP code identify its state.
+// Each state lists [low, high] ranges of 3-digit prefixes (inclusive). Entered
+// from memory of the USPS ranges, not generated from a dataset, so treat it as
+// approximate. A prefix no state claims (territories, military) is never flagged,
+// and a prefix that straddles a border is listed under both states.
+const ZIP_PREFIXES = {
+  AL: [[350, 352], [354, 369]],
+  AK: [[995, 999]],
+  AZ: [[850, 850], [852, 853], [855, 857], [859, 860], [863, 865]],
+  AR: [[716, 729]],
+  CA: [[900, 908], [910, 928], [930, 961]],
+  CO: [[800, 816]],
+  CT: [[60, 69]],
+  DE: [[197, 199]],
+  DC: [[200, 200], [202, 205]],
+  FL: [[320, 342], [344, 344], [346, 347], [349, 349]],
+  GA: [[300, 319], [398, 399]],
+  HI: [[967, 968]],
+  ID: [[832, 838]],
+  IL: [[600, 620], [622, 629]],
+  IN: [[460, 479]],
+  IA: [[500, 516], [520, 528]],
+  KS: [[660, 662], [664, 679]],
+  KY: [[400, 418], [420, 427]],
+  LA: [[700, 701], [703, 708], [710, 714]],
+  ME: [[39, 49]],
+  MD: [[206, 212], [214, 219]],
+  MA: [[10, 27], [55, 55]],
+  MI: [[480, 499]],
+  MN: [[550, 551], [553, 567]],
+  MS: [[386, 397]],
+  MO: [[630, 631], [633, 641], [644, 658]],
+  MT: [[590, 599]],
+  NE: [[680, 681], [683, 693]],
+  NV: [[889, 891], [893, 898]],
+  NH: [[30, 38]],
+  NJ: [[70, 89]],
+  NM: [[870, 871], [873, 875], [877, 884]],
+  NY: [[5, 5], [100, 149]],
+  NC: [[270, 289]],
+  ND: [[580, 588]],
+  OH: [[430, 459]],
+  OK: [[730, 731], [734, 741], [743, 749]],
+  OR: [[970, 979]],
+  PA: [[150, 196]],
+  RI: [[28, 29]],
+  SC: [[290, 299]],
+  SD: [[570, 577]],
+  TN: [[370, 385]],
+  TX: [[733, 733], [750, 799], [885, 885]],
+  UT: [[840, 847]],
+  VT: [[50, 54], [56, 59]],
+  VA: [[201, 201], [220, 246]],
+  WA: [[980, 986], [988, 994]],
+  WV: [[247, 268]],
+  WI: [[530, 532], [534, 535], [537, 539], [541, 549]],
+  WY: [[820, 831], [834, 834]],
+};
+
+// Local demo only: stand-ins for the dentist offices the backend will return for
+// step 2. Fictional. api.js fills in the state and ZIP the user entered.
+const LOCAL_DEMO_OFFICES = [
+  { id: 'demo-office-1', name: 'Sample Family Dental', street: '100 Example Street', distance_miles: 1.2 },
+  { id: 'demo-office-2', name: 'Placeholder Smiles', street: '250 Sample Avenue', distance_miles: 3.4 },
+  { id: 'demo-office-3', name: 'Demo Dental Group', street: '75 Test Boulevard', distance_miles: 5.8 },
 ];

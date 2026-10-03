@@ -3,6 +3,7 @@
 // The steps in order, and the page that collects each one.
 const FLOW = [
   { key: 'location', page: 'index.html' },
+  { key: 'office', page: 'office.html' },
   { key: 'category', page: 'category.html' },
   { key: 'procedure', page: 'procedure.html' },
   { key: 'timing', page: 'timing.html' },
@@ -33,6 +34,7 @@ function answeredSteps() {
   const location = readStep('location');
   return {
     location: location && location.state ? location : null,
+    office: readStep('office'),
     category: readStep('category'),
     procedure: readStep('procedure'),
     timing: readStep('timing'),
@@ -57,11 +59,33 @@ function categoryById(id) {
   return CATEGORIES.find(function (c) { return c.id === id; }) || null;
 }
 
+function stateName(code) {
+  const match = STATES.find(function (s) { return s.code === code; });
+  return match ? match.name : code;
+}
+
 // "Texas 78701" from a saved location.
 function formatLocation(location) {
-  const match = STATES.find(function (s) { return s.code === location.state; });
-  const name = match ? match.name : location.state;
+  const name = stateName(location.state);
   return location.zip ? name + ' ' + location.zip : name;
+}
+
+// State codes whose ZIP prefixes include this ZIP. Empty when no state claims it.
+function statesForZip(zip) {
+  const prefix = Number(zip.slice(0, 3));
+  return Object.keys(ZIP_PREFIXES).filter(function (code) {
+    return ZIP_PREFIXES[code].some(function (range) {
+      return prefix >= range[0] && prefix <= range[1];
+    });
+  });
+}
+
+// False only when the ZIP clearly belongs to other states. Unclaimed prefixes
+// pass, since we can't say they're wrong. This checks consistency with the
+// state, not that the ZIP exists.
+function zipFitsState(zip, stateCode) {
+  const owners = statesForZip(zip);
+  return owners.length === 0 || owners.indexOf(stateCode) !== -1;
 }
 
 function labelFor(items, id) {
@@ -69,10 +93,21 @@ function labelFor(items, id) {
   return match ? match.label : id;
 }
 
+// The offices the backend returned for the user's location (see api.js).
+function savedOffices() {
+  return readStep('offices') || [];
+}
+
+// The chosen office's name, falling back to its id if the list is gone.
+function officeLabel(id) {
+  const match = savedOffices().find(function (o) { return o.id === id; });
+  return match ? match.name : id;
+}
+
 // Emergency work skips the timing step, so the flow is one step shorter.
 function totalSteps() {
   const category = categoryById(readStep('category'));
-  return category && category.skipTiming ? 3 : 4;
+  return category && category.skipTiming ? 4 : 5;
 }
 
 // Fill in the "Step 2 of 4" label and the progress bar at the top of the card.
@@ -125,7 +160,7 @@ function renderRadioCards(container, name, items) {
 }
 
 // Wire a radio-card form: preselect any saved answer, keep the button in step,
-// and hand the chosen id to onSubmit.
+// and hand the chosen id and the button to onSubmit.
 function setupChoiceForm(form, button, name, savedId, onSubmit) {
   if (savedId) form.elements[name].value = savedId;
   button.disabled = !form.elements[name].value;
@@ -137,6 +172,6 @@ function setupChoiceForm(form, button, name, savedId, onSubmit) {
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     const id = form.elements[name].value;
-    if (id) onSubmit(id);
+    if (id) onSubmit(id, button);
   });
 }
