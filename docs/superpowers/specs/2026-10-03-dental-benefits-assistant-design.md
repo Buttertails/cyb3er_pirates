@@ -25,6 +25,8 @@ differs. Insurance accuracy is intentionally simplified.
 - Use a Python backend and JavaScript frontend as the working technology choices.
 - Present the guided chat alongside a dashboard.
 - Collaborators are gathering JSON data; its exact contents are pending.
+- The team chose Firebase for user data. Use Cloud Firestore for employee
+  profiles and usage. The user confirmed sign-in is outside the first demo.
 
 ## Product experience
 
@@ -51,14 +53,16 @@ shared backend logic. Company differences are represented by plan data.
 | JavaScript frontend | Dashboard, chat presentation, employee context, estimates and comparisons |
 | Dialogflow | Recognize supported requests, extract information, guide follow-up questions |
 | Python backend | Read the applicable plan and employee usage; calculate estimates and comparisons; supply controlled explanations; support usage tracking |
-| JSON data | Fictional companies and plans, employees and existing usage, and procedure cost inputs |
+| JSON data | Company plans, procedure prices, and initial employee/usage seed inputs |
+| Firebase Cloud Firestore | Employee profiles, baseline usage, and confirmed recent-procedure reports |
 
 The frontend and conversation obtain benefit results from the same Python
 logic. Dialogflow is not the source of company plan facts or financial
 calculations. No additional generative LLM is proposed for the first version.
 
-The exact Dialogflow edition, frontend framework, backend framework, and
-connection mechanism are implementation choices to resolve through Spec Kit.
+The user delegated the Dialogflow edition choice on 2026-10-03. Use Dialogflow
+CX guided flows. The frontend framework, backend framework, and connection
+mechanism are implementation choices to resolve through Spec Kit.
 The current backend, frontend, and chat directories contain placeholders.
 
 ## Simplified benefit model
@@ -75,8 +79,11 @@ A comparison across the annual reset assumes the fictional plan and procedure
 prices continue unless supplied data explicitly defines a change. Timing
 comparisons concern financial implications for an already needed procedure.
 
-An estimate must not silently become recorded benefits usage. The mechanism for
-recording completed care and retaining updated usage remains a product decision.
+An estimate must not silently become recorded benefits usage. The user clarified
+that the employee page asks about recent procedures. Employee reporting updates
+usage separately from employer maintenance of plan policies. The employer
+editing interface is a stretch goal; the initial demo maintains policies through
+JSON. Persistence details are implementation choices.
 
 ## Scope boundaries
 
@@ -94,10 +101,11 @@ feature rather than a prerequisite for the main journey.
 
 - Review the incoming JSON for company plans, employee usage, and procedure
   prices; agree a common representation rather than a separate format per company.
-- Confirm which Dialogflow edition the team already knows and can access.
-- Choose how the demo identifies an employee and records completed usage.
-- Decide whether the first timing comparison covers one procedure or a short
-  sequence, consistent with the challenge's care-sequencing requirement.
+- Confirm cloud access for the selected Dialogflow CX guided-flow integration.
+- Use JSON for initial employer policy updates and the employee recent-procedure
+  prompt for usage reporting. An employer editing interface is a stretch goal.
+- Compare one procedure at a time initially. Multi-procedure sequencing is
+  deferred by the user for the initial version.
 - Confirm available network data and the demo's hosting environment.
 
 These items are explicit open questions. Material answers must be incorporated
