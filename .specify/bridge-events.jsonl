@@ -1,0 +1,5 @@
+{"timestamp":"2026-10-03T20:00:14Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"codex","checked_action":"speckit.clarify"}
+{"timestamp":"2026-10-03T20:22:59Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"codex","checked_action":"speckit.plan"}
+{"timestamp":"2026-10-03T20:31:44Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"codex","checked_action":"speckit.tasks"}
+{"timestamp":"2026-10-03T20:40:35Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"codex","checked_action":"speckit.tasks"}
+{"timestamp":"2026-10-03T20:42:58Z","action":"handoff","status":"ready","feature_directory":"specs/001-dental-benefits-assistant","decision":"updated","reason":"","actor":"codex","prior_actor":null,"snapshot_id":"20261003T204258446Z-ready"}
