@@ -1,7 +1,8 @@
 # Frontend JSON messages
 
-What the frontend sends at each step of the intake flow, and what the backend
-must do and return in response. The frontend is plain HTML/CSS/JS in `frontend/`.
+What the frontend sends at each step of the intake flow and the new-user
+sign-up, and what the backend must do and return in response. The frontend is
+plain HTML/CSS/JS in `frontend/`.
 
 **Status:** a proposal from the frontend side, for the team to review. The
 message shape and event names are not yet defined in
@@ -28,6 +29,9 @@ The review page and the temporary summary page send nothing. The sign-in page an
 the location step also call the profile routes, which are not `intake.*`
 messages; see [Authentication](#authentication) and
 [Profile and location](#profile-and-location).
+
+New users answer the [sign-up questions](#new-user-sign-up) first. Two of them
+are steps 1 and 2 above, so the intake picks up at step 3 once sign-up is done.
 
 ## How messages are sent
 
@@ -311,6 +315,16 @@ WI WY
 | `general` | General toothwork | `filling`, `crown-bridge`, `root-canal`, `extraction`, `implant`, `dentures`, `orthodontics`, `cosmetic`, `other` | no |
 | `emergency` | Emergency work | `severe-pain`, `broken-tooth`, `swelling`, `lost-filling`, `bleeding`, `urgent-other` | yes, `asap` |
 
+**`company`** (sign-up question 6). `acme-co` matches the sample employer the
+backend seeds (`backend/dental/catalog.py`); the others are placeholders.
+
+| `company` | Label |
+| --- | --- |
+| `acme-co` | Acme Corporation |
+| `demo-company-2` | Placeholder Industries |
+| `demo-company-3` | Example Health Partners |
+| `other` | My company isn't listed |
+
 **`timing`:**
 
 | `timing` | Label |
@@ -359,11 +373,15 @@ their messages again, so the same event can arrive more than once in a session.
 - [ ] Overwrite semantics on repeats, and clearing stale `office`, `procedure` and `timing` as described above
 - [ ] `422` for invalid input and `503` when the service is unavailable
 - [ ] Idle-session expiry
+- [ ] `PATCH /api/me` for `name`, `company` and `office`, with partial updates and the validation above
+- [ ] `name`, `company` and `office` in the `GET /api/me` response
+- [ ] Merge, not overwrite, when saving `users/{uid}`, so the location and the new fields don't erase each other
 
 ## Authentication
 
 Users sign in on `index.html` with Firebase Authentication, using email and
-password. The same page creates accounts. `frontend/js/firebase.js` loads the
+password. New users create their account on `signup.html`, as the second of the
+[sign-up questions](#new-user-sign-up). `frontend/js/firebase.js` loads the
 Firebase JS SDK from the gstatic CDN, with no build step:
 
 - On `localhost` or `127.0.0.1` it uses the Auth emulator
@@ -375,10 +393,11 @@ Firebase JS SDK from the gstatic CDN, with no build step:
 **Temporary demo sign-in, until the app is deployed:** while `DEMO_LOGIN` in
 `frontend/js/shared.js` is `true`, local copies of the site skip Firebase and
 the profile routes. That covers `localhost`, `127.0.0.1` and files opened
-directly. Any email and password signs in, and each email's location is kept in
-the browser's localStorage instead of `users/{uid}`, so it is still asked for
-only once. Nothing is sent to the backend for sign-in or location. A deployed
-site ignores the switch.
+directly. Any email and password signs in or creates an account, and each
+email's location, name, company and office are kept in the browser's
+localStorage instead of `users/{uid}`, so they are still asked for only once.
+Nothing is sent to the backend for sign-in or the profile. A deployed site
+ignores the switch.
 
 The browser keeps only the signed-in email in `sessionStorage`, to show who is
 signed in. Firebase keeps its own sign-in state. "Sign out" ends both and discards
@@ -392,24 +411,74 @@ How the backend sees the user:
 - A missing, invalid or expired token gets `401 {"error": "sign-in required"}`.
   The frontend then signs the user out and returns to the sign-in page.
 
+## New-user sign-up
+
+`index.html` links "Create an account" to `signup.html`, which asks one question
+per screen. The location and office questions reuse the intake pages, which
+follow the sign-up order while sign-up is under way (`ONBOARDING` in
+`frontend/js/shared.js`). The questions themselves are `SIGNUP_QUESTIONS` in
+`frontend/js/options.js`.
+
+| # | Question | Page | Sends |
+| --- | --- | --- | --- |
+| 1 | Email, typed twice | `signup.html?q=email` | Nothing. Kept in the tab until step 2. |
+| 2 | Password, typed twice, 6+ characters | `signup.html?q=password` | Firebase `createUserWithEmailAndPassword`. The account exists from here on. |
+| 3 | Full name | `signup.html?q=name` | `PATCH /api/me` `{ "name": "Pat Lee" }` (**new**) |
+| 4 | Location | `location.html` | `PUT /api/me/location`, then `intake.location` (unchanged) |
+| 5 | The dental office they go to, picked from the offices suggested for that location | `office.html` | `PATCH /api/me` `{ "office": "office-1042" }` (**new**), then `intake.office` |
+| 6 | Company, picked from a list | `signup.html?q=company` | `PATCH /api/me` `{ "company": "acme-co" }` (**new**) |
+
+- Each answer is saved as soon as it is given, like the intake messages.
+- After step 6 the user lands on the intake's care-category step (step 3), since
+  the location and office are already chosen and sent.
+- The office list on step 5 is the same `offices` the `intake.location` response
+  returns: the fictional placeholders in local demo mode, the backend's lookup
+  when live.
+
+**Resuming.** On every sign-in the frontend reads `GET /api/me`. If any of
+name, location, office or company is missing, the user is taken back into
+sign-up at the first missing question. That covers a sign-up abandoned after
+the account was created, and accounts made before sign-up asked these
+questions. Otherwise the user goes to the office step with their saved office
+preselected, as long as it is still among the offices returned for their location.
+
+**Not built on the backend yet.** `PATCH /api/me` and the new `GET /api/me`
+fields are a proposal. Until they exist, `API_CONFIG.profileDetailsLive` in
+`frontend/js/api.js` is `false` and the frontend keeps name, company and office
+per email in the browser's localStorage (`profile_details`), with the same
+merge rules. Set it to `true` once the route is live.
+
 ## Profile and location
 
 The backend remembers each user's location in Firestore at `users/{uid}`, so it
-is asked for once. These routes are always live, even in local demo mode, and
-both need the `Authorization` header.
+is asked for once. `GET /api/me` and `PUT /api/me/location` are always live, even
+in local demo mode (but not with the demo sign-in). `PATCH /api/me` is a proposal
+for the other [sign-up](#new-user-sign-up) answers. All of them need the
+`Authorization` header.
 
 ### `GET /api/me`
 
 ```json
-{ "uid": "Xy12...", "email": "pat@example.com", "location": { "state": "TX", "zip": "78701" } }
+{
+  "uid": "Xy12...",
+  "email": "pat@example.com",
+  "name": "Pat Lee",
+  "company": "acme-co",
+  "office": "office-1042",
+  "location": { "state": "TX", "zip": "78701" }
+}
 ```
 
-`location` is `null` until the user has saved one. After signing in, the frontend
-calls this route:
+`location` is `null` until the user has saved one. **Proposed, not built yet:**
+`name`, `company` and `office`, each `null` until saved through
+[`PATCH /api/me`](#patch-apime-proposed).
 
-- With no location, it shows the location step.
-- With a location, it skips that step. It sends the location as
-  `intake.location` to get the offices, then goes to the office step.
+After signing in, the frontend calls this route:
+
+- With a location, it sends the location as `intake.location` to get the offices.
+- If name, location, office or company is missing, it resumes
+  [sign-up](#new-user-sign-up) at the first missing one.
+- Otherwise it goes to the office step, with the saved office preselected.
 
 ### `PUT /api/me/location`
 
@@ -425,6 +494,37 @@ the state with a copy of the frontend's prefix table (`backend/dental/locations.
 - On success it returns the same shape as `GET /api/me`.
 - Last write wins. The "Change" link on the review page leads back to the
   location step, which saves the new location.
+
+### `PATCH /api/me` (proposed)
+
+Saves the sign-up answers the backend can't store yet. The body holds any
+subset of these fields, and only the fields present are changed. The frontend
+sends one field at a time, as each question is answered.
+
+```json
+{ "company": "acme-co" }
+```
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `name` | string | 1 to 100 characters after trimming. |
+| `company` | string | One of the `company` IDs under [Allowed values](#allowed-values). |
+| `office` | string | The `id` of the dental office the user goes to. Must be one of the offices suggested for the user's saved location (the `offices` that `intake.location` returns). |
+
+- Invalid input returns `422` with a readable `error`.
+- On success it returns the same shape as `GET /api/me`.
+- Last write wins, as with the location.
+
+### Stored in Firestore
+
+`users/{uid}` holds `email`, `state` and `zip` today. The proposal adds `name`,
+`company` and `office`. Only the backend writes this document; `firestore.rules`
+blocks clients.
+
+**Watch out:** `store.save_user_profile` writes the whole document with `.set()`,
+and `UserProfile.from_dict` drops fields it doesn't know. Once `name`, `company`
+and `office` are stored, `PUT /api/me/location` must merge rather than
+overwrite, or saving a location will erase them.
 
 ## Open points to settle with the API contract
 

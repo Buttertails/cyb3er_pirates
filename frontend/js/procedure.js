@@ -9,7 +9,7 @@
     return;
   }
 
-  renderStep(4);
+  renderStep('procedure');
   document.getElementById('heading').textContent = category.prompt;
   renderSummary('location-text', formatLocation(saved.location));
   renderSummary('office-text', officeLabel(saved.office));

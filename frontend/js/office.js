@@ -1,9 +1,13 @@
 // Step 2: pick a dentist office from the list the backend returned for step 1.
+// Sign-up asks this too (see ONBOARDING in shared.js), with the same suggestions:
+// there the choice is the office the user goes to, saved to their profile.
 (function () {
   const saved = requireSteps(['location']);
   if (!saved) return;
 
-  renderStep(2);
+  const onboarding = inOnboarding();
+  renderStep('office');
+  if (onboarding) document.getElementById('heading').textContent = 'Which dental office do you go to?';
   renderSummary('location-text', formatLocation(saved.location));
 
   const form = document.getElementById('office-form');
@@ -25,6 +29,9 @@
   setupChoiceForm(form, document.getElementById('continue'), 'office', saved.office,
     function (id, button) {
       saveStep('office', id);
-      sendSteps(button, [{ step: 'office', parameters: { office: id } }], 'category.html');
+      submitThenGo(button, async function () {
+        if (onboarding) await saveProfileDetails({ office: id });
+        await sendStep('office', { office: id });
+      }, nextPage('office'));
     });
 })();

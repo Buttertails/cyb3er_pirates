@@ -24,6 +24,9 @@
   box-sizing: border-box;
 }
 
+/* Keep the hidden attribute working on elements given a display below, like .summary. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -158,13 +161,8 @@ input[type="password"]:hover {
   border-color: var(--color-muted);
 }
 
-select:focus-visible,
-input[type="text"]:focus-visible,
-input[type="email"]:focus-visible,
-input[type="password"]:focus-visible,
-.btn:focus-visible,
-.link:focus-visible,
-.link-btn:focus-visible {
+select:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible,
+input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible, .link-btn:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -217,11 +215,7 @@ input[type="password"]:focus-visible,
 }
 
 /* Sign-in page: "New here? Create an account" under the form. */
-.form-switch {
-  margin: var(--space) 0 0;
-  text-align: center;
-  color: var(--color-muted);
-}
+.form-switch { margin: var(--space) 0 0; text-align: center; color: var(--color-muted); }
 
 /* Answers carried forward from earlier steps */
 .summary-group {

@@ -27,6 +27,11 @@ const API_CONFIG = {
   endpoint: '/api/chat',
   profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
+  // TEMPORARY: the backend has no route yet for the new-user answers it can't
+  // store (name, company, office; PATCH /api/me in docs/frontend_json.md). While
+  // this is false they're kept per email in this browser. Set it to true once
+  // the route exists.
+  profileDetailsLive: false,
 };
 
 // The backend says nobody is signed in (401), or Firebase has no user.
@@ -75,16 +80,54 @@ async function apiFetch(path, method, body) {
   return response.json();
 }
 
-// { uid, email, location: { state, zip } or null }
-function fetchProfile() {
-  if (demoLoginActive()) return Promise.resolve(demoProfile());
-  return apiFetch(API_CONFIG.profileEndpoint, 'GET');
+// True when name, company and office go to the backend rather than this browser.
+function profileDetailsSent() {
+  return API_CONFIG.profileDetailsLive && !demoLoginActive();
+}
+
+// { uid, email, name, company, office, location: { state, zip } or null }
+async function fetchProfile() {
+  const profile = demoLoginActive() ? demoProfile() : await apiFetch(API_CONFIG.profileEndpoint, 'GET');
+  if (profileDetailsSent()) return profile;
+  return Object.assign({ name: null, company: null, office: null }, profile, localDetails(profile.email));
 }
 
 // Save the user's location so later sign-ins don't ask again. Returns the profile.
 function saveProfileLocation(state, zip) {
   if (demoLoginActive()) return Promise.resolve(saveDemoLocation(state, zip));
   return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+}
+
+// Save some of the new-user answers to the profile: any of { name, company, office }.
+function saveProfileDetails(details) {
+  if (profileDetailsSent()) return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details);
+  saveLocalDetails(details);
+  return Promise.resolve();
+}
+
+// TEMPORARY stand-in for PATCH /api/me until profileDetailsLive is on: each
+// email's name, company and office in this browser's localStorage.
+const LOCAL_DETAILS_KEY = 'profile_details';
+
+function readAllLocalDetails() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_DETAILS_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function localDetails(email) {
+  return readAllLocalDetails()[(email || '').toLowerCase()] || {};
+}
+
+function saveLocalDetails(details) {
+  const all = readAllLocalDetails();
+  const email = (readStep('user') || '').toLowerCase();
+  all[email] = Object.assign({}, all[email], details);
+  try {
+    localStorage.setItem(LOCAL_DETAILS_KEY, JSON.stringify(all));
+  } catch (e) { /* ignore: these are asked for again next time */ }
 }
 
 // TEMPORARY stand-in for the profile routes while the demo sign-in is on
@@ -181,11 +224,11 @@ function showSendError(button, text) {
   error.hidden = !text;
 }
 
-// Run `work` (an async function), then go to nextPage, or to the page `work`
+// Run `work` (an async function), then go to `page`, or to the page `work`
 // returns instead. If it fails, stay on the page with a retry message so the
 // user's answer isn't silently lost. If the user turns out to be signed out,
 // send them back to sign in.
-async function submitThenGo(button, work, nextPage) {
+async function submitThenGo(button, work, page) {
   button.disabled = true;
   showSendError(button, '');
   let destination;
@@ -203,17 +246,17 @@ async function submitThenGo(button, work, nextPage) {
       : "We couldn't send that just now. Please try again.");
     return;
   }
-  window.location.href = destination || nextPage;
+  window.location.href = destination || page;
 }
 
-// Send each piece in order, then go to nextPage.
+// Send each piece in order, then go to `page`.
 // A piece is { step, parameters, autoSet }.
-function sendSteps(button, pieces, nextPage) {
+function sendSteps(button, pieces, page) {
   return submitThenGo(button, async function () {
     for (const piece of pieces) {
       await sendStep(piece.step, piece.parameters, piece.autoSet);
     }
-  }, nextPage);
+  }, page);
 }
 
 // --------------------------------------------------------------------------- #
