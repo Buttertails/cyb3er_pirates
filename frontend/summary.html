@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  TEMPORARY PAGE - scaffolding only.
+  Dumps everything the flow collected so the team can see it in one place.
+  Delete this file and js/summary.js once the real post-submit screen exists.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temporary summary | Lincoln Financial</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+
+  <main class="card">
+    <div class="progress"><span id="progress"></span></div>
+
+    <p class="temp-banner">
+      <strong>Temporary page.</strong> Scaffolding for team review — it shows everything
+      the flow collected, including the raw values. Not part of the final experience.
+    </p>
+
+    <p class="step">Summary</p>
+    <h1>Everything you selected</h1>
+
+    <dl class="answers" id="answers"></dl>
+
+    <h2 class="subhead">Raw values</h2>
+    <p class="lead">This is what would be sent to the backend.</p>
+    <pre id="payload"></pre>
+
+    <p class="actions">
+      <a class="link" href="confirm.html">Back to review</a>
+      <a class="link" href="index.html" id="start-over">Start over</a>
+    </p>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/shared.js"></script>
+  <script src="js/summary.js"></script>
+</body>
+</html>
