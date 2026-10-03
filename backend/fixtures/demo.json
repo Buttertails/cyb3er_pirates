@@ -1,0 +1,24 @@
+{
+  "fixture_set_id": "backend-chat-demo-v1",
+  "companies": [
+    {"id": "demo-company-a", "name": "Demo Company A", "plan_id": 0},
+    {"id": "demo-company-c", "name": "Demo Company C", "plan_id": 2}
+  ],
+  "employees": [
+    {
+      "id": "demo-a-pat", "name": "Pat (demo)", "company_id": "demo-company-a",
+      "member_type": "adult", "enrollment_date": "2024-01-01",
+      "usage": [{"id": "pat-prior-care", "procedure_id": "filling", "date": "2026-02-01", "plan_pays_cents": 25000}]
+    },
+    {
+      "id": "demo-a-sam", "name": "Sam (demo)", "company_id": "demo-company-a",
+      "member_type": "adult", "enrollment_date": "2024-01-01",
+      "usage": [{"id": "sam-prior-care", "procedure_id": "filling", "date": "2026-02-01", "plan_pays_cents": 740000}]
+    },
+    {
+      "id": "demo-c-lee", "name": "Lee (demo)", "company_id": "demo-company-c",
+      "member_type": "adult", "enrollment_date": "2024-01-01",
+      "usage": [{"id": "lee-prior-care", "procedure_id": "root-canal", "date": "2026-02-01", "plan_pays_cents": 50000}]
+    }
+  ]
+}

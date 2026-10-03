@@ -55,6 +55,7 @@ from firebase_functions import https_fn, options
 from flask import Flask, g, jsonify, request
 
 from auth import require_user
+from chat_routes import chat
 from dental import catalog, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
@@ -63,6 +64,7 @@ import store
 initialize_app()
 
 app = Flask(__name__)
+app.register_blueprint(chat)
 
 
 # --------------------------------------------------------------------------- #

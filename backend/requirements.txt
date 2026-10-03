@@ -1,3 +1,4 @@
 firebase-functions==0.4.2
 firebase-admin==6.5.0
 flask==3.0.3
+google-cloud-dialogflow-cx==2.7.0
