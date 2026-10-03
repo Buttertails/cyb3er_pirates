@@ -2,7 +2,8 @@
 
 // The steps in order, and the page that collects each one.
 const FLOW = [
-  { key: 'location', page: 'index.html' },
+  { key: 'user', page: 'index.html' },
+  { key: 'location', page: 'location.html' },
   { key: 'office', page: 'office.html' },
   { key: 'category', page: 'category.html' },
   { key: 'procedure', page: 'procedure.html' },
@@ -24,7 +25,17 @@ function saveStep(key, value) {
   } catch (e) { /* ignore: the next page sends the user back if nothing was saved */ }
 }
 
+// Forget the answers and the conversation, but stay signed in.
 function clearAnswers() {
+  const user = readStep('user');
+  try {
+    sessionStorage.clear();
+  } catch (e) { /* ignore */ }
+  if (user) saveStep('user', user);
+}
+
+// Forget everything, including who is signed in.
+function signOut() {
   try {
     sessionStorage.clear();
   } catch (e) { /* ignore */ }
@@ -33,6 +44,7 @@ function clearAnswers() {
 function answeredSteps() {
   const location = readStep('location');
   return {
+    user: readStep('user'),
     location: location && location.state ? location : null,
     office: readStep('office'),
     category: readStep('category'),
@@ -41,13 +53,15 @@ function answeredSteps() {
   };
 }
 
-// Send the user back to the first of `keys` they haven't answered yet.
+// Send the user back to the first of `keys` they haven't answered yet. Being
+// signed in is always required, so callers don't list 'user'.
 // Returns the saved answers, or null when the page is redirecting away.
 function requireSteps(keys) {
   const saved = answeredSteps();
   for (let i = 0; i < FLOW.length; i++) {
     const step = FLOW[i];
-    if (keys.indexOf(step.key) !== -1 && !saved[step.key]) {
+    const needed = step.key === 'user' || keys.indexOf(step.key) !== -1;
+    if (needed && !saved[step.key]) {
       window.location.replace(step.page);
       return null;
     }
@@ -175,3 +189,29 @@ function setupChoiceForm(form, button, name, savedId, onSubmit) {
     if (id) onSubmit(id, button);
   });
 }
+
+// Show who is signed in, with a sign-out link, at the right of the page header.
+// Runs on every page that loads this file and has the header.
+function renderAccount() {
+  const user = readStep('user');
+  const header = document.querySelector('.brand');
+  if (!user || !header) return;
+
+  const wrapper = document.createElement('span');
+  wrapper.className = 'brand-user';
+
+  const name = document.createElement('strong');
+  name.className = 'brand-username';
+  name.textContent = user;
+
+  const link = document.createElement('a');
+  link.className = 'link';
+  link.href = 'index.html';
+  link.textContent = 'Sign out';
+  link.addEventListener('click', signOut);
+
+  wrapper.append(name, ' \u00b7 ', link);
+  header.appendChild(wrapper);
+}
+
+if (typeof document !== 'undefined') renderAccount();

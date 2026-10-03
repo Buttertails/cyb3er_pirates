@@ -1,5 +1,8 @@
 // Step 1: collect the user's location, save it, then move on to choose an office.
 (function () {
+  // Nothing before this step is required except being signed in.
+  if (!requireSteps([])) return;
+
   renderStep(1);
 
   const form = document.getElementById('location-form');

@@ -47,6 +47,25 @@ body {
   background: var(--color-primary);
   border-radius: 50% 50% 50% 2px;
 }
+/* Signed-in name and sign-out link, pushed to the right of the header. */
+.brand { flex-wrap: wrap; }
+.brand-user {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+.brand-username {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
 .brand-name {
   margin: 0;
   font-family: var(--font-head);
@@ -102,7 +121,7 @@ h1 {
 label, legend { display: block; margin-bottom: 0.35rem; font-weight: 500; }
 .optional { font-weight: 400; color: var(--color-muted); }
 
-select, input[type="text"] {
+select, input[type="text"], input[type="password"] {
   width: 100%;
   padding: 0.7rem 0.75rem;
   font: inherit;
@@ -111,9 +130,9 @@ select, input[type="text"] {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
-select:hover, input[type="text"]:hover { border-color: var(--color-muted); }
+select:hover, input[type="text"]:hover, input[type="password"]:hover { border-color: var(--color-muted); }
 
-select:focus-visible, input[type="text"]:focus-visible,
+select:focus-visible, input[type="text"]:focus-visible, input[type="password"]:focus-visible,
 .btn:focus-visible, .link:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
