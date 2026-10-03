@@ -198,7 +198,47 @@ legend { padding: 0; }
   border-left: 3px solid var(--color-primary);
   border-radius: var(--radius);
 }
-.actions { display: flex; justify-content: center; margin-top: var(--space); }
+.actions { display: flex; justify-content: center; gap: calc(var(--space) * 1.5); margin-top: var(--space); }
+
+/* Marks a scaffolding page that is not meant to ship. */
+.temp-banner {
+  margin: 0 0 calc(var(--space) * 1.25);
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: #6b4e00;
+  background: #fff8e6;
+  border: 1px dashed #d9a800;
+  border-radius: var(--radius);
+}
+
+.subhead {
+  margin: calc(var(--space) * 1.5) 0 0.25rem;
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--color-primary);
+}
+
+.answers { margin: 0; }
+.answers > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.answers dt { color: var(--color-muted); }
+.answers dd { margin: 0; font-weight: 500; text-align: right; }
+
+pre {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
 
 @media (max-width: 480px) {
   .card { padding: var(--space); }

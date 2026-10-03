@@ -27,9 +27,9 @@
     document.getElementById('timing-change').hidden = true;
   }
 
-  document.getElementById('submit').addEventListener('click', function (event) {
-    event.target.hidden = true;
-    document.getElementById('submitted').hidden = false;
+  // TODO: send the request here. For now it opens the temporary summary page.
+  document.getElementById('submit').addEventListener('click', function () {
+    window.location.href = 'summary.html';
   });
 
   // Start over with a clean slate rather than the previous answers.
