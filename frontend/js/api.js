@@ -77,12 +77,42 @@ async function apiFetch(path, method, body) {
 
 // { uid, email, location: { state, zip } or null }
 function fetchProfile() {
+  if (demoLoginActive()) return Promise.resolve(demoProfile());
   return apiFetch(API_CONFIG.profileEndpoint, 'GET');
 }
 
 // Save the user's location so later sign-ins don't ask again. Returns the profile.
 function saveProfileLocation(state, zip) {
+  if (demoLoginActive()) return Promise.resolve(saveDemoLocation(state, zip));
   return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+}
+
+// TEMPORARY stand-in for the profile routes while the demo sign-in is on
+// (DEMO_LOGIN in shared.js). Each email's location is kept in this browser's
+// localStorage, so it is still asked for only once.
+const DEMO_PROFILES_KEY = 'demo_profiles';
+
+function readDemoProfiles() {
+  try {
+    return JSON.parse(localStorage.getItem(DEMO_PROFILES_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function demoProfile() {
+  const email = readStep('user') || '';
+  const location = readDemoProfiles()[email.toLowerCase()] || null;
+  return { uid: 'demo:' + email, email: email, location: location };
+}
+
+function saveDemoLocation(state, zip) {
+  const profiles = readDemoProfiles();
+  profiles[(readStep('user') || '').toLowerCase()] = { state: state, zip: zip };
+  try {
+    localStorage.setItem(DEMO_PROFILES_KEY, JSON.stringify(profiles));
+  } catch (e) { /* ignore: the location is asked for again next time */ }
+  return demoProfile();
 }
 
 function postMessage(message) {

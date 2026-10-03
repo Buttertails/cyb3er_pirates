@@ -10,6 +10,20 @@ const FLOW = [
   { key: 'timing', page: 'timing.html' },
 ];
 
+// TEMPORARY until the app is deployed: a demo sign-in that needs neither
+// Firebase nor the backend, so the app runs without the emulators, even opened
+// straight from disk. Any email and password signs in, nothing is checked or
+// sent, and api.js remembers each email's location in this browser. It only
+// applies locally; a deployed site always uses Firebase. Set to false to test
+// real sign-in against the Firebase emulators (see README.md).
+const DEMO_LOGIN = true;
+
+function demoLoginActive() {
+  const host = window.location.hostname;
+  return DEMO_LOGIN &&
+    (window.location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1');
+}
+
 // Read a saved step. Returns null if nothing is saved or storage is unavailable.
 function readStep(key) {
   try {
