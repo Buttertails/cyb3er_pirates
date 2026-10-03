@@ -12,6 +12,7 @@ Collection layout
     employers/{employerId}/employees/{employeeId}  -> Employee
     .../employees/{employeeId}/usage/{usageId}     -> UsageRecord
     catalog/procedures/{procedureId}               -> ProcedureCatalogEntry (read-only)
+    users/{uid}                                    -> UserProfile (keyed by Firebase Auth uid)
 
 Money
 -----
@@ -323,4 +324,33 @@ class UsageRecord:
             category=data.get("category"),
             tooth=data.get("tooth"),
             network=data.get("network", Network.IN_NETWORK.value),
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Signed-in user
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class UserProfile:
+    """What the backend remembers about a signed-in user, keyed by Firebase uid.
+
+    The location is asked for once, then reused on later sign-ins.
+    """
+
+    uid: str
+    email: Optional[str] = None
+    state: Optional[str] = None         # 2-letter code, see dental/locations.py
+    zip: Optional[str] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "UserProfile":
+        return cls(
+            uid=data["uid"],
+            email=data.get("email"),
+            state=data.get("state"),
+            zip=data.get("zip"),
         )

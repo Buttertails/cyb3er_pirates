@@ -9,20 +9,38 @@ Collection layout:
     employers/{employerId}/plans/{planId}
     employers/{employerId}/employees/{employeeId}
     employers/{employerId}/employees/{employeeId}/usage/{usageId}
+    users/{uid}
 """
 
 from __future__ import annotations
 
+import functools
+import os
 from typing import Any, Optional
 
 from firebase_admin import firestore
+from google.cloud import firestore as cloud_firestore
 
-from dental.models import Employee, Employer, EmployerPlan, UsageRecord
+from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile
 
 
 def db():
     """Return the Firestore client (lazily, so imports don't require init)."""
+    if os.environ.get("FIRESTORE_EMULATOR_HOST"):
+        return _emulator_client()
     return firestore.client()
+
+
+@functools.cache
+def _emulator_client():
+    """Firestore client for the emulator.
+
+    The Admin SDK's ``firestore.client()`` insists on Google credentials, which
+    don't exist locally. The plain client connects to the emulator with
+    anonymous credentials on its own.
+    """
+    project = os.environ.get("GCLOUD_PROJECT") or os.environ.get("GOOGLE_CLOUD_PROJECT")
+    return cloud_firestore.Client(project=project)
 
 
 # --------------------------------------------------------------------------- #
@@ -97,3 +115,22 @@ def add_usage(employer_id: str, employee_id: str, record: UsageRecord) -> None:
 def list_usage(employer_id: str, employee_id: str) -> list[UsageRecord]:
     docs = usage_collection(employer_id, employee_id).stream()
     return [UsageRecord.from_dict({"id": d.id, **d.to_dict()}) for d in docs]
+
+
+# --------------------------------------------------------------------------- #
+# Signed-in users
+# --------------------------------------------------------------------------- #
+
+def user_ref(uid: str):
+    return db().collection("users").document(uid)
+
+
+def save_user_profile(profile: UserProfile) -> None:
+    user_ref(profile.uid).set(profile.to_dict())
+
+
+def get_user_profile(uid: str) -> Optional[UserProfile]:
+    snap = user_ref(uid).get()
+    if not snap.exists:
+        return None
+    return UserProfile.from_dict({"uid": snap.id, **snap.to_dict()})

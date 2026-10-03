@@ -6,6 +6,10 @@ Firebase Hosting rewrite (/api/** -> api) means the frontend calls, e.g.,
 
 Endpoints
 ---------
+Signed-in user (Authorization: Bearer <Firebase ID token>):
+    GET  /api/me                                -> {uid, email, location: {state, zip} | null}
+    PUT  /api/me/location   body: {state, zip}  -> same shape; saved once, reused on later sign-ins
+
 Reference data:
     GET  /api/catalog
     GET  /api/mock-plans
@@ -35,6 +39,10 @@ order): a ``plan_id`` (+ optional ``member_type``: "adult"/"children") naming a
 fictional plan in ``Data/plans.json``; an inline ``plan`` (+ optional
 ``usage``); or ``employer_id`` + ``employee_id`` looked up from Firestore. The
 first two need no Firestore, which is handy for the frontend demo and tests.
+
+Routes are registered without the ``/api`` prefix. A Hosting rewrite passes the
+full path (``/api/me``) to the function while a direct call sees ``/me``, so
+``api`` strips the prefix before dispatching.
 """
 
 from __future__ import annotations
@@ -44,11 +52,12 @@ from typing import Any, Optional
 
 from firebase_admin import initialize_app
 from firebase_functions import https_fn, options
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 
-from dental import catalog, engine, mock_plans, sequencing
+from auth import require_user
+from dental import catalog, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
-from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord
+from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
 import store
 
 initialize_app()
@@ -130,6 +139,40 @@ def _resolve_plan_and_usage(body: dict[str, Any]) -> tuple[EmployerPlan, list[Us
 
     usage = store.list_usage(employer_id, employee_id)
     return plan, usage, enrollment_date or employee.enrollment_date
+
+
+# --------------------------------------------------------------------------- #
+# Signed-in user
+# --------------------------------------------------------------------------- #
+
+def _me_json(profile: Optional[UserProfile]) -> dict[str, Any]:
+    location = None
+    if profile is not None and profile.state:
+        location = {"state": profile.state, "zip": profile.zip}
+    return {"uid": g.uid, "email": g.email, "location": location}
+
+
+@app.get("/me")
+@require_user
+def read_me():
+    return jsonify(_me_json(store.get_user_profile(g.uid)))
+
+
+@app.put("/me/location")
+@require_user
+def put_my_location():
+    body = request.get_json(silent=True) or {}
+    try:
+        state, zip_code = locations.validate_location(body.get("state"), body.get("zip"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+
+    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
+    profile.email = g.email
+    profile.state = state
+    profile.zip = zip_code
+    store.save_user_profile(profile)
+    return jsonify(_me_json(profile))
 
 
 # --------------------------------------------------------------------------- #
@@ -316,9 +359,12 @@ def post_seed():
 # --------------------------------------------------------------------------- #
 
 @https_fn.on_request(
-    cors=options.CorsOptions(cors_origins="*", cors_methods=["GET", "POST", "OPTIONS"])
+    cors=options.CorsOptions(cors_origins="*", cors_methods=["GET", "POST", "PUT", "OPTIONS"])
 )
 def api(req: https_fn.Request) -> https_fn.Response:
     """Dispatch all /api/** requests to the Flask app."""
+    path = req.environ.get("PATH_INFO", "")
+    if path == "/api" or path.startswith("/api/"):
+        req.environ["PATH_INFO"] = path[len("/api"):] or "/"
     with app.request_context(req.environ):
         return app.full_dispatch_request()

@@ -14,6 +14,8 @@ backend/
     catalog.py       # CDT procedure catalog + seed data (frontend-aligned IDs)
     engine.py        # coverage/cost math + bonus features
     sequencing.py    # cross-plan-year timing optimizer
+    locations.py     # validation for the user's saved state + ZIP
+  auth.py            # verifies the Firebase ID token on signed-in routes
   store.py           # Firestore repository layer (the only Firestore access)
   main.py            # Flask app wrapped as the `api` Cloud Function
   tests/             # pytest suite for the engine
@@ -40,6 +42,11 @@ python -m pip install pytest
 python -m pytest
 ```
 
+That runs the pure engine and location tests. With the packages from
+`requirements.txt` installed (for example, in `venv`), the route tests in
+`tests/test_user_routes.py` run too. Otherwise they're skipped. They fake token
+checks and Firestore, so nothing is contacted.
+
 ## Run the API locally (Firebase emulators)
 
 ```powershell
@@ -49,6 +56,17 @@ backend/venv/Scripts/Activate.ps1
 python -m pip install -r backend/requirements.txt
 firebase emulators:start
 ```
+
+This also starts the Auth emulator, which the signed-in routes (`/api/me`)
+check tokens against. No credentials are needed. The Functions emulator points
+the Admin SDK at the Auth emulator. Under the Firestore emulator, `store.db()`
+connects without Google credentials, which the Admin SDK's `firestore.client()`
+would otherwise require.
+
+The routes are registered without the `/api` prefix. Through Hosting
+(`http://127.0.0.1:5002/api/...`) the function receives the full path, and
+`api()` strips the prefix. Calling the function directly
+(`http://localhost:5001/<project>/us-central1/api/...`) works without it.
 
 Then seed sample data and try the engine:
 
@@ -108,10 +126,31 @@ POST /api/estimate
 { "employer_id": "acme-co", "employee_id": "emp-jane", "procedures": ["crown-bridge"] }
 ```
 
+## Signed-in user
+
+The frontend signs users in with Firebase Auth and sends
+`Authorization: Bearer <ID token>`. `auth.require_user` verifies the token and
+returns `401` if it's missing or invalid. Each user's profile lives at
+`users/{uid}` and holds their location, which is asked for once and reused on
+later sign-ins.
+
+```json
+GET /api/me
+-> { "uid": "...", "email": "pat@example.com", "location": { "state": "TX", "zip": "78701" } }
+
+PUT /api/me/location
+{ "state": "TX", "zip": "78701" }      // zip may be null
+-> same shape as GET /api/me; 422 with { "error": "..." } if invalid
+```
+
+See `docs/frontend_json.md` for how the frontend uses these routes.
+
 ## API summary
 
 | Method | Path                                           | Purpose                                |
 | ------ | ---------------------------------------------- | -------------------------------------- |
+| GET    | `/api/me`                                      | signed-in user's profile + location    |
+| PUT    | `/api/me/location`                             | save the signed-in user's location     |
 | GET    | `/api/health`                                  | health check                           |
 | GET    | `/api/catalog`                                 | procedure catalog                      |
 | GET    | `/api/mock-plans`                              | fictional plans from `Data/plans.json` |
