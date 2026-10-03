@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Dental Benefits Optimizer — Firestore security rules.
+//
+// Data model (collections):
+//   employers/{employerId}
+//   employers/{employerId}/plans/{planId}
+//   employers/{employerId}/employees/{employeeId}
+//   employers/{employerId}/employees/{employeeId}/usage/{usageId}
+//
+// NOTE: These are development-friendly rules. Tighten before production:
+//   - Employers should only read/write their own employer doc + subcollections.
+//   - Employees should only read their own employee doc + usage, and read
+//     (not write) their employer's plan.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /employers/{employerId} {
+      allow read, write: if signedIn();
+
+      match /plans/{planId} {
+        allow read, write: if signedIn();
+      }
+
+      match /employees/{employeeId} {
+        allow read, write: if signedIn();
+
+        match /usage/{usageId} {
+          allow read, write: if signedIn();
+        }
+      }
+    }
+
+    // Shared, read-only reference data (CDT procedure catalog, cost benchmarks).
+    match /catalog/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
