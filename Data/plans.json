@@ -1,0 +1,77 @@
+{
+    "plans": [
+        {
+            "name": "A",
+            "planId": 0,
+            "group": true,
+            "maxCoverage": 7500,
+            "adult": {
+                "covered": [
+                    "Routine", 
+                    "Basic"
+                ],
+                "premium":  100,
+                "premiumCovered": 100,
+                "deductible": -1
+            },
+            "children": {
+                "covered": [
+                    "Routine", 
+                    "Basic",
+                    "Major",
+                    "Orthodontia"
+                ],
+                "premium":  100,
+                "premiumCovered": 100,
+                "deductible": -1
+            }
+        },
+        {
+            "name": "B",
+            "planId": 1,
+            "group": false,
+            "maxCoverage": -1,
+            "adult": {
+                "covered": [
+                    "Routine", 
+                    "Basic",
+                    "Major",
+                    "Orthodontia"
+                ],
+                "premium":  32.88,
+                "premiumCovered": 0,
+                "deductible": 4500
+            },
+            "children": {
+                "covered": [
+                ],
+                "premium":  -1,
+                "premiumCovered": -1,
+                "deductible": -1
+            }
+        },
+        {
+            "name": "C",
+            "planId": 2,
+            "group": true,
+            "maxCoverage": 12000,
+            "adult": {
+                "covered": [
+                    "Routine", 
+                    "Basic",
+                    "Major"
+                ],
+                "premium":  32.88,
+                "premiumCovered": 20,
+                "deductible": -1
+            },
+            "children": {
+                "covered": [
+                ],
+                "premium":  -1,
+                "premiumCovered": -1,
+                "deductible": -1
+            }
+        }
+    ]
+}
