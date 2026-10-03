@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>When do you need it? | Lincoln Financial</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="card">
+    <p class="step">Step 3 of 3</p>
+    <h1>When do you need it done?</h1>
+
+    <div class="summary-group">
+      <p class="summary">
+        <span>Location: <strong id="location-text"></strong></span>
+        <a class="link" href="index.html">Change</a>
+      </p>
+      <p class="summary">
+        <span>Procedure: <strong id="procedure-text"></strong></span>
+        <a class="link" href="procedure.html">Change</a>
+      </p>
+    </div>
+
+    <form id="timing-form">
+      <fieldset>
+        <legend>Select one</legend>
+        <div id="timing-options"></div>
+      </fieldset>
+      <button type="submit" id="continue" class="btn" disabled>Continue</button>
+    </form>
+
+    <!-- Placeholder confirmation, shown once all three steps are answered. -->
+    <div id="confirmation" class="confirmation" role="status" hidden>
+      <p id="confirmation-text"></p>
+      <a class="link" href="index.html" id="start-over">Start over</a>
+    </div>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/shared.js"></script>
+  <script src="js/timing.js"></script>
+</body>
+</html>
