@@ -1,0 +1,9 @@
+{
+    "dentalID": -1,
+    "category": "",
+    "description": "",
+    "cost": -1,
+    "individualPaid": -1,
+    "insurancePaid": -1,
+    "date": "timestamp"
+}
