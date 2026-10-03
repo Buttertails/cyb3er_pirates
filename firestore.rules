@@ -7,6 +7,7 @@ rules_version = '2';
 //   employers/{employerId}/plans/{planId}
 //   employers/{employerId}/employees/{employeeId}
 //   employers/{employerId}/employees/{employeeId}/usage/{usageId}
+//   users/{uid}
 //
 // NOTE: These are development-friendly rules. Tighten before production:
 //   - Employers should only read/write their own employer doc + subcollections.
@@ -33,6 +34,12 @@ service cloud.firestore {
           allow read, write: if signedIn();
         }
       }
+    }
+
+    // Signed-in user profiles (saved location). Only the backend touches these,
+    // through the Admin SDK, which bypasses these rules.
+    match /users/{uid} {
+      allow read, write: if false;
     }
 
     // Shared, read-only reference data (CDT procedure catalog, cost benchmarks).
