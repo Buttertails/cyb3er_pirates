@@ -1,11 +1,12 @@
 // Step 1: collect the user's location, save it, then move on to choose an office.
-// Asked once: sign-in skips this page when the backend already has a location.
-// The "Change" link on the review page still comes back here to update it.
+// Asked once, as part of sign-up (see ONBOARDING in shared.js): sign-in skips this
+// page when the backend already has a location. The "Change" link on the review
+// page still comes back here to update it.
 (function () {
   // Nothing before this step is required except being signed in.
   if (!requireSteps([])) return;
 
-  renderStep(1);
+  renderStep('location');
 
   const form = document.getElementById('location-form');
   const stateSelect = document.getElementById('state');
@@ -25,13 +26,6 @@
   if (saved) {
     stateSelect.value = saved.state || '';
     zipInput.value = saved.zip || '';
-  }
-
-  // An empty message hides the error.
-  function setError(input, errorElement, message) {
-    errorElement.textContent = message;
-    errorElement.hidden = !message;
-    input.setAttribute('aria-invalid', message ? 'true' : 'false');
   }
 
   // What's wrong with the ZIP, or '' if it's fine. Checked in order: format, then state match.
@@ -54,8 +48,8 @@
     const stateMessage = state === '' ? 'Please select a state.' : '';
     const zipMessage = zipProblem(zip, state);
 
-    setError(stateSelect, stateError, stateMessage);
-    setError(zipInput, zipError, zipMessage);
+    setFieldError(stateSelect, stateError, stateMessage);
+    setFieldError(zipInput, zipError, zipMessage);
     if (stateMessage) { stateSelect.focus(); return; }
     // Reprompt on the ZIP field: it's the one that can be re-entered fastest.
     if (zipMessage) { zipInput.focus(); return; }
@@ -67,6 +61,6 @@
     submitThenGo(form.querySelector('button[type="submit"]'), async function () {
       await saveProfileLocation(state, zip || null);
       await sendStep('location', { state: state, zip: zip || null });
-    }, 'office.html');
+    }, nextPage('location'));
   });
 })();

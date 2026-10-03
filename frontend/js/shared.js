@@ -10,10 +10,23 @@ const FLOW = [
   { key: 'timing', page: 'timing.html' },
 ];
 
+// The questions a new user answers once, in order. signup.html asks the typed
+// and company questions; location and office reuse the intake pages, which
+// follow this list instead of FLOW while inOnboarding() is true. Finishing it
+// carries on into the intake at the category step.
+const ONBOARDING = [
+  { key: 'email', page: 'signup.html?q=email' },
+  { key: 'password', page: 'signup.html?q=password' },
+  { key: 'name', page: 'signup.html?q=name' },
+  { key: 'location', page: 'location.html' },
+  { key: 'office', page: 'office.html' },
+  { key: 'company', page: 'signup.html?q=company' },
+];
+
 // TEMPORARY until the app is deployed: a demo sign-in that needs neither
 // Firebase nor the backend, so the app runs without the emulators, even opened
 // straight from disk. Any email and password signs in, nothing is checked or
-// sent, and api.js remembers each email's location in this browser. It only
+// sent, and api.js remembers each email's profile in this browser. It only
 // applies locally; a deployed site always uses Firebase. Set to false to test
 // real sign-in against the Firebase emulators (see README.md).
 const DEMO_LOGIN = true;
@@ -64,10 +77,21 @@ async function signOut() {
   clearSession();
 }
 
+// True while a new user is answering the ONBOARDING questions.
+function inOnboarding() {
+  return readStep('onboarding') === true;
+}
+
 function answeredSteps() {
   const location = readStep('location');
+  const user = readStep('user');
   return {
-    user: readStep('user'),
+    user: user,
+    email: user || readStep('signup_email'),
+    // The password step creates the account, so it's answered once someone is signed in.
+    password: user,
+    name: readStep('name'),
+    company: readStep('company'),
     location: location && location.state ? location : null,
     office: readStep('office'),
     category: readStep('category'),
@@ -76,20 +100,25 @@ function answeredSteps() {
   };
 }
 
+// Send the user to the first of `steps` ({ key, page }) without an answer.
+// Returns the saved answers, or null when the page is redirecting away.
+function requireAnswered(steps) {
+  const saved = answeredSteps();
+  const missing = steps.find(function (step) { return !saved[step.key]; });
+  if (missing) {
+    window.location.replace(missing.page);
+    return null;
+  }
+  return saved;
+}
+
 // Send the user back to the first of `keys` they haven't answered yet. Being
 // signed in is always required, so callers don't list 'user'.
 // Returns the saved answers, or null when the page is redirecting away.
 function requireSteps(keys) {
-  const saved = answeredSteps();
-  for (let i = 0; i < FLOW.length; i++) {
-    const step = FLOW[i];
-    const needed = step.key === 'user' || keys.indexOf(step.key) !== -1;
-    if (needed && !saved[step.key]) {
-      window.location.replace(step.page);
-      return null;
-    }
-  }
-  return saved;
+  return requireAnswered(FLOW.filter(function (step) {
+    return step.key === 'user' || keys.indexOf(step.key) !== -1;
+  }));
 }
 
 function categoryById(id) {
@@ -147,13 +176,61 @@ function totalSteps() {
   return category && category.skipTiming ? 4 : 5;
 }
 
-// Fill in the "Step 2 of 4" label and the progress bar at the top of the card.
-function renderStep(current) {
-  const total = totalSteps();
+// The steps of the flow the user is on: the new-user questions while
+// onboarding, otherwise the intake steps (signing in isn't counted as one).
+function activeSteps() {
+  if (inOnboarding()) return ONBOARDING;
+  return FLOW.filter(function (step) { return step.key !== 'user'; });
+}
+
+// The page after step `key` in the flow the user is on.
+function nextPage(key) {
+  const steps = activeSteps();
+  const next = steps[steps.findIndex(function (step) { return step.key === key; }) + 1];
+  return next ? next.page : null;
+}
+
+// Fill in the "Step 2 of 4" label and the progress bar at the top of the card,
+// counting step `key` within the flow the user is on.
+function renderStep(key) {
+  const steps = activeSteps();
+  const current = steps.findIndex(function (step) { return step.key === key; }) + 1;
+  const total = inOnboarding() ? steps.length : totalSteps();
   const label = document.getElementById('step-label');
   const fill = document.getElementById('progress');
   if (label) label.textContent = 'Step ' + current + ' of ' + total;
   if (fill) fill.style.width = Math.round((current / total) * 100) + '%';
+}
+
+// Show `message` under a form field, or hide it when the message is empty.
+function setFieldError(input, errorElement, message) {
+  errorElement.textContent = message;
+  errorElement.hidden = !message;
+  input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+
+// Friendly text for the Firebase Auth errors people actually run into, or
+// `fallback` for anything else.
+function authMessage(error, fallback) {
+  switch (error && error.code) {
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'That email and password don\'t match an account.';
+    case 'auth/invalid-email':
+      return 'Enter a valid email address.';
+    case 'auth/email-already-in-use':
+      return 'An account with that email already exists. Sign in instead.';
+    case 'auth/weak-password':
+      return 'Choose a password with at least 6 characters.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Wait a moment, then try again.';
+    case 'auth/network-request-failed':
+      return 'We couldn\'t reach the sign-in service. Check your connection and try again.';
+    default:
+      return fallback;
+  }
 }
 
 // Fill a summary row, hiding the whole row when there is nothing to show.

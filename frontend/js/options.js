@@ -1,5 +1,58 @@
 // Placeholder data for the intake flow. Edit these lists to change what users see.
 
+// New-user sign-up: the employers to choose from. Fictional, except that
+// 'acme-co' matches the sample employer the backend seeds (backend/dental/catalog.py),
+// so these ids are meant to line up with employers/{employerId} later.
+const COMPANIES = [
+  { id: 'acme-co', label: 'Acme Corporation', description: 'Sample employer' },
+  { id: 'demo-company-2', label: 'Placeholder Industries', description: 'Sample employer' },
+  { id: 'demo-company-3', label: 'Example Health Partners', description: 'Sample employer' },
+  { id: 'other', label: "My company isn't listed", description: 'You can still look for care' },
+];
+
+// New-user sign-up: the questions signup.html asks, one per screen, keyed by its
+// ?q= value. Location and office reuse the intake pages (see ONBOARDING in shared.js).
+// Text questions build their error messages from `label`; `confirmLabel` adds a
+// second field that must match. Choice questions show `options` as radio cards.
+const SIGNUP_QUESTIONS = {
+  email: {
+    heading: "What's your email?",
+    lead: "You'll use it to sign in.",
+    label: 'Email',
+    type: 'email',
+    autocomplete: 'email',
+    format: 'email',
+    confirmLabel: 'Confirm email',
+    button: 'Continue',
+  },
+  password: {
+    heading: 'Create a password',
+    lead: 'Use at least 6 characters.',
+    label: 'Password',
+    type: 'password',
+    autocomplete: 'new-password',
+    minLength: 6,
+    confirmLabel: 'Confirm password',
+    button: 'Create account',
+  },
+  name: {
+    heading: "What's your name?",
+    lead: 'So we know what to call you.',
+    label: 'Full name',
+    type: 'text',
+    autocomplete: 'name',
+    maxLength: 100,
+    button: 'Continue',
+  },
+  company: {
+    heading: 'Who do you work for?',
+    lead: 'Your employer provides your dental plan.',
+    kind: 'choice',
+    options: COMPANIES,
+    button: 'Finish',
+  },
+};
+
 // Step 1: where the user is.
 const STATES = [
   { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' },

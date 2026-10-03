@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create an account | Lincoln Financial</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+
+  <!-- One new-user question per screen: ?q= picks which (SIGNUP_QUESTIONS in
+       js/options.js). Location and office use their own pages. -->
+  <main class="card">
+    <div class="progress"><span id="progress"></span></div>
+    <p class="step" id="step-label"></p>
+
+    <!-- TEMPORARY until the app is deployed: see DEMO_LOGIN in js/shared.js. -->
+    <p class="temp-banner" id="demo-login" hidden>
+      <strong>Demo sign-in.</strong> Any email and password works. Nothing is checked
+      or sent, and your answers are remembered in this browser only.
+    </p>
+
+    <h1 id="heading"></h1>
+    <p class="lead" id="lead"></p>
+
+    <!-- Earlier answers; signup.js hides the rows that don't apply. -->
+    <div class="summary-group" id="summary-group">
+      <p class="summary">
+        <span>Email: <strong id="email-text"></strong></span>
+        <a class="link" href="signup.html?q=email">Change</a>
+      </p>
+      <p class="summary">
+        <span>Name: <strong id="name-text"></strong></span>
+        <a class="link" href="signup.html?q=name">Change</a>
+      </p>
+      <p class="summary">
+        <span>Location: <strong id="location-text"></strong></span>
+        <a class="link" href="location.html">Change</a>
+      </p>
+      <p class="summary">
+        <span>Office: <strong id="office-text"></strong></span>
+        <a class="link" href="office.html">Change</a>
+      </p>
+    </div>
+
+    <form id="question-form" novalidate>
+      <!-- Typed answers -->
+      <div id="text-question" hidden>
+        <div class="field">
+          <label for="answer" id="answer-label"></label>
+          <input id="answer" name="answer" autocapitalize="none" spellcheck="false"
+                 aria-describedby="answer-error">
+          <p class="error" id="answer-error" role="alert" hidden></p>
+        </div>
+
+        <div class="field" id="confirm-field" hidden>
+          <label for="confirm" id="confirm-label"></label>
+          <input id="confirm" name="confirm" autocapitalize="none" spellcheck="false"
+                 aria-describedby="confirm-error">
+          <p class="error" id="confirm-error" role="alert" hidden></p>
+        </div>
+      </div>
+
+      <!-- Answers picked from a list -->
+      <fieldset id="choice-question" hidden>
+        <legend>Select one</legend>
+        <div id="choice-options"></div>
+      </fieldset>
+
+      <button type="submit" class="btn" id="continue"></button>
+    </form>
+
+    <p class="form-switch" id="sign-in-instead" hidden>
+      Already have an account? <a class="link" href="index.html">Sign in</a>
+    </p>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/shared.js"></script>
+  <script src="js/api.js"></script>
+  <script type="module" src="js/firebase.js"></script>
+  <script src="js/signup.js"></script>
+</body>
+</html>

@@ -10,7 +10,7 @@
     return;
   }
 
-  renderStep(5);
+  renderStep('timing');
   renderSummary('location-text', formatLocation(saved.location));
   renderSummary('office-text', officeLabel(saved.office));
   renderSummary('procedure-text', labelFor(category.procedures, saved.procedure));

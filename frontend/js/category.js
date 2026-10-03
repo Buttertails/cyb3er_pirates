@@ -3,7 +3,7 @@
   const saved = requireSteps(['location', 'office']);
   if (!saved) return;
 
-  renderStep(3);
+  renderStep('category');
   renderSummary('location-text', formatLocation(saved.location));
   renderSummary('office-text', officeLabel(saved.office));
 
