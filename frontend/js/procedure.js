@@ -1,21 +1,36 @@
-// Step 2: show the saved location, let the user pick a dental procedure.
+// Step 3: pick a procedure from within the chosen category.
 (function () {
-  const location = readStep('location');
+  const saved = requireSteps(['location', 'category']);
+  if (!saved) return;
 
-  // No location yet (e.g. page opened directly): go back to step 1.
-  if (!location || !location.state) {
-    window.location.replace('index.html');
+  const category = categoryById(saved.category);
+  if (!category) {
+    window.location.replace('category.html');
     return;
   }
 
-  document.getElementById('location-text').textContent = formatLocation(location);
+  renderStep(3);
+  document.getElementById('heading').textContent = category.prompt;
+  renderSummary('location-text', formatLocation(saved.location));
+  renderSummary('category-text', category.label);
 
   const form = document.getElementById('procedure-form');
-  renderRadioCards(document.getElementById('procedure-options'), 'procedure', PROCEDURES);
+  renderRadioCards(document.getElementById('procedure-options'), 'procedure', category.procedures);
 
-  setupChoiceForm(form, document.getElementById('continue'), 'procedure', readStep('procedure'),
+  // Only preselect a saved procedure that belongs to this category.
+  const inCategory = category.procedures.some(function (p) { return p.id === saved.procedure; });
+
+  setupChoiceForm(form, document.getElementById('continue'), 'procedure',
+    inCategory ? saved.procedure : null,
     function (id) {
       saveStep('procedure', id);
-      window.location.href = 'timing.html';
+
+      // Emergency work is ASAP by definition, so skip the timing question.
+      if (category.skipTiming) {
+        saveStep('timing', 'asap');
+        window.location.href = 'confirm.html';
+      } else {
+        window.location.href = 'timing.html';
+      }
     });
 })();

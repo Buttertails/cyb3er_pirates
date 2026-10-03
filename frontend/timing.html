@@ -7,8 +7,14 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+
   <main class="card">
-    <p class="step">Step 3 of 3</p>
+    <div class="progress"><span id="progress"></span></div>
+    <p class="step" id="step-label"></p>
     <h1>When do you need it done?</h1>
 
     <div class="summary-group">
@@ -29,12 +35,6 @@
       </fieldset>
       <button type="submit" id="continue" class="btn" disabled>Continue</button>
     </form>
-
-    <!-- Placeholder confirmation, shown once all three steps are answered. -->
-    <div id="confirmation" class="confirmation" role="status" hidden>
-      <p id="confirmation-text"></p>
-      <a class="link" href="index.html" id="start-over">Start over</a>
-    </div>
   </main>
 
   <script src="js/options.js"></script>

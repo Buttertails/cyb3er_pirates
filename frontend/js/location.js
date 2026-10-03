@@ -1,5 +1,7 @@
-// Step 1: collect the user's location, save it for step 2, then move on.
+// Step 1: collect the user's location, save it, then move on to the care category.
 (function () {
+  renderStep(1);
+
   const form = document.getElementById('location-form');
   const stateSelect = document.getElementById('state');
   const zipInput = document.getElementById('zip');
@@ -39,6 +41,6 @@
     if (!zipOk) { zipInput.focus(); return; }
 
     saveStep('location', { state: state, zip: zip });
-    window.location.href = 'procedure.html';
+    window.location.href = 'category.html';
   });
 })();

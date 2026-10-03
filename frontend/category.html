@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>What do you need? | Lincoln Financial</title>
+  <title>What kind of care? | Lincoln Financial</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -15,24 +15,19 @@
   <main class="card">
     <div class="progress"><span id="progress"></span></div>
     <p class="step" id="step-label"></p>
-    <!-- Heading comes from the chosen category's `prompt`. -->
-    <h1 id="heading"></h1>
+    <h1>What kind of care do you need?</h1>
 
     <div class="summary-group">
       <p class="summary">
         <span>Location: <strong id="location-text"></strong></span>
         <a class="link" href="index.html">Change</a>
       </p>
-      <p class="summary">
-        <span>Care type: <strong id="category-text"></strong></span>
-        <a class="link" href="category.html">Change</a>
-      </p>
     </div>
 
-    <form id="procedure-form">
+    <form id="category-form">
       <fieldset>
         <legend>Select one</legend>
-        <div id="procedure-options"></div>
+        <div id="category-options"></div>
       </fieldset>
       <button type="submit" id="continue" class="btn" disabled>Continue</button>
     </form>
@@ -40,6 +35,6 @@
 
   <script src="js/options.js"></script>
   <script src="js/shared.js"></script>
-  <script src="js/procedure.js"></script>
+  <script src="js/category.js"></script>
 </body>
 </html>

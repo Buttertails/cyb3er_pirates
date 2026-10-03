@@ -7,10 +7,16 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+
   <main class="card">
-    <p class="step">Step 1 of 2</p>
+    <div class="progress"><span id="progress"></span></div>
+    <p class="step" id="step-label"></p>
     <h1>Where are you located?</h1>
-    <p class="lead">We use this to find options near you.</p>
+    <p class="lead">We use this to find dental options near you.</p>
 
     <form id="location-form" novalidate>
       <div class="field">

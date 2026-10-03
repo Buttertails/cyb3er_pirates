@@ -30,23 +30,56 @@ const STATES = [
   { code: 'WY', name: 'Wyoming' },
 ];
 
-// Step 2: the dental procedure the user needs. Stand-ins for the team to replace.
-const PROCEDURES = [
-  { id: 'cleaning', label: 'Routine cleaning', description: 'Regular hygiene visit' },
-  { id: 'exam-xrays', label: 'Exam and X-rays', description: 'Checkup with imaging' },
-  { id: 'filling', label: 'Filling', description: 'Treatment for a cavity' },
-  { id: 'crown-bridge', label: 'Crown or bridge', description: 'Cap or replacement for damaged teeth' },
-  { id: 'root-canal', label: 'Root canal', description: 'Treatment for an infected tooth' },
-  { id: 'extraction', label: 'Extraction', description: 'Tooth removal, including wisdom teeth' },
-  { id: 'implant', label: 'Implant', description: 'Permanent replacement for a missing tooth' },
-  { id: 'dentures', label: 'Dentures or partials', description: 'Removable tooth replacement' },
-  { id: 'orthodontics', label: 'Orthodontics', description: 'Braces or clear aligners' },
-  { id: 'cosmetic', label: 'Cosmetic', description: 'Whitening, veneers, or bonding' },
-  { id: 'emergency', label: 'Emergency care', description: 'Pain, swelling, or a broken tooth' },
-  { id: 'other', label: 'Other', description: 'Something not listed here' },
+// Steps 2 and 3: the three categories, each holding the procedures that fall under it.
+// `prompt` is the heading shown on step 3. `skipTiming` ends the flow after step 3
+// and records the timing as ASAP, which is what emergency work uses.
+const CATEGORIES = [
+  {
+    id: 'checkup',
+    label: 'Cleaning or checkup',
+    description: 'Routine visits and preventive care',
+    prompt: 'Which visit do you need?',
+    procedures: [
+      { id: 'cleaning', label: 'Routine cleaning', description: 'Regular hygiene visit' },
+      { id: 'exam-xrays', label: 'Exam and X-rays', description: 'Checkup with imaging' },
+      { id: 'deep-cleaning', label: 'Deep cleaning', description: 'Scaling and root planing' },
+    ],
+  },
+  {
+    id: 'general',
+    label: 'General toothwork',
+    description: 'Planned treatment and restorative work',
+    prompt: 'What work do you need done?',
+    procedures: [
+      { id: 'filling', label: 'Filling', description: 'Treatment for a cavity' },
+      { id: 'crown-bridge', label: 'Crown or bridge', description: 'Cap or replacement for damaged teeth' },
+      { id: 'root-canal', label: 'Root canal', description: 'Treatment for an infected tooth' },
+      { id: 'extraction', label: 'Extraction', description: 'Tooth removal, including wisdom teeth' },
+      { id: 'implant', label: 'Implant', description: 'Permanent replacement for a missing tooth' },
+      { id: 'dentures', label: 'Dentures or partials', description: 'Removable tooth replacement' },
+      { id: 'orthodontics', label: 'Orthodontics', description: 'Braces or clear aligners' },
+      { id: 'cosmetic', label: 'Cosmetic', description: 'Whitening, veneers, or bonding' },
+      { id: 'other', label: 'Other', description: 'Something not listed here' },
+    ],
+  },
+  {
+    id: 'emergency',
+    label: 'Emergency work',
+    description: "Pain, swelling, or damage that can't wait",
+    prompt: "What's going on?",
+    skipTiming: true,
+    procedures: [
+      { id: 'severe-pain', label: 'Severe tooth pain', description: 'Ongoing or worsening pain' },
+      { id: 'broken-tooth', label: 'Broken or knocked-out tooth', description: 'Injury or sudden damage' },
+      { id: 'swelling', label: 'Swelling or infection', description: 'Abscess, swelling, or fever' },
+      { id: 'lost-filling', label: 'Lost filling or crown', description: 'A restoration came loose or fell out' },
+      { id: 'bleeding', label: "Bleeding that won't stop", description: 'After a procedure or an injury' },
+      { id: 'urgent-other', label: 'Other urgent problem', description: 'Something not listed here' },
+    ],
+  },
 ];
 
-// Step 3: when the user needs the procedure done.
+// Step 4: when the user needs it done. Emergency work skips this and is recorded as ASAP.
 const TIMEFRAMES = [
   { id: 'asap', label: 'As soon as possible', description: "I'm in pain or it's urgent" },
   { id: 'two-weeks', label: 'Within 2 weeks', description: 'Soon, but not an emergency' },

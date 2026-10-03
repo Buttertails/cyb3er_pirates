@@ -1,5 +1,13 @@
 // Helpers shared by the step pages. Loaded after options.js.
 
+// The steps in order, and the page that collects each one.
+const FLOW = [
+  { key: 'location', page: 'index.html' },
+  { key: 'category', page: 'category.html' },
+  { key: 'procedure', page: 'procedure.html' },
+  { key: 'timing', page: 'timing.html' },
+];
+
 // Read a saved step. Returns null if nothing is saved or storage is unavailable.
 function readStep(key) {
   try {
@@ -15,6 +23,40 @@ function saveStep(key, value) {
   } catch (e) { /* ignore: the next page sends the user back if nothing was saved */ }
 }
 
+function clearAnswers() {
+  try {
+    sessionStorage.clear();
+  } catch (e) { /* ignore */ }
+}
+
+function answeredSteps() {
+  const location = readStep('location');
+  return {
+    location: location && location.state ? location : null,
+    category: readStep('category'),
+    procedure: readStep('procedure'),
+    timing: readStep('timing'),
+  };
+}
+
+// Send the user back to the first of `keys` they haven't answered yet.
+// Returns the saved answers, or null when the page is redirecting away.
+function requireSteps(keys) {
+  const saved = answeredSteps();
+  for (let i = 0; i < FLOW.length; i++) {
+    const step = FLOW[i];
+    if (keys.indexOf(step.key) !== -1 && !saved[step.key]) {
+      window.location.replace(step.page);
+      return null;
+    }
+  }
+  return saved;
+}
+
+function categoryById(id) {
+  return CATEGORIES.find(function (c) { return c.id === id; }) || null;
+}
+
 // "Texas 78701" from a saved location.
 function formatLocation(location) {
   const match = STATES.find(function (s) { return s.code === location.state; });
@@ -25,6 +67,33 @@ function formatLocation(location) {
 function labelFor(items, id) {
   const match = items.find(function (item) { return item.id === id; });
   return match ? match.label : id;
+}
+
+// Emergency work skips the timing step, so the flow is one step shorter.
+function totalSteps() {
+  const category = categoryById(readStep('category'));
+  return category && category.skipTiming ? 3 : 4;
+}
+
+// Fill in the "Step 2 of 4" label and the progress bar at the top of the card.
+function renderStep(current) {
+  const total = totalSteps();
+  const label = document.getElementById('step-label');
+  const fill = document.getElementById('progress');
+  if (label) label.textContent = 'Step ' + current + ' of ' + total;
+  if (fill) fill.style.width = Math.round((current / total) * 100) + '%';
+}
+
+// Fill a summary row, hiding the whole row when there is nothing to show.
+function renderSummary(id, text) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  if (text) {
+    target.textContent = text;
+  } else {
+    const row = target.closest('.summary');
+    if (row) row.hidden = true;
+  }
 }
 
 // Build one keyboard-accessible radio card per item.
