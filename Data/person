@@ -1,0 +1,14 @@
+{
+    "ID": -1,
+    "company": "placeholder",
+    "planID": "Holder",
+    "zipcode": 12232,
+    "preferedOffice": "AddressHere",
+    "deductPayed": -1,
+    "coveragedUsed": -1,
+    "email": "Test@hotmail.com",
+    "procedureYear":
+    [
+        
+    ]
+}
