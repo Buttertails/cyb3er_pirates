@@ -28,11 +28,10 @@
     document.getElementById('timing-change').hidden = true;
   }
 
-  // Every answer was already sent as the user gave it (see api.js), so this just
-  // moves on. For now it opens the temporary summary page.
-  // TODO: replace with the real next screen once the Dialogflow flow exists.
+  // Every answer was already sent as the user gave it (see api.js). Submitting
+  // moves on to the estimate results page, which runs the coverage engine.
   document.getElementById('submit').addEventListener('click', function () {
-    window.location.href = 'summary.html';
+    window.location.href = 'results.html';
   });
 
   // Start over with a clean slate rather than the previous answers.

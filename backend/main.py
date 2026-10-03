@@ -97,10 +97,10 @@ def _resolve_plan_and_usage(body: dict[str, Any]) -> tuple[EmployerPlan, list[Us
     # Mock-plan mode: resolve a fictional plan from Data/plans.json by planId.
     if "plan_id" in body:
         plans = mock_plans.load_mock_plans_by_id()
-        plan_id = int(body["plan_id"])
+        plan_id = str(body["plan_id"]).strip()
         mock = plans.get(plan_id)
         if mock is None:
-            raise ValueError(f"No plan with planId {plan_id} in plans.json.")
+            raise ValueError(f"No plan with planId {plan_id!r} in plans.json.")
         member_type = _member_type(body.get("member_type"))
         if not mock.offers(member_type):
             raise ValueError(

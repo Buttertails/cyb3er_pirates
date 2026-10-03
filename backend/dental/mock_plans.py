@@ -5,7 +5,7 @@ file speaks a different vocabulary than the deterministic engine:
 
     plans.json                         engine (models.py)
     ------------------------------     ---------------------------------------
-    planId (int), name ("A"/"B"/"C")   id (str), name (str)
+    planId (-> "C0"/"I1"), name "A"    id (str), name (str)
     group (bool)                       (not modeled — carried through)
     maxCoverage (-1 == unlimited)      annual_maximum_cents
     adult / children member blocks     one plan applies to the whole person
@@ -87,6 +87,26 @@ def _encode_sentinel(value: Optional[float]) -> Any:
     return SENTINEL if value is None else value
 
 
+# Plan-id prefixes: company (group) plans are "C", independent plans are "I".
+COMPANY_PLAN_PREFIX = "C"
+INDEPENDENT_PLAN_PREFIX = "I"
+
+
+def normalize_plan_id(raw_plan_id: Any, group: bool) -> str:
+    """Return a prefixed string plan id (e.g. ``"C0"`` / ``"I1"``).
+
+    Plan ids are strings prefixed by whether the plan is a company/group plan
+    (``"C"``) or an independent one (``"I"``). If the source already carries a
+    valid prefix it is used as-is; a bare value (e.g. the integer ``0``) is
+    prefixed based on the ``group`` flag.
+    """
+    text = str(raw_plan_id).strip()
+    if text[:1] in (COMPANY_PLAN_PREFIX, INDEPENDENT_PLAN_PREFIX) and text[1:].isdigit():
+        return text
+    prefix = COMPANY_PLAN_PREFIX if group else INDEPENDENT_PLAN_PREFIX
+    return f"{prefix}{text}"
+
+
 # --------------------------------------------------------------------------- #
 # Member type
 # --------------------------------------------------------------------------- #
@@ -164,7 +184,7 @@ class MockPlan:
     """
 
     name: str
-    plan_id: int
+    plan_id: str  # prefixed string: "C<n>" for company plans, "I<n>" for independent
     group: bool = False
     max_coverage: Optional[float] = None  # dollars; None == unlimited
     adult: MemberCoverage = field(default_factory=MemberCoverage)
@@ -192,10 +212,11 @@ class MockPlan:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MockPlan":
+        group = bool(data.get("group", False))
         return cls(
             name=data["name"],
-            plan_id=int(data["planId"]),
-            group=bool(data.get("group", False)),
+            plan_id=normalize_plan_id(data["planId"], group),
+            group=group,
             max_coverage=_decode_sentinel(data.get("maxCoverage")),
             adult=MemberCoverage.from_dict(data.get("adult", {})),
             children=MemberCoverage.from_dict(data.get("children", {})),
@@ -248,7 +269,7 @@ class MockPlan:
         )
 
         return EmployerPlan(
-            id=f"plan-{self.plan_id}-{member_type.value}",
+            id=f"{self.plan_id}-{member_type.value}",
             employer_id=employer_id or f"company-{self.name.lower()}",
             name=f"Plan {self.name} ({member_type.value})",
             plan_year_start_month=plan_year_start_month,
@@ -291,6 +312,6 @@ def load_mock_plans(path: Optional[Path | str] = None) -> list[MockPlan]:
     return [MockPlan.from_dict(entry) for entry in data.get("plans", [])]
 
 
-def load_mock_plans_by_id(path: Optional[Path | str] = None) -> dict[int, MockPlan]:
-    """Same as :func:`load_mock_plans` but keyed by ``planId``."""
+def load_mock_plans_by_id(path: Optional[Path | str] = None) -> dict[str, MockPlan]:
+    """Same as :func:`load_mock_plans` but keyed by the prefixed ``plan_id``."""
     return {plan.plan_id: plan for plan in load_mock_plans(path)}
