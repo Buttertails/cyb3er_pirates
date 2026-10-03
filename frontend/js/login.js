@@ -35,6 +35,8 @@
   };
   let mode = 'signIn';
 
+  document.getElementById('demo-login').hidden = !demoLoginActive();
+
   if (new URLSearchParams(window.location.search).has('signed-out')) {
     document.getElementById('signed-out').hidden = false;
   }
@@ -106,6 +108,15 @@
     }
   }
 
+  // Sign in or create the account. TEMPORARY: with the demo sign-in on
+  // (DEMO_LOGIN in shared.js) any email and password works and nothing is checked.
+  function authenticate(email, password) {
+    if (demoLoginActive()) return Promise.resolve({ email: email });
+    return mode === 'signUp'
+      ? window.appAuth.signUp(email, password)
+      : window.appAuth.signIn(email, password);
+  }
+
   // Signed in: remember who, then skip the location step if the backend already
   // has a location. It is still sent as the intake message, which returns the
   // offices to choose from.
@@ -135,9 +146,7 @@
     showSendError(button, '');
     let user;
     try {
-      user = mode === 'signUp'
-        ? await window.appAuth.signUp(email, password)
-        : await window.appAuth.signIn(email, password);
+      user = await authenticate(email, password);
     } catch (e) {
       button.disabled = false;
       showSendError(button, window.appAuth ? authMessage(e) : 'Sign-in didn\'t load. Refresh the page and try again.');

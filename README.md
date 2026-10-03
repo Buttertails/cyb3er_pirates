@@ -1,4 +1,23 @@
-### Run the app locally
+### Quick start: demo sign-in (until the app is deployed)
+
+Sign-in currently runs in a temporary demo mode locally, so the frontend works on
+its own, with no emulators and no backend. Open `frontend/index.html` directly,
+or serve the `frontend/` folder with any static server, for example:
+
+```bash
+python3 -m http.server 8000 --directory frontend
+```
+
+Then open http://127.0.0.1:8000. Any email and password signs in. Each email's
+location is remembered in the browser (localStorage), so you're asked for it
+only once. A banner on the sign-in page marks demo mode.
+
+Demo mode only applies on `localhost`, `127.0.0.1` or a file opened directly.
+A deployed site always uses Firebase. To use real sign-in locally, set
+`DEMO_LOGIN` to `false` in `frontend/js/shared.js` and run the emulators as
+described below.
+
+### Run the app locally with real sign-in
 
 Everything runs in the Firebase emulators: the Hosting emulator serves the
 frontend, the Functions emulator runs the backend, and the Auth and Firestore
@@ -36,6 +55,9 @@ Hosting runs on port 5002 because macOS uses port 5000 for AirPlay Receiver.
 
 ### Deploying
 
-Turn on the Email/Password sign-in provider in the Firebase console. On Firebase
+Turn on the Email/Password sign-in provider in the Firebase console. Remove the
+temporary demo sign-in: `DEMO_LOGIN` in `frontend/js/shared.js`, the demo
+profile helpers in `frontend/js/api.js`, and the banner in
+`frontend/index.html`. It's already ignored on a deployed site. On Firebase
 Hosting the frontend reads its Firebase config from `/__/firebase/init.json`, so
 there's no config file to add.

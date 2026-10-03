@@ -372,6 +372,14 @@ Firebase JS SDK from the gstatic CDN, with no build step:
   `/__/firebase/init.json` URL. The Email/Password provider must be enabled in
   the Firebase console.
 
+**Temporary demo sign-in, until the app is deployed:** while `DEMO_LOGIN` in
+`frontend/js/shared.js` is `true`, local copies of the site skip Firebase and
+the profile routes. That covers `localhost`, `127.0.0.1` and files opened
+directly. Any email and password signs in, and each email's location is kept in
+the browser's localStorage instead of `users/{uid}`, so it is still asked for
+only once. Nothing is sent to the backend for sign-in or location. A deployed
+site ignores the switch.
+
 The browser keeps only the signed-in email in `sessionStorage`, to show who is
 signed in. Firebase keeps its own sign-in state. "Sign out" ends both and discards
 the session's answers.
