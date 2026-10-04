@@ -149,7 +149,12 @@ def dialogflow_webhook():
         raise ChatProblem("invalid_context", "Invalid or expired session. Start a new conversation.", 409) from exc
     employee = _with_reports(claims.uid, _employee(profiles, claims.employee_id))
     if fulfillment["tag"] == "dentists.find":
-        directory = dentists.for_profile(store.get_user_profile(claims.uid), dentists.load_directory())
+        try:
+            directory = dentists.for_profile(store.get_user_profile(claims.uid), dentists.load_directory())
+        except Exception as exc:
+            current_app.logger.warning("Dentist directory failed (%s).", type(exc).__name__)
+            directory = {"status": "error", "message": "Sample dentist directory is temporarily unavailable. Please retry.",
+                         "offices": []}
         prompt = "Here are the sample dentist results for your saved location. You can ask about a procedure next."
         if directory["status"] != "ok":
             prompt = directory["message"] + " You can ask about a procedure next."
@@ -243,9 +248,10 @@ def post_chat():
     estimate = None
     directory = None
     payloads = [payload for payload in result.get("webhookPayloads", [])
-                if isinstance(payload, dict) and payload.get("type") == "dental_benefits"]
+                if isinstance(payload, dict) and payload.get("type") in {"dental_benefits", "dentist_directory"}]
+    latest_payload = payloads[-1] if payloads else None
     # Only the final fulfillment controls the displayed result and message.
-    for payload in payloads[-1:]:
+    for payload in [latest_payload] if latest_payload and latest_payload["type"] == "dental_benefits" else []:
         if payload.get("status") not in ("ok", "needs_input"):
             raise _dialogflow_error()
         choices = payload.get("choices", [])
@@ -275,10 +281,8 @@ def post_chat():
             if not isinstance(prompt, str) or not prompt.strip():
                 raise _dialogflow_error()
             messages = [prompt]
-    dentist_payloads = [payload for payload in result.get("webhookPayloads", [])
-                        if isinstance(payload, dict) and payload.get("type") == "dentist_directory"]
-    for payload in dentist_payloads[-1:]:
-        if payload.get("status") not in {"ok", "missing_zip", "unknown_plan", "unsupported_zip", "no_offices"}:
+    for payload in [latest_payload] if latest_payload and latest_payload["type"] == "dentist_directory" else []:
+        if payload.get("status") not in {"ok", "missing_zip", "unknown_plan", "unsupported_zip", "no_offices", "error"}:
             raise _dialogflow_error()
         if not isinstance(payload.get("message"), str) or not isinstance(payload.get("offices"), list):
             raise _dialogflow_error()

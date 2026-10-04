@@ -11,10 +11,10 @@
 ## Phase 2: Conversation interface
 
 - [x] T004 [US1] Write a failing frontend behavior test for a live chat dentist response in `frontend/src/pages/LiveBenefitsChat.jsx`, then render the existing `DentistResults` card from `result.dentists` and remove the standalone dentist button and direct button lookup path.
-- [ ] T005 [US1] Write a failing clear-directory-phrase test in `backend/tests/test_dialogflow_client.py`; update `backend/dialogflow_client.py` to send a custom `dentists.find` CX event for those phrases while sending ordinary questions as text.
-- [ ] T006 [US1] Add a `dentists.find` flow event handler targeting the existing Dentists page in the `cyb3r-pirates/us-east1` CX agent; retain its intent routes and webhook entry fulfillment, and preserve all existing routes.
+- [x] T005 [US1] Write a failing clear-directory-phrase test in `backend/tests/test_dialogflow_client.py`; update `backend/dialogflow_client.py` to send a custom `dentists.find` CX event for those phrases while sending ordinary questions as text.
+- [x] T006 [US1] Add a `dentists.find` flow event handler targeting the existing Dentists page in the `cyb3r-pirates/us-east1` CX agent; retain its intent routes and webhook entry fulfillment, and preserve all existing routes.
 
 ## Phase 3: Validation and delivery
 
-- [ ] T007 Run backend pytest, frontend tests/build, and focused CX phrases from opening, procedure, network, and estimate stages; verify follow-up procedure questions and record evidence in `specs/007-dentist-chat-branch/verification.md`.
+- [x] T007 Run backend pytest, frontend tests/build, and focused CX phrases from opening, procedure, network, and estimate stages; verify follow-up procedure questions and record evidence in `specs/007-dentist-chat-branch/verification.md`.
 - [ ] T008 Merge the feature into `main`, push, and update the existing Cloud Run API and Firebase Hosting release; confirm the deployed chat contract and agent branch without changing Auth or Firestore.

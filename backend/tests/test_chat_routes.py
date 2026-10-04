@@ -165,6 +165,20 @@ def test_dentist_webhook_uses_signed_uid_and_saved_profile(client, monkeypatch):
     assert "uid" not in payload and "zip" not in payload
 
 
+def test_dentist_webhook_reports_directory_outage_in_chat(client, monkeypatch):
+    from dental import dentists
+    monkeypatch.setattr(store, "get_user_profile", lambda uid: main.UserProfile.from_dict(
+        {"uid": uid, "company": "acme-co", "state": "NC", "zip": "27519"}))
+    monkeypatch.setattr(dentists, "load_directory", lambda: (_ for _ in ()).throw(ValueError("bad fixture")))
+    body = webhook_body()
+    body["fulfillmentInfo"]["tag"] = "dentists.find"
+    response = webhook(client, body)
+    assert response.status_code == 200
+    assert response.get_json()["payload"]["status"] == "error"
+    assert response.get_json()["payload"]["offices"] == []
+    assert "temporarily unavailable" in response.get_json()["payload"]["message"]
+
+
 @pytest.fixture
 def fake_agent(client, monkeypatch):
     """Replace only the remote boundary; real webhook/calculation still run."""
@@ -280,6 +294,20 @@ def test_dentist_lookup_stays_in_chat_then_allows_a_procedure(client, fake_agent
     next_turn = turn(client, "filling", session=session).get_json()
     assert next_turn["conversation_state"] == "Network"
     assert next_turn["dentists"] is None
+
+
+def test_later_benefits_fulfillment_does_not_reuse_dentist_card(client, monkeypatch):
+    import dialogflow_client
+    monkeypatch.setattr(dialogflow_client, "detect_intent", lambda *args: {"queryResult": {
+        "responseMessages": [{"text": {"text": ["Your benefits"]}}],
+        "currentPage": {"displayName": "Benefits"},
+        "webhookPayloads": [
+            {"type": "dentist_directory", "status": "ok", "message": "Stale offices", "offices": [{"id": "stale"}]},
+            {"type": "dental_benefits", "status": "needs_input", "prompt": "Your benefits", "choices": []},
+        ], "webhookStatuses": [{}]}})
+    result = turn(client, event="start").get_json()
+    assert result["messages"] == ["Your benefits"]
+    assert result["dentists"] is None
 
 
 def test_profile_switch_requires_a_new_session(client, fake_agent):
