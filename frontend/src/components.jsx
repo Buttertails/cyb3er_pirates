@@ -457,13 +457,13 @@ export function PurpleBackground() {
       });
     }
   }, [location.pathname]); 
-  return <img ref={bgRef} className="purple-bg" src="../res/purple-wave.svg" />;
+  return <img ref={bgRef} className="purple-bg" src={purpleWave} alt="" />;
 }
 
 export function OrangeBackground() {
-  return <img className="orange-bg" src="../res/orange-wave.svg" />;
+  return <img className="orange-bg" src={orangeWave} alt="" />;
 }
 
 export function LightPurpleBackground() {
-  return <img className="light-purple-bg" src="../res/light-purple-wave.svg" />;
+  return <img className="light-purple-bg" src={lightPurpleWave} alt="" />;
 }
