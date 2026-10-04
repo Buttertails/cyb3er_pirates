@@ -6,7 +6,7 @@ record; the bridge owns inline execution. No product implementation in planning.
 
 ## Phase 1: Setup
 
-- [x] T001 Establish isolated feature worktree, baseline tests and current cloud/agent configuration inventory; save full sanitized CX backup under chat/agent-config/ and record resource IDs and rollback in specs/004-personalized-chatbot/verification.md (FR-013).
+- [ ] T001 Establish isolated feature worktree, baseline tests and current cloud/agent configuration inventory; save full sanitized CX backup under chat/agent-config/ and record resource IDs and rollback in specs/004-personalized-chatbot/verification.md (FR-013).
 
 ## Phase 2: Foundation
 
@@ -24,7 +24,7 @@ help-and-resume, changed answer and restored treatment under two companies.
 - [ ] T007 [US1] Add failing navigation/interruption/change/reset tests in backend/tests/test_chat_service.py, then implement deterministic prompts, preserved preferences, return_to, dependent-state clearing, help/why/fallback and HR guidance in backend/chat_service.py (FR-001, FR-002, FR-012).
 - [ ] T008 [US1] Add scoped snapshot/diff/apply/restore tooling in tools/dialogflow/; back up and update CX navigation/Menu/Procedure/Network in one batch, preserving IDs; record supported synonyms, unsure branch and focused live route evidence in chat/agent-config/ and verification.md (FR-001, FR-002, FR-012, FR-013).
 - [ ] T009 [US1] Back up and add CX Priorities/Coverage/Estimate/Benefits and help-return routes as a second batch using contracts/agent-flow.md; configure only existing Flask chat environment and agent webhook with private values outside Git/browser; record a real backend-fulfilled estimate in specs/004-personalized-chatbot/verification.md (FR-004, FR-010, FR-011, FR-013).
-- [x] T010 [US1] Write failing thin-chat UI tests in frontend/tests/chat.test.mjs, then add frontend/chat.html and frontend/js/chat.js plus small frontend/profile.html link for signed-in live turns, explicit fictional employee selection, choices and confirmed restart; preserve the team's intake mode and profile/update screens (FR-003, FR-010, FR-014).
+- [ ] T010 [US1] Write failing thin-chat UI tests in frontend/tests/chat.test.mjs, then add frontend/chat.html and frontend/js/chat.js plus small frontend/profile.html link for signed-in live turns, explicit fictional employee selection, choices and confirmed restart; preserve the team's intake mode and profile/update screens (FR-003, FR-010, FR-014).
 - [ ] T011 [US1] Verify and release first website conversation to existing dental-api/Hosting; complete two live company journeys with help/resume and answer changes, record failures/recovery and rollback in specs/004-personalized-chatbot/verification.md (FR-013, SC-001, SC-005).
 
 ## Phase 4: User Story 2 - Personalized options (P2)
