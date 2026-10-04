@@ -29,6 +29,10 @@ Reference data:
     GET  /api/mock-plans
     GET  /api/health
 
+Guided chat (fictional employee context; no login dependency):
+    POST /api/chat                              -> messages, benefits, estimate
+    POST /api/dialogflow/webhook                -> authenticated CX fulfillment
+
 Generic CRUD (Firestore-backed):
     POST /api/employers                         body: {id, name, active_plan_id?}
     GET  /api/employers/<eid>
@@ -72,6 +76,7 @@ except ImportError:  # pragma: no cover - CORS is optional for same-origin use
     CORS = None
 
 from auth import require_user
+from chat_routes import chat
 from dental import catalog, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
@@ -100,6 +105,7 @@ _init_firebase()
 _FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
 app = Flask(__name__)
+app.register_blueprint(chat, url_prefix="/api")
 if CORS is not None:
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
