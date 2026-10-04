@@ -47,6 +47,10 @@ export function Header() {
   }
 
   function handleUpdate() {
+    if (inUpdate()) {
+      navigate(ROUTES.history);
+      return;
+    }
     const here = `${window.location.pathname}${window.location.search}`;
     navigate(startUpdate('manual', here));
   }

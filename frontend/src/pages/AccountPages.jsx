@@ -67,7 +67,7 @@ export function SignInPage() {
     scopeRef.current = createScope({ root: root.current });
 
     scopeRef.current.add(() => {
-      animate('.login-card', {
+      animate(root.current, {
         translateY: [150, 0],
         opacity: [0, 1],
         duration: 1350,

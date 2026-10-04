@@ -36,13 +36,16 @@ export function GuidedChatPage() {
   useDocumentTitle('Dental assistant');
   const { blocked } = useFlowGuard([]);
   const navigate = useNavigate();
-  const [log, setLog] = useState(() => readStep('chat_log') || []);
+  const historyMode = useRef(inUpdate()).current;
+  const logKey = historyMode ? 'history_log' : 'chat_log';
+  const nodeKey = historyMode ? 'history_node' : 'chat_node';
+  const [log, setLog] = useState(() => readStep(logKey) || []);
   const [busy, setBusy] = useState(false);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState('');
   const employeeId = readStep('demo_employee_id') || employeeIdForCompany(readStep('company'));
   const logRef = useRef(log);
-  const nodeRef = useRef(readStep('chat_node'));
+  const nodeRef = useRef(readStep(nodeKey));
   const startedRef = useRef(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -51,7 +54,7 @@ export function GuidedChatPage() {
   function setMessages(messages) {
     logRef.current = messages;
     setLog(messages);
-    saveStep('chat_log', messages);
+    saveStep(logKey, messages);
   }
 
   function append(message) {
@@ -72,7 +75,7 @@ export function GuidedChatPage() {
   async function ask(stepId, replies = []) {
     const step = STEPS[stepId];
     nodeRef.current = stepId;
-    saveStep('chat_node', stepId);
+    saveStep(nodeKey, stepId);
     const asked = await step.ask();
     const question = asked.at(-1);
     asked[asked.length - 1] = {
@@ -131,7 +134,7 @@ export function GuidedChatPage() {
       } else if (result.navigate) {
         // The next visit to the chat picks up wherever the answers left off.
         nodeRef.current = null;
-        saveStep('chat_node', null);
+        saveStep(nodeKey, null);
         navigate(result.navigate);
       } else {
         await ask(result.next, result.replies);

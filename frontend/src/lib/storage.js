@@ -102,7 +102,7 @@ export function updateSteps() {
 
 // Returns a fresh /chat URL each time so an open chat restarts on the update questions.
 export function startUpdate(reason, returnTo) {
-  ['still_here', 'procedures_saved', 'procedures_draft', 'work_entry', 'chat_node']
+  ['still_here', 'procedures_saved', 'procedures_draft', 'work_entry', 'history_node', 'history_log']
     .forEach((key) => saveStep(key, null));
   saveStep('updating', true);
   saveStep('update_reason', reason);
