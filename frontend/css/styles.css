@@ -12,6 +12,7 @@
   --color-track: #e6e9ec;
   --color-primary: #650030;
   --color-primary-dark: #4a0023;
+  --color-button-hover: #ff4f17;
   --color-selected-bg: #f8eff3;
   --color-error: #b3261e;
   --radius: 2px;
@@ -224,10 +225,12 @@ input[type="password"]:focus-visible, input[type="month"]:focus-visible, .btn:fo
   border: 1px solid var(--color-primary);
   border-radius: var(--radius);
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 .btn:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: var(--color-button-hover);
+  border-color: var(--color-button-hover);
+  letter-spacing: 0.05em;
 }
 .btn:disabled {
   opacity: 0.45;

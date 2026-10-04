@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { COMPANIES, SIGNUP_QUESTIONS } from '../../js/options.js';
 import {
@@ -34,6 +34,7 @@ import {
   signInIsStale,
   startUpdate,
 } from '../lib/storage.js';
+import { animate, createScope } from 'animejs';
 
 export function SignInPage() {
   useDocumentTitle('Sign in');
@@ -44,6 +45,29 @@ export function SignInPage() {
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const root = useRef(null);
+  const scopeRef = useRef(null);
+
+  // Slide in animation on load
+  useEffect(() => {
+    scopeRef.current = createScope({ root: root.current });
+
+    scopeRef.current.add(() => {
+      animate('.login-card', {
+        translateY: [150, 0],
+        opacity: [0, 1],
+        duration: 1350,
+        ease: 'outBack',
+      });
+    });
+
+    // 3. Cleanup: revert animations automatically when the component unmounts
+    return () => {
+      if (scopeRef.current) {
+        scopeRef.current.revert();
+      }
+    };
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -98,7 +122,7 @@ export function SignInPage() {
   }
 
   return (
-    <Card>
+    <Card className="login-card">
       {demoLoginActive() && (
         <p className="temp-banner"><strong>Demo sign-in.</strong> Any email and password works.</p>
       )}
@@ -259,7 +283,7 @@ export function SignupPage() {
   }
 
   return (
-    <Card>
+    <Card ref={root} className="login-card">
       <Progress step={key} />
       {index === 0 && demoLoginActive() && (
         <p className="temp-banner"><strong>Demo sign-in.</strong> Any email and password works.</p>
