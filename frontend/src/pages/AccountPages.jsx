@@ -5,6 +5,7 @@ import {
   Card,
   ChoiceForm,
   FieldError,
+  LincolnLoader,
   Progress,
   SummaryRow,
   useDocumentTitle,
@@ -161,7 +162,7 @@ export function SignInPage() {
           <FieldError id="password-error" message={errors.password} />
         </div>
         <button className="btn" type="submit" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? <><LincolnLoader />Signing in…</> : 'Sign in'}
         </button>
         <FieldError message={submitError} />
       </form>
@@ -339,7 +340,7 @@ export function SignupPage() {
             </div>
           )}
           <button className="btn" type="submit" disabled={task.busy || authBusy}>
-            {task.busy || authBusy ? 'Please wait…' : question.button}
+            {task.busy || authBusy ? <><LincolnLoader />Please wait…</> : question.button}
           </button>
           <FieldError message={authError || task.error} />
         </form>

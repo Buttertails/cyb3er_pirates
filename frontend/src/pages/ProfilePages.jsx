@@ -6,6 +6,7 @@ import {
   Card,
   ComparisonCard,
   EstimateCard,
+  LincolnLoader,
   SequenceCard,
   useDocumentTitle,
   useFlowGuard,
@@ -48,6 +49,7 @@ export function ProfilePage() {
   const [benefits, setBenefits] = useState(null);
   const [savedPlans, setSavedPlans] = useState([]);
   const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(Boolean(employeeId));
 
   useEffect(() => {
     let active = true;
@@ -56,6 +58,7 @@ export function ProfilePage() {
     setBenefits(null);
     setSavedPlans([]);
     setLoadError('');
+    setLoading(Boolean(employeeId));
     fetchAppointments().then((value) => { if (active) setAppointments(value); }).catch(() => {});
     if (employeeId) Promise.all([
       fetchProcedures(employeeId),
@@ -66,7 +69,8 @@ export function ProfilePage() {
       setProcedures(reports);
       setBenefits(summary.benefits);
       setSavedPlans(savedItems);
-    }).catch((error) => { if (active) setLoadError(submitErrorMessage(error)); });
+    }).catch((error) => { if (active) setLoadError(submitErrorMessage(error)); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [employeeId]);
 
@@ -113,6 +117,7 @@ export function ProfilePage() {
 
       <h2 className="subhead">Your plan and usage</h2>
       {loadError && <p className="error" role="alert">{loadError}</p>}
+      {loading && <LincolnLoader label="Loading your plan…" className="lincoln-loader-block" />}
       {benefits && <AnswerList rows={[
         ['Plan', benefits.plan_name],
         ['Annual maximum', dollars(benefits.annual_maximum)],
@@ -123,7 +128,7 @@ export function ProfilePage() {
 
       <h2 className="subhead">Saved estimates &amp; plans</h2>
       {!employeeId && <p className="lead">Select a supported company plan to view saved items.</p>}
-      {employeeId && savedPlans.length === 0 && (
+      {employeeId && !loading && savedPlans.length === 0 && (
         <p className="lead">Nothing saved yet. Save an estimate or a care plan from the assistant to see it here.</p>
       )}
       {savedPlans.map((item) => (
@@ -151,7 +156,7 @@ export function ProfilePage() {
       {past.length > 0 && <ProfileList title="Past" items={past.map(describeAppointment)} />}
 
       <h2 className="subhead">Confirmed dental work</h2>
-      {procedures.length === 0 ? (
+      {loading ? null : procedures.length === 0 ? (
         <p className="lead">Nothing recorded yet.</p>
       ) : (
         <div className="summary-group">

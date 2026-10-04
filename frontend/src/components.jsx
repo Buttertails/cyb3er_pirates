@@ -125,7 +125,7 @@ export function ChoiceForm({
         <ChoiceCards name={name} items={items} value={value} onChange={onChange} />
       </fieldset>
       <button type="submit" className="btn" disabled={!value || busy}>
-        {busy ? 'Please wait…' : buttonLabel}
+        {busy ? <><LincolnLoader />Please wait…</> : buttonLabel}
       </button>
       <FormError message={error} />
     </form>
@@ -312,6 +312,22 @@ export function ComparisonCard({ comparison }) {
         provider charges vary; this is not a claims decision.
       </p>
     </div>
+  );
+}
+
+// Lincoln's hat hops off his head while a request is in flight; render it only
+// while busy so it stops when the request settles. Without a label it is
+// decorative, for spots that already say they're waiting.
+export function LincolnLoader({ label = '', className = '' }) {
+  const a11y = label ? { role: 'status' } : { 'aria-hidden': true };
+  return (
+    <span className={`lincoln-loader ${className}`.trim()} {...a11y}>
+      <span className="lincoln-loader-figure">
+        <span className="lincoln-loader-head" />
+        <span className="lincoln-loader-hat" />
+      </span>
+      {label && <span className="visually-hidden">{label}</span>}
+    </span>
   );
 }
 

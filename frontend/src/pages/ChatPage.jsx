@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ComparisonCard, EstimateCard, SequenceCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
+import {
+  ComparisonCard, EstimateCard, LincolnLoader, SequenceCard, useDocumentTitle, useFlowGuard,
+} from '../components.jsx';
 import { SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { firstStep, greeting, STEPS } from '../lib/chatScript.js';
@@ -165,7 +167,7 @@ function GuidedChatPage() {
   useEffect(() => {
     const scroller = scrollRef.current;
     if (scroller) scroller.scrollTop = scroller.scrollHeight;
-  }, [log, typing]);
+  }, [log, typing, busy]);
 
   if (blocked) return null;
   const last = log.at(-1);
@@ -193,9 +195,9 @@ function GuidedChatPage() {
               {message.kind === 'comparison' && <ComparisonCard comparison={message.data} />}
             </li>
           ))}
-          {typing && (
-            <li className="bubble bubble-bot typing" aria-label="Assistant is typing">
-              <span /><span /><span />
+          {(typing || busy) && (
+            <li className="bubble bubble-bot bubble-loader" aria-label="Assistant is working">
+              <LincolnLoader />
             </li>
           )}
         </ol>

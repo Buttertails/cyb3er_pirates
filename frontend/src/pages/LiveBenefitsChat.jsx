@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
+import { EstimateCard, LincolnLoader, useDocumentTitle, useFlowGuard } from '../components.jsx';
 import { sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
@@ -20,6 +20,7 @@ export function LiveBenefitsChat() {
   const [error, setError] = useState('');
   const session = useRef(null);
   const latest = useRef(0);
+  const scrollRef = useRef(null);
 
   async function send(message, selected = employeeId, current = session.current) {
     const requestId = ++latest.current;
@@ -57,6 +58,11 @@ export function LiveBenefitsChat() {
     return () => { latest.current += 1; };
   }, [blocked, employeeId]);
 
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+  }, [messages, busy]);
+
   function answer(value) {
     const text = value.trim();
     if (!employeeId || !text || busy) return;
@@ -77,7 +83,7 @@ export function LiveBenefitsChat() {
   if (blocked) return null;
   return (
     <main className="card chat">
-      <div className="chat-scroll">
+      <div className="chat-scroll" ref={scrollRef}>
         <ol className="chat-log" role="log" aria-live="polite" aria-label="Conversation">
           {messages.map((message, index) => (
             <li key={`${index}-${message.from}`} className={`bubble bubble-${message.from}${message.estimate ? ' bubble-wide' : ''}`}>
@@ -85,6 +91,11 @@ export function LiveBenefitsChat() {
               {message.estimate && <EstimateCard estimate={message.estimate} />}
             </li>
           ))}
+          {busy && (
+            <li className="bubble bubble-bot bubble-loader" aria-label="Assistant is thinking">
+              <LincolnLoader />
+            </li>
+          )}
         </ol>
         {choices.length > 0 && <div className="chips" role="group" aria-label="Suggested answers">
           {choices.map((choice) => <button className="chip" type="button" key={choice.value} disabled={busy}

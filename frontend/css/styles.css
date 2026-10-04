@@ -622,32 +622,75 @@ body:has(.chat) {
   margin-bottom: 0;
 }
 
-/* Three dots while the assistant "types". */
-.typing {
-  display: flex;
-  gap: 0.3rem;
-  padding: 0.85rem 0.9rem;
+/*
+ * Lincoln loader: his hat hops off his head while we wait on the backend.
+ * Both shapes are masks filled with currentColor, so the loader is maroon by
+ * default and turns white inside buttons. --loader-size is the head's width.
+ */
+.lincoln-loader {
+  --loader-size: 2.5rem;
+  display: inline-block;
+  width: var(--loader-size);
+  padding-top: calc(var(--loader-size) * 0.8); /* headroom for the hat and its hop */
+  color: var(--color-primary);
+  line-height: 0;
 }
-.typing span {
-  width: 7px;
-  height: 7px;
-  background: var(--color-muted);
-  border-radius: 50%;
-  opacity: 0.4;
+.lincoln-loader-figure {
+  position: relative;
+  display: block;
+  aspect-ratio: 171 / 256;
+}
+.lincoln-loader-head,
+.lincoln-loader-hat {
+  position: absolute;
+  background-color: currentColor;
+}
+.lincoln-loader-head {
+  inset: 0;
+  -webkit-mask: url("../res/lincoln-head.png") center / contain no-repeat;
+  mask: url("../res/lincoln-head.png") center / contain no-repeat;
+}
+/* Brim resting on the crown of the head. */
+.lincoln-loader-hat {
+  left: 11.5%;
+  bottom: 87.5%;
+  width: 80%;
+  aspect-ratio: 256 / 226;
+  transform-origin: 50% 100%;
+  -webkit-mask: url("../res/lincoln-hat.png") center / contain no-repeat;
+  mask: url("../res/lincoln-hat.png") center / contain no-repeat;
+}
+/* Lincoln stands on his own in the log, without the gray bubble behind him. */
+.bubble-loader {
+  padding: 0.25rem 0;
+  background: transparent;
+}
+.lincoln-loader-block {
+  --loader-size: 3rem;
+  display: block;
+  margin: var(--space) auto;
+}
+/* Small enough to sit beside the button text without growing the button. */
+.btn .lincoln-loader {
+  --loader-size: 0.95rem;
+  margin: -0.85rem 0.5rem -0.35rem 0;
+  vertical-align: middle;
+  color: inherit;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .typing span {
-    animation: typing-dot 1s ease-in-out infinite;
+  .lincoln-loader-hat {
+    animation: hat-pop 1s infinite;
   }
-  .typing span:nth-child(2) { animation-delay: 0.15s; }
-  .typing span:nth-child(3) { animation-delay: 0.3s; }
   .bubble {
     animation: page-fade-in 200ms ease-out both;
   }
 }
-@keyframes typing-dot {
-  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-3px); }
+@keyframes hat-pop {
+  0%, 40% { transform: translateY(0) rotate(0); animation-timing-function: ease-out; }
+  60% { transform: translateY(-30%) rotate(-8deg); animation-timing-function: ease-in; }
+  80% { transform: translateY(0) rotate(0); }
+  86% { transform: scale(1.04, 0.94); } /* small squash on landing */
+  100% { transform: none; }
 }
 
 /* Quick replies under the latest question. */
