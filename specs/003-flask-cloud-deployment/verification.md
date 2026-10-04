@@ -39,7 +39,7 @@ updated through be6f3c1 (51504cf and 8a60abb), and was pulled again to confirm i
 is current. Integrated those changes into the deployment branch: improved API
 404/405 JSON handling and the team's local_demo setting for intake messages.
 The prior Flask service and Hosting release passed all 12 live checks, but the
-container and site are being refreshed again to match this newer source.
+container and site were refreshed to match this newer source (see below).
 
 
 ## Final source refresh
@@ -69,3 +69,22 @@ intake setting; health, catalog, C0/C2 policies, dummy estimate, anonymous /me
 401, explicit chat/webhook configuration errors, Firebase init project, and
 new unknown-API JSON 404 all match the latest source. The Hosting rewrite points
 to dental-api/us-central1, so the current website uses the standalone Flask server.
+
+## Dashboard/frontend refresh
+
+Merged main 67aad58 into delivery commit bd16df6. These new changes are frontend
+and documentation only; backend bytes remain those in application commit
+405a6de, so no additional image build or Cloud Run revision was necessary.
+Published the 33 tracked production frontend assets with Hosting only.
+
+Fresh verification on the merged source: 165 backend tests, 4 Firebase config
+tests, and syntax checks of all frontend JavaScript pass. All 17 live Hosting
+checks pass, now including profile.html, procedures.html, location-check.html
+and the current profile API mode. Revision dental-api-00002-gsl remains current.
+
+The team's frontend currently uses local_demo intake/estimates, additional
+profile/procedure data in browser storage, and placeholder appointments. Those
+feature integration gaps are preserved and belong to the proposed chatbot
+expansion, not a successful live chatbot claim. Protected profile rejection and
+real /api/estimate remain verified. Login accounts and database writes remain
+untested. No unrelated Firebase resources were changed.

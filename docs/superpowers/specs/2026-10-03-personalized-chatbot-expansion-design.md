@@ -2,7 +2,8 @@
 
 Status: Proposed for written-design approval. Source: user requests more steps,
 more rounded conversation, personalized input, alternative procedure costs,
-and useful care scheduling across policy resets.
+and useful care scheduling across policy resets. The user selected the package
+with interactive what-if cards and a benefits timeline.
 
 ## Goal
 
@@ -91,10 +92,40 @@ messages, useful choice buttons and structured result cards. Coordinate with
 team frontend changes; do not rewrite the existing intake/dashboard or send its
 incompatible intake.* messages as if they were supported chat events.
 
+## Selected standout features
+
+Interactive what-if cards accompany the chatbot estimate. The employee can
+change network, date or curated treatment option and compare each scenario
+against the original estimate: employee cost, plan payment and projected
+remaining allowance. Use the same backend calculation and saved conversation
+context; cards must not contain a separate browser approximation. Budget changes
+filter or label options without changing policy coverage. Unsupported scenarios
+explain the missing rule. Changes do not record completed care.
+
+A benefits timeline combines recorded care, the policy reset and projected
+stages for the active treatment. Label recorded and projected entries distinctly.
+Show usage and remaining allowance by policy year, update projections when a
+what-if choice changes, and explain when a lifetime limit prevents extra savings.
+The timeline is planning guidance, not a booking or claim submission system.
+
+Reuse and extend the team's new dashboard/profile and completed-care screens.
+Those currently keep additional profile details and procedure history in browser
+storage, and estimates/intake use local_demo mode. Before enabling personalized
+live comparisons, bind company/plan and authoritative usage to the verified
+employee context. Do not treat the dashboard's sample appointments or hardcoded
+plan as actual usage. Coordinate the required contract with the team; preserve
+existing profile/login behavior and make demo context explicit.
+
+Success: an employee can complete one supported conversation, change a scenario
+without repeating intake, see costs and the timeline update consistently, and
+return to the original estimate. Include both a useful reset comparison and a
+no-savings example. Defer PDF export, employer editing and appointment booking.
+
 ## Delivery and verification
 
 Deliver in increments: navigation and richer intake; live backend fulfillment;
-alternative comparisons; staged/reset comparisons; website integration and
+alternative comparisons; staged/reset comparisons; what-if cards and timeline;
+website integration and
 complete journeys. Back up the remote agent before each change, keep a small
 reviewable batch, and preserve rollback. Use controlled fictional conversations
 for live verification; no account creation or usage writes are required.
