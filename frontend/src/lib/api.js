@@ -189,6 +189,16 @@ export function recordSignIn() {
     saveLocalDetails({ last_sign_in_at: new Date().toISOString() }));
 }
 
+// Sets the inactivity-reminder baseline for a new account. Never blocks sign-up.
+export async function recordAccountCreated() {
+  try {
+    await recordSignIn();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchBenefits(employeeId) {
   if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   return apiFetch(`/api/me/benefits?employee_id=${encodeURIComponent(employeeId)}`, 'GET');

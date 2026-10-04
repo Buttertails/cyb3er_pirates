@@ -41,9 +41,9 @@ Port source with `git show react-wip:<path>` / `git show stash@{0}:<path>`; neve
 
 ## Phase 5: User Stories 2 and 4 — Return flow and landing (P1/P2)
 
-- [ ] T014 [US2] [US4] Red-green: `reminderFromSearch`, `signedInDestination` and `postSignInPlan` priority in `frontend/src/lib/accountNavigation.js` (`frontend/src/pages/AccountPages.test.jsx`). Wire them into the sign-in paths in `frontend/src/pages/AccountPages.jsx`.
-- [ ] T015 [US4] Red-green: `formatPlanDate` and `benefitsReminderNote` in `frontend/src/lib/storage.js` (`frontend/src/lib/storage.test.js`). Add the one-time profile notice in `frontend/src/pages/ProfilePages.jsx`.
-- [ ] T016 [US2] Red-green: `recordAccountCreated` in `frontend/src/lib/api.js` (`frontend/src/lib/api.test.js`). Record the baseline at account creation in `SignupPage`.
+- [x] T014 [US2] [US4] Red-green: `reminderFromSearch`, `signedInDestination` and `postSignInPlan` priority in `frontend/src/lib/accountNavigation.js` (`frontend/src/pages/AccountPages.test.jsx`). Wire them into the sign-in paths in `frontend/src/pages/AccountPages.jsx`.
+- [x] T015 [US4] Red-green: `formatPlanDate` and `benefitsReminderNote` in `frontend/src/lib/storage.js` (`frontend/src/lib/storage.test.js`). Add the one-time profile notice in `frontend/src/pages/ProfilePages.jsx`.
+- [x] T016 [US2] Red-green: `recordAccountCreated` in `frontend/src/lib/api.js` (`frontend/src/lib/api.test.js`). Record the baseline at account creation in `SignupPage`.
 
 ## Phase 6: Polish and operations
 

@@ -216,6 +216,33 @@ export function dollars(value) {
   return Number(value).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 }
 
+// Formats a YYYY-MM-DD plan date as a calendar date. Date.parse would treat it
+// as UTC midnight and show the previous day in US timezones.
+export function formatPlanDate(iso) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!match) return '';
+  const [year, month, day] = match.slice(1).map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+
+// Plans whose annual maximum is "unlimited" in Data/plans.json.
+const UNLIMITED_ANNUAL_MAXIMUM = 10000000;
+
+// Notice for users arriving from the unused-benefits reminder email. Amounts
+// come from GET /api/me/benefits (the backend calculator), never the email.
+export function benefitsReminderNote(benefits) {
+  if (!benefits) return null;
+  const maximum = Number(benefits.annual_maximum);
+  const remaining = Number(benefits.remaining);
+  if (!Number.isFinite(maximum) || !Number.isFinite(remaining)) return null;
+  if (maximum <= 0 || maximum >= UNLIMITED_ANNUAL_MAXIMUM || remaining <= 0) return null;
+  const resets = formatPlanDate(benefits.plan_year?.end);
+  return `You still have ${dollars(remaining)} of your ${dollars(maximum)} annual dental benefit for this plan year.`
+    + (resets ? ` Unused benefits reset on ${resets}.` : '');
+}
+
 export function formatDay(iso) {
   const time = Date.parse(iso || '');
   if (Number.isNaN(time)) return '';

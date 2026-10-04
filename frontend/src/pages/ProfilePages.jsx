@@ -14,6 +14,7 @@ import {
 import { deleteSavedPlan, fetchAppointments, fetchBenefits, fetchProcedures, fetchSavedPlans, submitErrorMessage } from '../lib/api.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
+  benefitsReminderNote,
   describeProcedure,
   dollars,
   formatLocation,
@@ -50,6 +51,12 @@ export function ProfilePage() {
   const [savedPlans, setSavedPlans] = useState([]);
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(Boolean(employeeId));
+  // Set by the sign-in page when the user arrives from the benefits reminder email.
+  const [reminder] = useState(() => readStep('reminder'));
+
+  useEffect(() => {
+    if (reminder) saveStep('reminder', null);
+  }, [reminder]);
 
   useEffect(() => {
     let active = true;
@@ -87,6 +94,7 @@ export function ProfilePage() {
 
   if (blocked) return null;
   const notProvided = 'Not provided';
+  const reminderNote = reminder === 'benefits' ? benefitsReminderNote(benefits) : null;
   const now = Date.now();
   const dated = appointments.appointments.filter((item) => !Number.isNaN(Date.parse(item.starts_at)));
   const upcoming = dated.filter((item) => Date.parse(item.starts_at) >= now)
@@ -118,6 +126,7 @@ export function ProfilePage() {
       <h2 className="subhead">Your plan and usage</h2>
       {loadError && <p className="error" role="alert">{loadError}</p>}
       {loading && <LincolnLoader label="Loading your plan…" className="lincoln-loader-block" />}
+      {reminderNote && <p className="note" role="status">{reminderNote}</p>}
       {benefits && <AnswerList rows={[
         ['Plan', benefits.plan_name],
         ['Annual maximum', dollars(benefits.annual_maximum)],

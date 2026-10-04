@@ -5,7 +5,7 @@ vi.mock('./auth.js', () => ({
   idToken: async () => 'signed-in-token',
 }));
 
-import { AppServiceError, fetchNearbyDentists, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, sendStep, SignedOutError } from './api.js';
+import { AppServiceError, fetchNearbyDentists, recordAccountCreated, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, sendStep, SignedOutError } from './api.js';
 import { readStep, saveStep } from './storage.js';
 
 beforeEach(() => {
@@ -85,5 +85,20 @@ describe('cloud-backed React API', () => {
     await expect(sendStep('location', { state: 'NC', zip: '27519' })).resolves.toBeUndefined();
     expect(readStep('office')).toBe('cary-c0');
     expect(readStep('office_directory_message')).toMatch(/try again/i);
+  });
+
+  it('records a sign-in baseline when an account is created', async () => {
+    await expect(recordAccountCreated()).resolves.toBe(true);
+    const [path, options] = fetch.mock.calls[0];
+    expect(path).toBe('/api/me/sign-in');
+    expect(options.method).toBe('POST');
+    expect(JSON.parse(options.body)).toEqual({});
+  });
+
+  it('never blocks account creation when the baseline cannot be recorded', async () => {
+    fetch.mockRejectedValueOnce(new Error('network down'));
+    await expect(recordAccountCreated()).resolves.toBe(false);
+    fetch.mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) });
+    await expect(recordAccountCreated()).resolves.toBe(false);
   });
 });

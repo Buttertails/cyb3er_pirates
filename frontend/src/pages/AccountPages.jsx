@@ -12,11 +12,17 @@ import {
   useSubmitTask,
 } from '../components.jsx';
 import { authMessage, currentAuthUser, demoLoginActive, signIn, signUp } from '../lib/auth.js';
-import { signInRouteDecision } from '../lib/accountNavigation.js';
+import {
+  postSignInPlan,
+  reminderFromSearch,
+  signedInDestination,
+  signInRouteDecision,
+} from '../lib/accountNavigation.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
   fetchProfile,
   finishFlow,
+  recordAccountCreated,
   recordSignIn,
   saveProfileDetails,
 } from '../lib/api.js';
@@ -45,6 +51,7 @@ export function SignInPage() {
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const reminder = reminderFromSearch(location.search);
   const root = useRef(null);
   const scopeRef = useRef(null);
 
@@ -54,13 +61,16 @@ export function SignInPage() {
       if (!active) return;
       const decision = signInRouteDecision(user?.email, readStep('user'));
       if (decision === 'clear') clearSession();
-      if (decision === 'resume') navigate(ROUTES.chat, { replace: true });
+      if (decision === 'resume') {
+        if (reminder) saveStep('reminder', reminder);
+        navigate(signedInDestination(reminder), { replace: true });
+      }
       if (decision === 'hydrate') await continueWithUser(user);
     }).catch(() => {
       if (active) clearSession();
     });
     return () => { active = false; };
-  }, [navigate]);
+  }, [navigate, reminder]);
 
   // Slide in animation on load
   useEffect(() => {
@@ -114,6 +124,8 @@ export function SignInPage() {
   async function continueWithUser(user) {
       clearSession();
       saveStep('user', user.email);
+      // Saved after clearSession so a reminder-email landing survives sign-in.
+      if (reminder) saveStep('reminder', reminder);
       const profile = await fetchProfile();
       ['name', 'company', 'office'].forEach((key) => {
         if (profile[key]) saveStep(key, profile[key]);
@@ -126,16 +138,21 @@ export function SignInPage() {
 
       const answers = answeredSteps();
       const unanswered = ONBOARDING.find((step) => !answers[step.key]);
-      if (unanswered) {
-        await recordSignIn();
+      const plan = postSignInPlan({
+        onboardingPage: unanswered?.page,
+        stale: signInIsStale(profile.last_sign_in_at),
+        reminder,
+      });
+      if (plan.recordNow) await recordSignIn();
+      if (plan.kind === 'onboarding') {
         saveStep('onboarding', true);
-        navigate(unanswered.page);
-      } else if (signInIsStale(profile.last_sign_in_at)) {
+        navigate(plan.page);
+      } else if (plan.kind === 'stale') {
+        // The sign-in is recorded when the update finishes (finishFlow).
         saveStep('previous_sign_in', profile.last_sign_in_at);
-        navigate(startUpdate('stale', ROUTES.chat));
+        navigate(startUpdate('stale', plan.returnTo));
       } else {
-        await recordSignIn();
-        navigate(ROUTES.chat);
+        navigate(plan.page);
       }
   }
 
@@ -146,6 +163,9 @@ export function SignInPage() {
       )}
       {new URLSearchParams(location.search).has('signed-out') && (
         <p className="note" role="status">You were signed out. Please sign in again.</p>
+      )}
+      {reminder === 'benefits' && (
+        <p className="note" role="status">Sign in to see how much of your dental benefit is left.</p>
       )}
       <h1>Sign in</h1>
       <p className="lead">Sign in to find a dental office and get started.</p>
@@ -264,6 +284,8 @@ export function SignupPage() {
       return;
     }
     saveStep('user', user.email);
+    // Starts the inactivity-reminder baseline; a failure must not block sign-up.
+    await recordAccountCreated();
     navigate(nextPage('password'));
   }
 

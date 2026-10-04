@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeSteps,
+  benefitsReminderNote,
+  formatPlanDate,
   clearAnswers,
   clearSession,
   nextPage,
@@ -62,5 +64,37 @@ describe('flow storage', () => {
     expect(startUpdate('manual', ROUTES.profile)).toMatch(/^\/history\?update=\d+$/);
     expect(activeSteps().map((step) => step.key)).toEqual(['procedures', 'location-check']);
     expect(readStep('update_return')).toBe(ROUTES.profile);
+  });
+});
+
+describe('benefits reminder notice', () => {
+  const benefits = {
+    plan_year: { start: '2026-01-01', end: '2027-01-01' },
+    annual_maximum: 7500, used: 250, remaining: 7250,
+  };
+
+  it('formats plan dates as calendar dates in any timezone', () => {
+    const previous = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+      expect(formatPlanDate('2027-01-01')).toBe('January 1, 2027');
+    } finally {
+      process.env.TZ = previous;
+    }
+    expect(formatPlanDate('not a date')).toBe('');
+    expect(formatPlanDate(undefined)).toBe('');
+  });
+
+  it('states the backend-computed remaining amount and reset date', () => {
+    expect(benefitsReminderNote(benefits)).toBe(
+      'You still have $7,250.00 of your $7,500.00 annual dental benefit for this plan year. '
+      + 'Unused benefits reset on January 1, 2027.');
+  });
+
+  it('shows nothing for missing data, nothing left, or unlimited plans', () => {
+    expect(benefitsReminderNote(null)).toBeNull();
+    expect(benefitsReminderNote({ ...benefits, remaining: 0 })).toBeNull();
+    expect(benefitsReminderNote({ ...benefits, annual_maximum: 10000000, remaining: 10000000 })).toBeNull();
+    expect(benefitsReminderNote({ ...benefits, annual_maximum: 'n/a' })).toBeNull();
   });
 });
