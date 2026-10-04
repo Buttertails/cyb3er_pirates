@@ -23,6 +23,8 @@ Endpoints (all under /api)
 Signed-in user (Authorization: Bearer <Firebase ID token>):
     GET  /api/me                                -> {uid, email, location: {state, zip} | null}
     PUT  /api/me/location   body: {state, zip}  -> same shape; saved once, reused on later sign-ins
+    POST /api/me/estimate   {employee_id, procedure_id, network?} -> single-procedure estimate
+    POST /api/me/sequence   {employee_id, procedures[], network?, urgent[]?} -> cross-plan-year plan
 
 Reference data:
     GET  /api/catalog
@@ -390,6 +392,44 @@ def post_my_estimate():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 422
     return jsonify({"estimate": estimate, "benefits": employee.benefits(treatment_date)})
+
+
+@api_bp.post("/me/sequence")
+@require_user
+def post_my_sequence():
+    """Recommend when to do several procedures across the plan-year boundary to
+    minimize the signed-in user's out-of-pocket cost.
+
+    Body: {employee_id, procedures: [engine_id, ...], network?, urgent?: [id]}.
+    Uses the fictional employee's real plan + confirmed-care usage, like
+    /api/me/estimate, so the recommendation reflects benefits already used.
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or set(body) - {"employee_id", "procedures", "network", "urgent", "as_of"}:
+        return jsonify({"error": "Provide a fictional employee and supported procedures."}), 422
+    try:
+        employee = _with_reports(g.uid, _care_employee(body.get("employee_id")))
+        procedures = body.get("procedures")
+        if not isinstance(procedures, list) or not (1 <= len(procedures) <= 10):
+            raise ValueError("Choose between one and ten procedures to plan.")
+        for procedure in procedures:
+            if not isinstance(procedure, str) or procedure not in catalog.PROCEDURE_CATALOG:
+                raise ValueError("Choose supported procedures.")
+        network = chat_network(body.get("network", "in_network"))
+        urgent = body.get("urgent", [])
+        if not isinstance(urgent, list) or any(u not in procedures for u in urgent):
+            raise ValueError("Urgent items must be among the chosen procedures.")
+        treatment_date = iso_date(body["as_of"]) if body.get("as_of") is not None else date.today()
+        result = sequencing.optimize_sequence(
+            employee.plan, employee.usage, procedures,
+            network=network, as_of=treatment_date,
+            enrollment_date=employee.enrollment_date,
+            urgent_procedure_ids=set(urgent),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    return jsonify({"sequence": {**result, **employee.identity(), "demo_data": True},
+                    "benefits": employee.benefits(treatment_date)})
 
 
 # --------------------------------------------------------------------------- #

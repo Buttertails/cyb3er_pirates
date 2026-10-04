@@ -13,6 +13,7 @@ import {
   fetchProcedures,
   finishFlow,
   requestEstimate,
+  requestSequence,
   saveProcedures,
   saveProfileDetails,
   saveProfileLocation,
@@ -336,6 +337,12 @@ function addWorkEntry() {
 }
 
 const HISTORY_CHOICES = HISTORY_CATEGORIES.flatMap((category) => withAliases(category.procedures));
+
+// Procedures a user can plan across the year. Real, priceable procedures only
+// (the engine needs catalog ids), so the catch-all "other" is left out.
+const SEQUENCE_PROCEDURES = HISTORY_CATEGORIES
+  .flatMap((category) => category.procedures)
+  .filter((procedure) => procedure.id !== 'other');
 
 async function commitCare(category, procedureId) {
   const saved = answeredSteps();
@@ -667,6 +674,7 @@ export const STEPS = {
 
   estimate: {
     choices: () => [
+      chip('plan-year', 'Plan care across the year', ['plan', 'sequence', 'schedule', 'maximize', 'multiple', 'several']),
       chip('another', 'Estimate another procedure', ['another', 'different procedure', 'something else']),
       chip('change', 'Change something', ['change', 'edit']),
       chip('retry', 'Try again', ['try again', 'retry']),
@@ -674,7 +682,7 @@ export const STEPS = {
       RESTART_CHIP,
     ],
     suggestions() {
-      return featured(this.choices(), ['another', 'change', 'restart']);
+      return featured(this.choices(), ['plan-year', 'another', 'change']);
     },
     async ask() {
       const saved = answeredSteps();
@@ -700,11 +708,106 @@ export const STEPS = {
       if (choice.id === 'restart') return { restart: true };
       if (choice.id === 'retry') return { next: 'estimate' };
       if (choice.id === 'sent') return { navigate: ROUTES.summary };
+      if (choice.id === 'plan-year') {
+        // Seed the plan with the procedure they just estimated.
+        const started = readStep('procedure') ? [readStep('procedure')] : [];
+        saveStep('sequence_picks', started);
+        return { next: 'plan-add' };
+      }
       if (choice.id === 'another') {
         ['category', 'procedure', 'timing'].forEach((key) => saveStep(key, null));
         return { next: 'category' };
       }
       return { next: 'change' };
+    },
+  },
+
+  // --- Care sequencing across the plan year (challenge core feature #3) ------
+
+  'plan-add': {
+    input: { placeholder: 'Or type a procedure, like “crown” or “root canal”' },
+    choices: () => withAliases(SEQUENCE_PROCEDURES),
+    suggestions() {
+      const picked = new Set(readStep('sequence_picks') || []);
+      const remaining = SEQUENCE_PROCEDURES.filter((item) => !picked.has(item.id));
+      return withAliases(remaining).slice(0, 4);
+    },
+    ask() {
+      const picks = readStep('sequence_picks') || [];
+      if (picks.length === 0) {
+        return [{ text: 'Which procedures are you planning? Add the first one and we’ll build a schedule that makes the most of your annual maximum.' }];
+      }
+      const named = picks.map((id) => labelFor(SEQUENCE_PROCEDURES, id).toLowerCase()).join(', ');
+      return [{ text: `So far: ${named}. Add another procedure to plan, or tap “That’s all”.` }];
+    },
+    answer(input) {
+      // Let the user finish from this step too.
+      const done = matchChoice(input.text, [chip('done', 'That’s all', ['thats all', 'done', 'finished', 'no more', 'nothing else'])]);
+      if (done) return { next: 'plan-review' };
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: 'I don’t know that one yet. Pick the closest match below.' };
+      const picks = readStep('sequence_picks') || [];
+      if (!picks.includes(choice.id)) picks.push(choice.id);
+      saveStep('sequence_picks', picks);
+      return { next: 'plan-more' };
+    },
+  },
+
+  'plan-more': {
+    choices: () => [
+      chip('more', 'Add another', ['add another', 'another', 'more', 'yes']),
+      chip('done', 'That’s all', ['thats all', 'done', 'finished', 'no', 'nope']),
+    ],
+    ask() {
+      const picks = readStep('sequence_picks') || [];
+      const named = picks.map((id) => labelFor(SEQUENCE_PROCEDURES, id).toLowerCase()).join(', ');
+      return [{ text: `Planning: ${named}. Anything else?` }];
+    },
+    answer(input) {
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: NOT_SURE };
+      return { next: choice.id === 'more' ? 'plan-add' : 'plan-review' };
+    },
+  },
+
+  'plan-review': {
+    choices: () => [
+      chip('another', 'Plan different procedures', ['another', 'different', 'redo']),
+      chip('care', 'Back to care options', ['care', 'estimate', 'back']),
+      RESTART_CHIP,
+    ],
+    suggestions() {
+      return featured(this.choices(), ['another', 'care', 'restart']);
+    },
+    async ask() {
+      const picks = readStep('sequence_picks') || [];
+      if (picks.length === 0) {
+        return [{ text: 'Add at least one procedure to plan.', choices: this.choices() }];
+      }
+      try {
+        const sequence = await requestSequence(picks, { employeeId: readStep('demo_employee_id') });
+        return [
+          { kind: 'sequence', data: sequence, text: 'Here’s how to time this care to get the most from your plan.' },
+          { text: 'What would you like to do next?' },
+        ];
+      } catch (cause) {
+        return [{
+          text: cause?.message === 'unmapped-procedure'
+            ? 'I can’t plan one of those selections yet. Try different procedures.'
+            : 'I couldn’t build a plan just now.',
+          choices: featured(this.choices(), ['another', 'care', 'restart']),
+        }];
+      }
+    },
+    answer(input) {
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: NOT_SURE };
+      if (choice.id === 'restart') return { restart: true };
+      if (choice.id === 'another') {
+        saveStep('sequence_picks', []);
+        return { next: 'plan-add' };
+      }
+      return { next: 'estimate' };
     },
   },
 };

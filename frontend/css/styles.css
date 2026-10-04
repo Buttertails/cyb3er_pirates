@@ -677,3 +677,19 @@ body:has(.chat) {
     max-width: 92%;
   }
 }
+
+/* Care-sequencing card: the "do now vs. defer to next plan year" plan. */
+.sequence-summary {
+  margin: var(--space) 0;
+  padding: 0.75rem;
+  background: var(--color-selected-bg);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius);
+}
+.sequence-group { margin-top: var(--space); }
+.sequence-group .step { margin-bottom: 0.35rem; }
+.sequence-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}

@@ -291,3 +291,29 @@ export async function requestEstimate(intakeProcedureId, options = {}) {
   const result = await apiFetch('/api/me/estimate', 'POST', body);
   return result.estimate;
 }
+
+// Recommend when to do several procedures across the plan year to minimize the
+// user's out-of-pocket cost. `intakeProcedureIds` are intake ids (mapped to the
+// engine catalog here). `options.urgent` lists intake ids that must stay this
+// year. Returns the backend's sequence result (schedule, savings, summary).
+export async function requestSequence(intakeProcedureIds, options = {}) {
+  if (!options.employeeId) throw new RejectedError('Select a fictional employee first.');
+  const procedures = [];
+  for (const id of intakeProcedureIds) {
+    const engineId = PROCEDURE_TO_ENGINE[id];
+    if (!engineId) throw new Error('unmapped-procedure');
+    if (!procedures.includes(engineId)) procedures.push(engineId);
+  }
+  if (!procedures.length) throw new RejectedError('Choose at least one procedure to plan.');
+  const urgent = (options.urgent || [])
+    .map((id) => PROCEDURE_TO_ENGINE[id])
+    .filter((engineId) => engineId && procedures.includes(engineId));
+  const body = {
+    employee_id: options.employeeId,
+    procedures,
+    network: options.network || 'in_network',
+    ...(urgent.length ? { urgent } : {}),
+  };
+  const result = await apiFetch('/api/me/sequence', 'POST', body);
+  return result.sequence;
+}
