@@ -29,6 +29,12 @@
   const errorBox = document.getElementById('error');
   const errorText = document.getElementById('error-text');
   const result = document.getElementById('result');
+  const employeeSelect = document.getElementById('result-employee');
+  employeeSelect.value = readStep('demo_employee_id') || '';
+  employeeSelect.addEventListener('change', function () {
+    saveStep('demo_employee_id', employeeSelect.value || null);
+    loadEstimate();
+  });
 
   function money(value) {
     const number = Number(value) || 0;
@@ -115,15 +121,20 @@
     renderReasons(line);
 
     const flag = document.getElementById('estimate-flag');
-    flag.textContent = 'Connected estimate using fictional Demo Plan A and demo prices. This does not record completed care.';
+    flag.textContent = 'Connected estimate using ' + estimate.company_name + ' · ' +
+      estimate.plan_name + '. Fictional prices; this does not record completed care.';
     flag.hidden = false;
 
     showOnly('result');
   }
 
   function loadEstimate() {
+    if (!employeeSelect.value) {
+      showError('Select a fictional employee to calculate this estimate.');
+      return;
+    }
     showOnly('loading');
-    requestEstimate(saved.procedure, {})
+    requestEstimate(saved.procedure, { employeeId: employeeSelect.value })
       .then(render)
       .catch(function (e) {
         if (e && e.message === 'unmapped-procedure') {
@@ -137,5 +148,5 @@
   document.getElementById('retry').addEventListener('click', loadEstimate);
   document.getElementById('start-over').addEventListener('click', clearAnswers);
 
-  loadEstimate();
+  document.addEventListener('DOMContentLoaded', loadEstimate);
 })();

@@ -43,6 +43,11 @@ def saved(monkeypatch):
     monkeypatch.setattr(firebase_admin.auth, "verify_id_token", fake_verify)
     monkeypatch.setattr(store, "get_user_profile", lambda uid: profiles.get(uid))
     monkeypatch.setattr(store, "save_user_profile", lambda p: profiles.__setitem__(p.uid, p))
+    def patch(uid, fields):
+        data = profiles[uid].to_dict() if uid in profiles else {"uid": uid}
+        data.update(fields)
+        profiles[uid] = main.UserProfile.from_dict(data)
+    monkeypatch.setattr(store, "patch_user_profile", patch)
     return profiles
 
 
@@ -137,6 +142,20 @@ def test_profile_rejects_unapproved_fields(client):
     assert response.status_code == 422
 
 
+def test_profile_saves_only_submitted_fields(client, monkeypatch):
+    writes = []
+    def record(uid, fields):
+        writes.append((uid, fields))
+    monkeypatch.setattr(store, "patch_user_profile", record, raising=False)
+    client.patch("/api/me", headers=bearer("pat-token"), json={"name": "Pat"})
+    client.put("/api/me/location", headers=bearer("pat-token"),
+               json={"state": "TX", "zip": "78701"})
+    assert writes == [
+        ("user-pat", {"email": "pat@example.com", "name": "Pat"}),
+        ("user-pat", {"email": "pat@example.com", "state": "TX", "zip": "78701"}),
+    ]
+
+
 def test_sign_in_updates_marker_without_erasing_profile(client):
     client.patch("/api/me", headers=bearer("pat-token"), json={"name": "Pat"})
     response = client.post("/api/me/sign-in", headers=bearer("pat-token"), json={})
@@ -149,14 +168,16 @@ def test_completed_care_is_scoped_and_retry_does_not_double_count(client, monkey
     reports = {}
     monkeypatch.setattr(store, "list_care_reports",
                         lambda uid, eid: list(reports.get((uid, eid), {}).values()))
-    def create(uid, eid, report):
+    def commit(uid, eid, batch, seed, maximum):
         records = reports.setdefault((uid, eid), {})
-        prior = records.get(report["submission_id"])
-        if prior is not None and any(prior[k] != v for k, v in report.items() if k != "recorded_at"):
-            raise ValueError("conflict")
-        records.setdefault(report["submission_id"], report)
-        return records[report["submission_id"]]
-    monkeypatch.setattr(store, "create_care_report", create)
+        for report in batch:
+            prior = records.get(report["submission_id"])
+            if prior is not None and any(prior[k] != v for k, v in report.items()):
+                raise store.CareConflict("conflict")
+        for report in batch:
+            records.setdefault(report["submission_id"], report)
+        return [records[report["submission_id"]] for report in batch]
+    monkeypatch.setattr(store, "commit_care_batch", commit)
     body = {"employee_id": "demo-a-pat", "procedures": [{
         "submission_id": "care-123", "procedure": "filling", "category": "general",
         "date": "2026-09", "cost": 200, "you_paid": 40, "insurance_paid": 160
@@ -175,15 +196,46 @@ def test_completed_care_is_scoped_and_retry_does_not_double_count(client, monkey
 
 
 def test_completed_care_rejects_payment_above_remaining_allowance(client, monkeypatch):
-    monkeypatch.setattr(store, "list_care_reports", lambda uid, eid: [])
-    monkeypatch.setattr(store, "create_care_report",
-                        lambda *args: pytest.fail("Invalid report must not be written."))
+    def reject(uid, eid, reports, seed, maximum):
+        assert seed["2026-01-01"] == 740000
+        assert maximum == 750000
+        raise ValueError("Annual allowance exceeded.")
+    monkeypatch.setattr(store, "commit_care_batch", reject)
     response = client.post("/api/me/procedures", headers=bearer("pat-token"), json={
         "employee_id": "demo-a-sam", "procedures": [{
             "submission_id": "care-126", "procedure": "filling", "category": "general",
             "date": "2026-09", "cost": 200, "you_paid": 0, "insurance_paid": 200,
         }],
     })
+    assert response.status_code == 422
+
+
+def test_selected_employee_benefits_and_estimate_use_confirmed_account_usage(client, monkeypatch):
+    report = {"submission_id": "care-lee1", "employee_id": "demo-c-lee",
+              "procedure": "filling", "category": "general", "date": "2026-09-01",
+              "cost_cents": 20000, "you_paid_cents": 10000, "insurance_paid_cents": 10000}
+    monkeypatch.setattr(store, "list_care_reports",
+                        lambda uid, eid: [report] if (uid, eid) == ("user-pat", "demo-c-lee") else [])
+    benefits = client.get("/api/me/benefits?employee_id=demo-c-lee",
+                          headers=bearer("pat-token"))
+    assert benefits.status_code == 200
+    assert benefits.get_json()["benefits"]["used"] == 600
+    other = client.get("/api/me/benefits?employee_id=demo-c-lee",
+                       headers=bearer("sam-token"))
+    assert other.get_json()["benefits"]["used"] == 500
+    estimate = client.post("/api/me/estimate", headers=bearer("pat-token"),
+                           json={"employee_id": "demo-c-lee", "procedure_id": "root-canal",
+                                 "network": "in_network", "as_of": "2026-10-03"})
+    assert estimate.status_code == 200
+    assert estimate.get_json()["estimate"]["plan_id"] == "C2"
+    assert estimate.get_json()["estimate"]["annual_max_used_before"] == 600
+
+
+def test_selected_employee_estimate_rejects_malformed_date(client, monkeypatch):
+    monkeypatch.setattr(store, "list_care_reports", lambda uid, eid: [])
+    response = client.post("/api/me/estimate", headers=bearer("pat-token"),
+                           json={"employee_id": "demo-a-pat", "procedure_id": "filling",
+                                 "as_of": {"date": "2026-10-03"}})
     assert response.status_code == 422
 
 

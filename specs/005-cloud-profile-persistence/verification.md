@@ -2,10 +2,11 @@
 
 ## Local implementation checks
 
-- Backend: `/tmp/cyb3er-flask-verify-venv/bin/python -m pytest` in `backend/`: 181 passed.
+- Backend: `/tmp/cyb3er-flask-verify-venv/bin/python -m pytest` in `backend/`: 186 passed after review corrections.
 - Frontend: `node --test frontend/tests/*.test.mjs`: 3 files passed.
 - `git diff --check`: clean.
 - Tests cover cloud profile fields surviving location edits, separate accounts, validated and idempotent completed-care reports, annual allowance cap, UID-bound chat sessions, account/employee separation, matching chatbot and webhook benefit usage, no local financial fallback, and no duplicate results-page script declarations.
+- Independent review found five Important issues. Corrections cover field-level profile merges, atomic care batches and annual totals, selected-employee estimates/benefits, and visibly retained browser-only history.
 
 ## Cloud delivery
 

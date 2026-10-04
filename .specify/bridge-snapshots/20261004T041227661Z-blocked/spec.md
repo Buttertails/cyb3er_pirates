@@ -1,6 +1,6 @@
 # Feature Specification: Persist profile and completed care
 
-**Feature Branch**: `main`
+**Feature Branch**: `feat/cloud-profile-persistence`  
 **Created**: 2026-10-03  
 **Status**: Approved design; specification drafted  
 **Source**: `docs/superpowers/specs/2026-10-03-cloud-profile-and-usage-persistence-design.md`
@@ -21,7 +21,6 @@ read the profile again as the same and a different account.
 1. Given a signed-in account, saving a valid profile answer persists it across a
    new browser session and backend restart.
 2. Given stored name/company/office, saving a new location keeps all three.
-   Concurrent saves to different profile fields also preserve both changes.
 3. Given an unavailable save, the page shows a retryable error and does not
    claim that cloud storage succeeded.
 4. Given a second account, its profile does not expose the first account's data.
@@ -41,14 +40,12 @@ balances and reread the record.
 1. Given a selected fictional employee and a valid report with insurer payment,
    confirmation saves the report once and updates that employee's chat balance.
 2. Given a retry of the same submission, the report and allowance count once;
-   a conflicting retry is rejected without partially saving a batch.
+   a conflicting retry is rejected.
 3. Given a report without a known insurer payment, the history entry persists,
    but the app labels that payment unknown and does not invent a contribution.
 4. Given another account or fictional employee, that user's reports do not
    change the current user's balance.
 5. Given a planned estimate, starting or changing it does not create a report.
-6. Given concurrent reports near the annual maximum, at most the allowed
-   insurer-paid total is recorded.
 
 ### User Story 3 - See connected results without false local saves (Priority: P2)
 
@@ -63,14 +60,11 @@ shown as a connected estimate.
 
 **Acceptance Scenarios**:
 1. Given a supported intake selection, the result displays the connected
-   estimate for the explicitly selected fictional employee, including that
-   signed-in user's confirmed usage, and states its fictional assumptions.
+   estimate and states its fictional plan assumptions.
 2. Given an unavailable estimate service, the result page offers retry and does
    not show a locally generated financial result.
 3. Given intake steps with no matching server event, the UI identifies them as
    browser-held selections and does not say they were sent to the backend.
-4. Given prior browser-only care history, the profile still displays it as
-   unverified local history and does not count it toward cloud usage.
 
 ### Edge Cases
 
@@ -88,30 +82,28 @@ browser-only records; a failed live estimate.
 
 - **FR-001**: A signed-in user's name, selected company, office, location and
   completed sign-in marker persist independently across sessions and devices.
-- **FR-002**: Partial and concurrent profile updates preserve other fields, and
+- **FR-002**: Partial profile updates preserve previously saved fields, and
   another account cannot read or change them through the application.
 - **FR-003**: A completed-care report must be assigned to the signed-in account
   and an explicitly selected fictional employee with a known company plan.
 - **FR-004**: Reports accept only supported completed-care procedures, a valid
   past or current service month, and valid optional nonnegative money amounts.
-- **FR-005**: Repeating an identical submission records it once; an entire
-  conflicting batch is rejected atomically without changing usage.
+- **FR-005**: Repeating an identical submission records it once; a different
+  report with the same submission ID is rejected without changing usage.
 - **FR-006**: Only confirmed, known insurer payments contribute to recorded
-  benefits usage. Concurrent reports cannot exceed the modeled allowance.
-  Unknown payments remain labeled unknown; an estimate or skipped report
-  contributes nothing.
+  benefits usage. Unknown payments remain labeled unknown; an estimate or
+  skipped report contributes nothing.
 - **FR-007**: The live chatbot uses the selected fictional employee's plan,
   fixture usage and the signed-in account's confirmed reports for that employee.
   Other accounts' and employees' reports are excluded.
 - **FR-008**: Chat context binds the verified account, employee, fixture set and
   conversation; incompatible old contexts require an explicit restart.
-- **FR-009**: Chat, result and profile screens use the explicitly selected
-  fictional employee's plan and confirmed usage for compatible financial
-  values from the same shared calculation and identify fictional assumptions.
+- **FR-009**: Chat, result and profile screens show compatible financial values
+  from the same shared calculation and clearly identify fictional assumptions.
 - **FR-010**: Save and estimate failures are visible with retry; the interface
   never presents a local approximation as a successful cloud result.
-- **FR-011**: Existing browser-only records remain visible as unverified local
-  history and are not silently imported or counted as confirmed usage.
+- **FR-011**: Existing browser-only records are retained locally and are not
+  silently imported or counted as confirmed usage.
 - **FR-012**: Existing accounts, group resources and cloud configuration remain
   available; the fix uses the existing deployment path and releases in small,
   verifiable increments.

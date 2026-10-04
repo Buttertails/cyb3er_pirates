@@ -1,6 +1,6 @@
 # Feature Specification: Persist profile and completed care
 
-**Feature Branch**: `main`
+**Feature Branch**: `feat/cloud-profile-persistence`  
 **Created**: 2026-10-03  
 **Status**: Approved design; specification drafted  
 **Source**: `docs/superpowers/specs/2026-10-03-cloud-profile-and-usage-persistence-design.md`

@@ -1,8 +1,7 @@
-// Coverage estimate — talks to the backend engine's POST /api/estimate.
+// Coverage estimate for the signed-in account's selected fictional employee.
 //
-// Loaded after api.js on results.html; it reuses API_CONFIG for the request
-// timeout, but the estimate endpoint needs no sign-in
-// (it runs purely from a plan id + procedures), so it uses a plain fetch.
+// Loaded after api.js on results.html; it uses apiFetch for an authenticated
+// request to the shared backend calculator.
 //
 // results.js calls requestEstimate(intakeProcedureId, options) and renders the
 // response. The response shape mirrors the engine's Estimate.to_dict():
@@ -39,13 +38,9 @@ const PROCEDURE_TO_ENGINE = {
   'urgent-other': 'exam-xrays',
 };
 
-// The demo plan the estimate runs against until plan selection is part of the
-// intake. "C0" is company plan A (adult); see Data/plans.json.
 const ESTIMATE_DEFAULTS = {
-  planId: 'C0',
-  memberType: 'adult',
   network: 'in_network',
-  endpoint: '/api/estimate',
+  endpoint: '/api/me/estimate',
 };
 
 // Map an intake procedure id to the engine catalog id, or null if we can't.
@@ -63,25 +58,13 @@ async function requestEstimate(intakeProcedureId, options) {
   if (!engineId) {
     throw new Error('unmapped-procedure');
   }
+  if (!opts.employeeId) throw new Error('select-employee');
 
   const body = {
-    plan_id: opts.planId || ESTIMATE_DEFAULTS.planId,
-    member_type: opts.memberType || ESTIMATE_DEFAULTS.memberType,
+    employee_id: opts.employeeId,
+    procedure_id: engineId,
     network: opts.network || ESTIMATE_DEFAULTS.network,
-    procedures: [engineId],
   };
-
-  const timeoutMs = (typeof API_CONFIG !== 'undefined' && API_CONFIG.timeoutMs) || 18000;
-  const response = await fetch(ESTIMATE_DEFAULTS.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(function () { return {}; });
-    throw new Error(data.error || 'Estimate failed with status ' + response.status);
-  }
-  return response.json();
+  const response = await apiFetch(ESTIMATE_DEFAULTS.endpoint, 'POST', body);
+  return response.estimate;
 }

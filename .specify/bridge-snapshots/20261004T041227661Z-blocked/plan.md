@@ -1,6 +1,6 @@
 # Implementation Plan: Cloud profile and completed care
 
-**Branch**: `main` | **Date**: 2026-10-03 | **Spec**: [spec.md](spec.md)
+**Branch**: `feat/cloud-profile-persistence` | **Date**: 2026-10-03 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 
@@ -33,14 +33,14 @@ Rechecked after data model and contracts: no constitution exception.
 
 ```text
 backend/
-  main.py                 # authenticated profile, procedure and estimate routes
-  store.py                # partial merges and atomic account-scoped reports
+  main.py                 # authenticated profile and procedure routes
+  store.py                # Firestore merge and account-scoped records
   chat_context.py         # UID-bound signed session
   chat_routes.py          # recorded usage in live responses/webhook
   tests/                  # route, isolation, ledger, chat tests
 frontend/
   js/api.js               # authenticated profile/procedure clients
-  js/estimate.js          # selected-employee result without fake fallback
+  js/estimate.js          # connected result without fake fallback
   js/procedures.js        # explicit fictional employee selection
   procedures.html
   tests/

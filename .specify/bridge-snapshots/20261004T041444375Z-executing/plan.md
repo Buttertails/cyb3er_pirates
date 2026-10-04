@@ -1,6 +1,6 @@
 # Implementation Plan: Cloud profile and completed care
 
-**Branch**: `main` | **Date**: 2026-10-03 | **Spec**: [spec.md](spec.md)
+**Branch**: `feat/cloud-profile-persistence` | **Date**: 2026-10-03 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 

@@ -190,9 +190,8 @@ async function finishFlow() {
     'still_here', 'procedures_saved', 'procedures_draft'].forEach(function (key) { saveStep(key, null); });
 }
 
-// TEMPORARY stand-in for the proposed profile routes until profileDetailsLive
-// is on: each email's name, company, office, procedures and last sign-in in
-// this browser's localStorage.
+// Legacy browser-held details remain readable so earlier care history can be
+// shown as unverified. New profile and care updates use the cloud API.
 const LOCAL_DETAILS_KEY = 'profile_details';
 
 function readAllLocalDetails() {
@@ -205,6 +204,11 @@ function readAllLocalDetails() {
 
 function localDetails(email) {
   return readAllLocalDetails()[(email || '').toLowerCase()] || {};
+}
+
+function unverifiedLocalHistory() {
+  const records = localDetails(readStep('user')).procedures || [];
+  return records.map(function (entry) { return Object.assign({}, entry, { unverified_local: true }); });
 }
 
 function saveLocalDetails(details) {

@@ -20,10 +20,20 @@
 
     <dl class="answers" id="about"></dl>
 
+    <div class="field">
+      <label for="history-employee">Fictional employee and plan</label>
+      <select id="history-employee">
+        <option value="">Select a fictional employee</option>
+        <option value="demo-a-pat">Pat — Demo Company A</option>
+        <option value="demo-a-sam">Sam — Demo Company A</option>
+        <option value="demo-c-lee">Lee — Demo Company C</option>
+      </select>
+    </div>
+
     <h2 class="subhead">Your plan</h2>
     <dl class="answers" id="plan"></dl>
     <p class="note" id="plan-note">
-      Placeholder: your actual plan isn't connected to your profile yet.
+      Select a fictional employee to view connected demo benefits.
     </p>
 
     <h2 class="subhead">Appointments</h2>
@@ -41,18 +51,15 @@
     </div>
 
     <h2 class="subhead">Recent dental work</h2>
-    <div class="field">
-      <label for="history-employee">Fictional employee</label>
-      <select id="history-employee">
-        <option value="">Select a fictional employee</option>
-        <option value="demo-a-pat">Pat — Demo Company A</option>
-        <option value="demo-a-sam">Sam — Demo Company A</option>
-        <option value="demo-c-lee">Lee — Demo Company C</option>
-      </select>
-    </div>
     <p class="error" id="procedures-error" role="alert" hidden></p>
     <p class="lead" id="procedures-empty" hidden>Nothing recorded yet.</p>
     <div class="summary-group" id="procedures-list"></div>
+
+    <div id="local-history" hidden>
+      <h3>Earlier browser-only history</h3>
+      <p class="note">Unverified records from this browser. They have not been added to cloud benefits usage.</p>
+      <div class="summary-group" id="local-history-list"></div>
+    </div>
 
     <button type="button" class="btn" id="update">Update recent visits</button>
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-04T03:52:47Z",
+  "updated_at": "2026-10-04T04:14:44Z",
   "feature_directory": "specs/005-cloud-profile-persistence",
   "source_of_truth": {
     "constitution": ".specify/memory/constitution.md",
@@ -24,11 +24,11 @@
   "artifact_owner": "codex",
   "review_only_agents": [],
   "notes": null,
-  "last_snapshot_id": "20261004T035247461Z-executing",
+  "last_snapshot_id": "20261004T041444375Z-executing",
   "instructions": "Use /speckit-superpowers-bridge (Claude Code) or $speckit-superpowers-bridge (Codex). The bridge orchestrates native Superpowers skills against tasks.md; do not run speckit.implement and do not invoke superpowers:writing-plans / :brainstorming for an active Spec Kit feature.",
   "artifacts_sha256": {
-    "spec.md": "b468047a10f234b321bae206af8a7197a17cca0c53378bfafff4d012fed66c80",
-    "plan.md": "c040ddfa1868fe88bf0eac2bd9ae117adb28e36a175754a0f19664997ecfe901",
-    "tasks.md": "8fa8a1c4f2b5fb190b949edead98aef88992e8627480ca08cd0cdb45e0fd0145"
+    "spec.md": "c03065dbbea88d7558a2c827394ea323af5614b01c5022588f66e42d3e2aaa80",
+    "plan.md": "3c709c082fde0ae5c1be68e77f51a277e5ca5095fec5b9ad5cac1287798da317",
+    "tasks.md": "c06612ab99d079c1b7f17d6db60616927fed03f869cc834dfadd6321f71f2ee5"
   }
 }

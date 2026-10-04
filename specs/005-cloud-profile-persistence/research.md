@@ -6,7 +6,7 @@
 
 ## Storage and retries
 
-**Decision**: Merge profile fields into `users/{uid}` and store reports at `users/{uid}/demo_employees/{employee_id}/procedures/{submission_id}`. Use Firestore create semantics and compare content for retries. **Rationale**: Merge preserves teammate-added fields; stable IDs avoid double counting. **Alternative**: Append arbitrary IDs; rejected due to retry duplication.
+**Decision**: Merge only supplied profile fields into `users/{uid}`, avoiding stale whole-profile writes. Store reports at `users/{uid}/demo_employees/{employee_id}/procedures/{submission_id}`. A Firestore transaction checks all batch IDs and a per-plan-year recorded-payment total before any writes, then creates reports and updates the total atomically. **Rationale**: Partial merge preserves concurrent edits; transaction preserves idempotency and the annual cap. **Alternative**: Separate create calls after a stream read; rejected due to races and partial writes.
 
 ## Usage calculation
 
@@ -14,7 +14,7 @@
 
 ## Frontend
 
-**Decision**: Keep unsupported `intake.*` step events as browser-held navigation selections. Send profile updates and completed care to authenticated routes; request the connected estimate regardless of wizard mode. Show service failures instead of fabricated financial results.
+**Decision**: Keep unsupported `intake.*` step events as browser-held navigation selections. Send profile updates and completed care to authenticated routes; request an authenticated estimate for the explicitly selected fictional employee and confirmed usage regardless of wizard mode. Retain older browser-only history visibly labeled unverified. Show service failures instead of fabricated financial results.
 
 ## Delivery
 

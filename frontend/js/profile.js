@@ -11,6 +11,7 @@
   historyEmployee.addEventListener('change', function () {
     saveStep('demo_employee_id', historyEmployee.value || null);
     renderProcedures();
+    renderBenefits();
   });
 
   renderAnswerRows(document.getElementById('about'), [
@@ -19,13 +20,6 @@
     ['Company', saved.company ? labelFor(COMPANIES, saved.company) : NOT_PROVIDED],
     ['Location', saved.location ? formatLocation(saved.location) : NOT_PROVIDED],
     ['Dental office', saved.office ? officeLabel(saved.office) : NOT_PROVIDED],
-  ]);
-
-  renderAnswerRows(document.getElementById('plan'), [
-    ['Plan', DEMO_PLAN.name],
-    ['Covers', DEMO_PLAN.covered.join(', ')],
-    ['Annual maximum', DEMO_PLAN.maxCoverage > 0 ? dollars(DEMO_PLAN.maxCoverage) : 'None'],
-    ['Deductible', DEMO_PLAN.deductible ? dollars(DEMO_PLAN.deductible) : 'None'],
   ]);
 
   document.getElementById('update').addEventListener('click', function () {
@@ -38,6 +32,8 @@
   document.addEventListener('DOMContentLoaded', function () {
     renderAppointments();
     renderProcedures();
+    renderBenefits();
+    renderLocalHistory();
   });
 
   // "Thu, Oct 17, 2026 · 9:30 AM · Placeholder Smiles · Routine cleaning"
@@ -87,6 +83,39 @@
     procedures.slice().sort(function (a, b) { return b.date.localeCompare(a.date); })
       .forEach(function (entry) { list.appendChild(summaryRow(describeProcedure(entry))); });
     document.getElementById('procedures-empty').hidden = procedures.length > 0;
+  }
+
+  async function renderBenefits() {
+    const list = document.getElementById('plan');
+    const note = document.getElementById('plan-note');
+    list.replaceChildren();
+    if (!historyEmployee.value) {
+      note.textContent = 'Select a fictional employee to view connected demo benefits.';
+      return;
+    }
+    try {
+      const response = await apiFetch('/api/me/benefits?employee_id=' +
+        encodeURIComponent(historyEmployee.value), 'GET');
+      const benefits = response.benefits;
+      renderAnswerRows(list, [
+        ['Company', benefits.company_name],
+        ['Plan', benefits.plan_name],
+        ['Annual maximum', dollars(benefits.annual_maximum)],
+        ['Used', dollars(benefits.used)],
+        ['Remaining', dollars(benefits.remaining)],
+      ]);
+      note.textContent = 'Fictional demo plan and prices. Confirmed insurer payments are included.';
+    } catch (e) {
+      note.textContent = 'Could not load connected benefits. Please try again.';
+    }
+  }
+
+  function renderLocalHistory() {
+    const records = unverifiedLocalHistory();
+    if (!records.length) return;
+    const list = document.getElementById('local-history-list');
+    records.forEach(function (entry) { list.appendChild(summaryRow(describeProcedure(entry))); });
+    document.getElementById('local-history').hidden = false;
   }
 
   // Show the "<id>" section with a row per item, or leave it hidden when empty.

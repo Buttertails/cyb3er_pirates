@@ -20,7 +20,7 @@ from typing import Any, Optional
 
 from firebase_admin import firestore
 from google.cloud import firestore as cloud_firestore
-from google.api_core.exceptions import AlreadyExists
+from datetime import datetime, timezone
 
 from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile
 
@@ -130,6 +130,11 @@ def save_user_profile(profile: UserProfile) -> None:
     user_ref(profile.uid).set(profile.to_dict(), merge=True)
 
 
+def patch_user_profile(uid: str, fields: dict[str, Any]) -> None:
+    """Merge only fields supplied by this request, preserving concurrent edits."""
+    user_ref(uid).set(fields, merge=True)
+
+
 def get_user_profile(uid: str) -> Optional[UserProfile]:
     snap = user_ref(uid).get()
     if not snap.exists:
@@ -145,14 +150,54 @@ def list_care_reports(uid: str, employee_id: str) -> list[dict[str, Any]]:
     return [snap.to_dict() for snap in care_collection(uid, employee_id).stream()]
 
 
-def create_care_report(uid: str, employee_id: str, report: dict[str, Any]) -> dict[str, Any]:
-    ref = care_collection(uid, employee_id).document(report["submission_id"])
-    try:
-        ref.create(report)
-        return report
-    except AlreadyExists:
-        prior = ref.get().to_dict()
-        if prior is None or any(prior.get(key) != value for key, value in report.items()
-                                if key != "recorded_at"):
-            raise ValueError("A different care report already uses this submission ID.") from None
-        return prior
+class CareConflict(Exception):
+    pass
+
+
+def _apply_care_batch(transaction, client, uid: str, employee_id: str,
+                      reports: list[dict[str, Any]],
+                      seed_paid_by_year: dict[str, int], annual_maximum_cents: int):
+    root = client.collection("users").document(uid).collection("demo_employees").document(employee_id)
+    report_refs = [root.collection("procedures").document(item["submission_id"]) for item in reports]
+    prior = [next(transaction.get(ref)).to_dict() for ref in report_refs]
+    years = sorted({item["date"][:4] + "-01-01" for item in reports})
+    total_refs = {year: root.collection("usage_totals").document(year) for year in years}
+    totals = {year: (next(transaction.get(ref)).to_dict() or {}).get("known_paid_cents", 0)
+              for year, ref in total_refs.items()}
+    for item, old in zip(reports, prior):
+        if old is not None and any(old.get(key) != value for key, value in item.items()):
+            raise CareConflict("A different report already uses this submission ID.")
+    increments = {year: 0 for year in years}
+    for item, old in zip(reports, prior):
+        if old is None:
+            increments[item["date"][:4] + "-01-01"] += item["insurance_paid_cents"] or 0
+    for year, increment in increments.items():
+        if seed_paid_by_year[year] + totals[year] + increment > annual_maximum_cents:
+            raise ValueError("Known insurer payments exceed this fictional plan's annual allowance.")
+    now = datetime.now(timezone.utc).isoformat()
+    result = []
+    for item, old, ref in zip(reports, prior, report_refs):
+        if old is not None:
+            result.append(old)
+        else:
+            saved = {**item, "recorded_at": now}
+            transaction.create(ref, saved)
+            result.append(saved)
+    for year, increment in increments.items():
+        if increment:
+            transaction.set(total_refs[year], {"known_paid_cents": totals[year] + increment}, merge=True)
+    return result
+
+
+def commit_care_batch(uid: str, employee_id: str, reports: list[dict[str, Any]],
+                      seed_paid_by_year: dict[str, int], annual_maximum_cents: int):
+    if not reports:
+        return []
+    client = db()
+
+    @cloud_firestore.transactional
+    def write(transaction):
+        return _apply_care_batch(transaction, client, uid, employee_id, reports,
+                                 seed_paid_by_year, annual_maximum_cents)
+
+    return write(client.transaction())

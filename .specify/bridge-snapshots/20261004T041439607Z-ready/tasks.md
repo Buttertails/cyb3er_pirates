@@ -23,14 +23,14 @@
 
 ## Phase 3A: Review corrections
 
-- [x] T013 [US1] Reproduce concurrent profile field loss with a failing repository/route test, then change `backend/store.py` and `backend/main.py` to merge only supplied fields.
-- [x] T014 [US2] Add failing tests for concurrent annual-cap submissions and all-or-nothing conflicting batches; implement one Firestore transaction for each batch and plan-year totals in `backend/store.py` and `backend/main.py`.
-- [x] T015 [US3] Add failing tests for a selected Company C employee's live benefits/estimate and an estimate that does not write usage; add authenticated `/api/me/benefits` and `/api/me/estimate` routes backed by the shared engine.
-- [x] T016 [US3] Add failing frontend tests for selected-employee result requests and retained, labeled browser-only history; update `frontend/js/estimate.js`, `frontend/js/results.js`, `frontend/js/profile.js` and related pages.
+- [ ] T013 [US1] Reproduce concurrent profile field loss with a failing repository/route test, then change `backend/store.py` and `backend/main.py` to merge only supplied fields.
+- [ ] T014 [US2] Add failing tests for concurrent annual-cap submissions and all-or-nothing conflicting batches; implement one Firestore transaction for each batch and plan-year totals in `backend/store.py` and `backend/main.py`.
+- [ ] T015 [US3] Add failing tests for a selected Company C employee's live benefits/estimate and an estimate that does not write usage; add authenticated `/api/me/benefits` and `/api/me/estimate` routes backed by the shared engine.
+- [ ] T016 [US3] Add failing frontend tests for selected-employee result requests and retained, labeled browser-only history; update `frontend/js/estimate.js`, `frontend/js/results.js`, `frontend/js/profile.js` and related pages.
 
 ## Phase 4: Verification and cloud delivery
 
-- [x] T011 Run full backend/frontend tests, validate spec scenarios for two accounts and two company plans, and review changes for credential or resource mutations; record evidence in `specs/005-cloud-profile-persistence/verification.md`.
+- [ ] T011 Run full backend/frontend tests, validate spec scenarios for two accounts and two company plans, and review changes for credential or resource mutations; record evidence in `specs/005-cloud-profile-persistence/verification.md`.
 - [ ] T012 Deploy the tested Flask revision to existing Cloud Run service and static assets to existing Firebase Hosting site; verify health, asset revision, authenticated profile/report/chat journey, and rollback revision in `specs/005-cloud-profile-persistence/verification.md`.
 
 ## Dependencies

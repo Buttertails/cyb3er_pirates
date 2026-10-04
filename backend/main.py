@@ -76,9 +76,9 @@ except ImportError:  # pragma: no cover - CORS is optional for same-origin use
     CORS = None
 
 from auth import require_user
-from chat_routes import chat
-from chat_profiles import load_profiles
-from completed_care import parse_report, report_usage
+from chat_routes import chat, _estimate as chat_estimate, _network as chat_network, _with_reports
+from chat_profiles import iso_date, load_profiles
+from completed_care import parse_report
 from dental import catalog, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
@@ -222,12 +222,8 @@ def patch_me():
     for key, value in body.items():
         if not isinstance(value, str) or not value.strip() or len(value.strip()) > 120:
             return jsonify({"error": f"Provide a valid {key}."}), 422
-    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
-    profile.email = g.email
-    for key, value in body.items():
-        setattr(profile, key, value.strip())
-    store.save_user_profile(profile)
-    return jsonify(_me_json(profile))
+    store.patch_user_profile(g.uid, {"email": g.email, **{key: value.strip() for key, value in body.items()}})
+    return jsonify(_me_json(store.get_user_profile(g.uid)))
 
 
 @api_bp.post("/me/sign-in")
@@ -236,11 +232,9 @@ def post_my_sign_in():
     body = request.get_json(silent=True)
     if body != {}:
         return jsonify({"error": "Send an empty object."}), 422
-    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
-    profile.email = g.email
-    profile.last_sign_in_at = datetime.now(timezone.utc).isoformat()
-    store.save_user_profile(profile)
-    return jsonify(_me_json(profile))
+    store.patch_user_profile(g.uid, {"email": g.email,
+                                     "last_sign_in_at": datetime.now(timezone.utc).isoformat()})
+    return jsonify(_me_json(store.get_user_profile(g.uid)))
 
 
 @api_bp.put("/me/location")
@@ -252,19 +246,15 @@ def put_my_location():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 422
 
-    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
-    profile.email = g.email
-    profile.state = state
-    profile.zip = zip_code
-    store.save_user_profile(profile)
-    return jsonify(_me_json(profile))
+    store.patch_user_profile(g.uid, {"email": g.email, "state": state, "zip": zip_code})
+    return jsonify(_me_json(store.get_user_profile(g.uid)))
 
 
 def _care_employee(employee_id):
     if not isinstance(employee_id, str):
         raise ValueError("Select a fictional employee.")
     try:
-        return load_profiles().employee(employee_id)
+        return load_profiles(os.environ.get("CHAT_FIXTURE_PATH")).employee(employee_id)
     except KeyError:
         raise ValueError("Select a supported fictional employee.") from None
 
@@ -299,39 +289,49 @@ def post_my_procedures():
         parsed = [parse_report(item, employee) for item in body["procedures"]]
         if len(parsed) > 20 or len({r["submission_id"] for r in parsed}) != len(parsed):
             raise ValueError("Submit at most 20 distinct reports.")
-        existing = store.list_care_reports(g.uid, employee.employee_id)
-        by_id = {r["submission_id"]: r for r in existing}
-        for report in parsed:
-            prior = by_id.get(report["submission_id"])
-            if prior and any(prior.get(key) != value for key, value in report.items()):
-                return jsonify({"error": "A different report already uses this submission ID."}), 409
         from dental import engine
+        seed_by_year = {}
         for report in parsed:
-            if report["submission_id"] in by_id:
-                continue
-            usage = report_usage(report)
-            if usage is None:
-                continue
             period = engine.plan_year_window(employee.plan, date.fromisoformat(report["date"]))
-            seed_paid = sum(item.plan_pays_cents for item in employee.usage
-                            if engine.plan_year_window(employee.plan, date.fromisoformat(item.date)) == period)
-            stored_paid = sum((item.get("insurance_paid_cents") or 0) for item in existing
-                              if engine.plan_year_window(employee.plan, date.fromisoformat(item["date"])) == period)
-            pending_paid = sum((item.get("insurance_paid_cents") or 0) for item in parsed
-                               if item["submission_id"] not in by_id
-                               and engine.plan_year_window(employee.plan, date.fromisoformat(item["date"])) == period)
-            if seed_paid + stored_paid + pending_paid > employee.plan.annual_maximum_cents:
-                raise ValueError("Known insurer payments exceed this fictional plan's annual allowance.")
+            seed_by_year[period[0].isoformat()] = sum(
+                item.plan_pays_cents for item in employee.usage
+                if engine.plan_year_window(employee.plan, date.fromisoformat(item.date)) == period)
+        created = store.commit_care_batch(g.uid, employee.employee_id, parsed,
+                                          seed_by_year, employee.plan.annual_maximum_cents)
+    except store.CareConflict as exc:
+        return jsonify({"error": str(exc)}), 409
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 422
-    created = []
-    for report in parsed:
-        report["recorded_at"] = datetime.now(timezone.utc).isoformat()
-        try:
-            created.append(store.create_care_report(g.uid, employee.employee_id, report))
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 409
     return jsonify({"procedures": [_care_json(r) for r in created]})
+
+
+@api_bp.get("/me/benefits")
+@require_user
+def get_my_benefits():
+    try:
+        employee = _with_reports(g.uid, _care_employee(request.args.get("employee_id")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    return jsonify({"benefits": employee.benefits(date.today())})
+
+
+@api_bp.post("/me/estimate")
+@require_user
+def post_my_estimate():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or set(body) - {"employee_id", "procedure_id", "network", "as_of"}:
+        return jsonify({"error": "Provide a fictional employee and supported procedure."}), 422
+    try:
+        employee = _with_reports(g.uid, _care_employee(body.get("employee_id")))
+        procedure = body.get("procedure_id")
+        if not isinstance(procedure, str) or procedure not in catalog.PROCEDURE_CATALOG:
+            raise ValueError("Choose a supported procedure.")
+        network = chat_network(body.get("network", "in_network"))
+        treatment_date = iso_date(body["as_of"]) if body.get("as_of") is not None else date.today()
+        estimate = chat_estimate(employee, procedure, network, treatment_date)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    return jsonify({"estimate": estimate, "benefits": employee.benefits(treatment_date)})
 
 
 # --------------------------------------------------------------------------- #

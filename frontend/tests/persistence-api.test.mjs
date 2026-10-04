@@ -30,7 +30,10 @@ test('profile save calls cloud API and reports an unavailable service', async ()
 
 test('estimate failure never returns a local financial result', async () => {
   const ctx = browser('../js/estimate.js', async () => { throw Error('offline'); });
-  await assert.rejects(vm.runInContext("requestEstimate('filling')", ctx));
+  ctx.apiFetch = async () => { throw Error('offline'); };
+  await assert.rejects(vm.runInContext(
+    "requestEstimate('filling', {employeeId:'demo-a-pat'})", ctx
+  ), /offline/);
 });
 
 test('conflicting care retry surfaces the server message', async () => {
@@ -48,4 +51,31 @@ test('results page scripts load together without duplicate declarations', () => 
   assert.doesNotThrow(() => vm.runInContext(
     fs.readFileSync(new URL('../js/estimate.js', import.meta.url), 'utf8'), ctx
   ));
+});
+
+test('connected estimate sends the selected fictional employee', async () => {
+  const sent = [];
+  const ctx = browser('../js/api.js', async () => ({}));
+  ctx.apiFetch = async (path, method, body) => {
+    sent.push([path, method, body]);
+    return { estimate: { lines: [{ plan_pays: 50 }] } };
+  };
+  vm.runInContext(fs.readFileSync(new URL('../js/estimate.js', import.meta.url), 'utf8'), ctx);
+  const result = await vm.runInContext(
+    "requestEstimate('root-canal', {employeeId:'demo-c-lee'})", ctx
+  );
+  assert.equal(result.lines[0].plan_pays, 50);
+  assert.equal(sent[0][0], '/api/me/estimate');
+  assert.equal(sent[0][2].employee_id, 'demo-c-lee');
+});
+
+test('older browser history remains explicitly unverified', () => {
+  const ctx = browser('../js/api.js', async () => ({}));
+  ctx.readStep = () => 'pat@example.com';
+  ctx.localStorage.getItem = () => JSON.stringify({
+    'pat@example.com': { procedures: [{ procedure: 'filling', date: '2026-09' }] },
+  });
+  const records = vm.runInContext('unverifiedLocalHistory()', ctx);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].unverified_local, true);
 });
