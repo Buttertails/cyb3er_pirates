@@ -1,8 +1,8 @@
 {
   "fixture_set_id": "backend-chat-demo-v1",
   "companies": [
-    {"id": "demo-company-a", "name": "Demo Company A", "plan_id": 0},
-    {"id": "demo-company-c", "name": "Demo Company C", "plan_id": 2}
+    {"id": "demo-company-a", "name": "Demo Company A", "plan_id": "C0"},
+    {"id": "demo-company-c", "name": "Demo Company C", "plan_id": "C2"}
   ],
   "employees": [
     {

@@ -2,7 +2,7 @@
 
 Date: 2026-10-03. Branch: feat/backend-chat. Base: f51ab49.
 
-## Evidence
+## Original implementation evidence
 
 Baseline: 66 backend tests passed. Each new task first failed because its
 production module/route did not exist, then passed with implementation.
@@ -56,3 +56,35 @@ signing key and webhook authorization token, deployment and HTTPS webhook/tag
 attachment. These are separate authorized steps. The frontend does not yet call
 the new chat endpoint. Fixture usage is simplified fictional seed data; actual
 profiles, reporting and usage persistence remain outside this feature.
+
+## Compatibility after pulling Firebase login
+
+Pulled origin/main through 7cd7057 into the shared checkout, then merged that
+main revision into feat/backend-chat without Git conflicts. The prior local
+Firebase alias edit was preserved in a named stash; upstream's corrected
+cyb3r-pirates project ID is retained.
+
+The combined suite first exposed a real runtime incompatibility: the team's
+adapter now keys policies by C0/I1/C2, while the chat fixtures used integer IDs.
+Updated only chat fixture references, validation and contract expectations to
+use those canonical prefixed IDs. Existing company/employee data and calculator
+rules remain unchanged.
+
+The ignored frontend/js/firebaseConfig.json file is absent in this checkout.
+Added a loader that preserves a supplied file and, on 404 only, reads Firebase
+Hosting's reserved /__/firebase/init.json config. Other file errors remain visible.
+It does not create apps, enable providers, change projects or create accounts.
+
+Fresh verification:
+
+- Main before chat integration: 77 backend tests passed.
+- Combined branch: **166 backend tests passed** with fake external services.
+- `node frontend/tests/firebase-config.test.mjs`: **4 tests passed** with fake fetch.
+- Firebase module syntax and `git diff --check`: passed.
+- An integration test verifies Firebase-authenticated /me and demo /chat coexist,
+  anonymous /me still returns 401, and a Firebase ID token cannot authorize the
+  Dialogflow webhook. Demo chat is not bound to real logged-in account data.
+
+Actual Firebase sign-in and live Dialogflow calls were not exercised. No cloud
+resources, auth providers, databases, billing or deployed files changed.
+Compatibility fixes are on feat/backend-chat; main contains the pulled team code.

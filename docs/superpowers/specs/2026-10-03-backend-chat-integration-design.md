@@ -34,7 +34,7 @@ remaining annual maximum. Estimates do not record completed care.
 `Data/company.json`, `person.json`, and `procedure.json` currently contain
 placeholder records. Leave those teammate files intact. Add explicitly fictional
 test employees and company-to-plan mappings under `backend/fixtures/`, referencing
-the existing numeric plan IDs. Include two employees at the same company with
+the the team’s canonical prefixed plan IDs (`C0`, `C2`). Include two employees at the same company with
 different usage and an employee at another company. Reject unknown IDs rather
 than selecting a default plan. This is a read-only demo data source; connecting
 real profile/usage storage is a later change.

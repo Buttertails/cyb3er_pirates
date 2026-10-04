@@ -1,8 +1,8 @@
 # Data model
 
 - Fixture set: nonempty version ID, companies array and employees array.
-- Company: unique nonempty id/name, exactly one integer plan_id resolving to the
-  existing policy file. Reject booleans masquerading as integer IDs.
+- Company: unique nonempty id/name, exactly one prefixed string plan_id (`C0`, `C2`) resolving to the
+  existing policy file. Reject booleans and bare numeric IDs.
 - Employee: unique nonempty id/name, resolvable company_id, member_type adult or
   children offered by the company plan, optional ISO enrollment_date, usage list.
 - Usage: unique nonempty id, supported procedure_id, ISO date, integer >= 0

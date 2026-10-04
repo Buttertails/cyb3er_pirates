@@ -65,11 +65,3 @@ Execute T001–T006 in canonical tasks.md through the bridge. Keep the original
 66-test baseline passing. Review, finish the branch, and assess convergence
 before marking this feature complete. No mocked test proves a live connection.
 Do not push, merge or deploy without explicit authorization.
-
-## Approved Upstream Compatibility Maintenance
-
-The user requested pulling the new Firebase login and ensuring compatibility.
-Use the team's canonical prefixed policy IDs. For a missing ignored browser
-config, preserve the explicit file when present and fall back to Firebase
-Hosting's reserved config endpoint. Do not change Auth providers, cloud resources
-or account-to-demo-employee mapping. T007 covers this narrow maintenance.

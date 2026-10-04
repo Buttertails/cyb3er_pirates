@@ -22,8 +22,8 @@ team's existing engine result with identity, choices and assumptions added.
 Public amounts are dollars; fixture usage is cents. Recorded benefits are
 never replaced by projected usage.
 
-Sample employee IDs: demo-a-pat (plan 0, $250 used in 2026), demo-a-sam
-(plan 0, $7400 used in 2026), demo-c-lee (plan 2, $500 used in 2026).
+Sample employee IDs: demo-a-pat (plan C0, $250 used in 2026), demo-a-sam
+(plan C0, $7400 used in 2026), demo-c-lee (plan C2, $500 used in 2026).
 CHAT_REFERENCE_DATE=2026-10-03 gives repeatable sample results.
 
 ## POST /api/dialogflow/webhook

@@ -38,7 +38,7 @@ class EmployeeContext:
     employee_name: str
     company_id: str
     company_name: str
-    plan_id: int
+    plan_id: str
     plan: EmployerPlan
     usage: list[UsageRecord]
     enrollment_date: str | None
@@ -76,7 +76,8 @@ def load_profiles(path: str | Path | None = None, *, as_of: date | None = None) 
             cid = _text(company["id"])
             _text(company["name"])
             pid = company["plan_id"]
-            if cid in companies or type(pid) is not int or pid not in policies:
+            if (cid in companies or not isinstance(pid, str)
+                    or not re.fullmatch(r"[CI]\d+", pid) or pid not in policies):
                 raise ValueError("Duplicate company or invalid company plan reference.")
             companies[cid] = company
         employees = {}

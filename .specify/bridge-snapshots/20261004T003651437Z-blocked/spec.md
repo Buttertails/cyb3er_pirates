@@ -88,10 +88,3 @@ Profile/usage persistence remains the separate whole-project requirement.
 Policy-category rates already assumed by the team adapter remain unchanged and
 are disclosed. One procedure only. Timing comparison, usage writes, UI integration,
 live agent setup, paid requests and deployment are deferred.
-
-## Upstream Compatibility Maintenance
-
-The user requested pulling the team's login feature and checking conflicts.
-Preserve real Firebase login and its profile identity while keeping this feature's
-fictional employee selection separate. Changes needed to consume the team's policy
-IDs and load existing Hosting config are authorized compatibility maintenance.

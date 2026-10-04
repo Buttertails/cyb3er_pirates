@@ -210,7 +210,7 @@ def test_profile_switch_requires_a_new_session(client, fake_agent):
     assert response.status_code == 409
     fresh = turn(client, event="start", employee="demo-c-lee").get_json()
     assert fresh["session_id"] != session
-    assert fresh["benefits"]["plan_id"] == 2
+    assert fresh["benefits"]["plan_id"] == "C2"
 
 
 def test_restart_replaces_old_or_expired_context(client, fake_agent):
@@ -340,3 +340,23 @@ def test_summary_chat_messages_use_current_backend_balance(client, monkeypatch):
     assert response.status_code == 200
     assert "999" not in " ".join(response.get_json()["messages"])
     assert "7,250.00" in " ".join(response.get_json()["messages"])
+
+
+def test_firebase_profile_identity_and_demo_chat_coexist(client, fake_agent, monkeypatch):
+    import firebase_admin.auth
+    from dental.models import UserProfile
+    monkeypatch.setattr(firebase_admin.auth, "verify_id_token", lambda *args, **kwargs:
+                        {"uid":"firebase-user-pat", "email":"pat@example.com"})
+    monkeypatch.setattr(store, "get_user_profile", lambda uid: UserProfile(uid=uid, state="NY"))
+    firebase_headers = {"Authorization":"Bearer fake-firebase-id-token"}
+    response = client.post("/chat", json={"employee_id":"demo-a-pat", "event":"start"},
+                           headers=firebase_headers)
+    assert response.status_code == 200
+    assert response.get_json()["benefits"]["employee_id"] == "demo-a-pat"
+    profile = client.get("/me", headers=firebase_headers)
+    assert profile.status_code == 200
+    assert profile.get_json()["uid"] == "firebase-user-pat"
+    assert profile.get_json()["email"] == "pat@example.com"
+    assert client.get("/me").status_code == 401
+    # A Firebase login token cannot substitute for Dialogflow webhook credentials.
+    assert client.post("/dialogflow/webhook", json=webhook_body(), headers=firebase_headers).status_code == 401

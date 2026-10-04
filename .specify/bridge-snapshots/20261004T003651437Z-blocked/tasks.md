@@ -2,9 +2,8 @@
 
 Source: spec.md, plan.md, data-model.md and contracts/api.md. Backend-only
 approved slice; the older 001 project tasks remain untouched. Use TDD and the
-bridge. The initial slice excludes live calls, remote configuration, frontend
-edits, cloud provisioning, push, merge or deployment. T007 separately authorizes
-pulling upstream into this branch and a narrow frontend config compatibility fix.
+bridge. No live calls, remote configuration, frontend edits, cloud provisioning,
+push, merge or deployment.
 
 ## Phase 1: Setup and Foundational
 
@@ -33,7 +32,3 @@ Execution is inline in this session; parallel opportunities describe team work.
 Implement validated data and session context, then the webhook, then the SDK
 adapter and chat endpoint. Verify each task RED→GREEN. All tasks describe only
 the approved backend slice; later live setup is not part of this task list.
-
-## Phase 4: Upstream Compatibility Maintenance
-
-- [x] T007 Align backend/chat_profiles.py, backend/fixtures/demo.json and tests/test_chat_profiles.py and tests/test_chat_routes.py with the team's canonical prefixed policy IDs; exercise Firebase-authenticated profile routes alongside demo chat without replacing their identity or weakening webhook authorization; add a tested frontend/js/firebase-config.mjs fallback for a missing local config to Firebase Hosting's reserved config URL, preserving the team file when present; verify both main and combined suites and record limitations in verification.md (FR-001, FR-007, upstream-login compatibility).
