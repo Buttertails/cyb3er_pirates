@@ -1,7 +1,7 @@
 # Dental benefits assistant
 
 ### Hosted Instance and Presentation Link
-cyb3r-pirates.web.app
+https://cyb3r-pirates.web.app/
 
 https://canva.link/47957pkvka385rd
 
