@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DentistResults } from './components.jsx';
+import { Header } from './components.jsx';
+import { MemoryRouter } from 'react-router-dom';
 
 describe('sample dentist result cards', () => {
   it('shows the office details and a map pin with clear sample labels', () => {
@@ -31,5 +33,16 @@ describe('sample dentist result cards', () => {
       expect(html).toContain(`Directory ${status}`);
       expect(html).not.toContain('Stale Office');
     }
+  });
+});
+
+describe('site navigation', () => {
+  it('provides an Assistant route from Account', () => {
+    const storage = { user: JSON.stringify('pat@example.com') };
+    globalThis.sessionStorage = { getItem: (key) => storage[key] ?? null };
+    const html = renderToStaticMarkup(<MemoryRouter initialEntries={['/profile.html']}><Header /></MemoryRouter>);
+    expect(html).toContain('href="/chat"');
+    expect(html).toContain('Assistant');
+    expect(html).toContain('aria-current="page"');
   });
 });

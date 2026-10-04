@@ -16,6 +16,7 @@ from dental import catalog, dentists, engine
 from dental.models import Network
 import dialogflow_client
 import store
+from pdf_intake import PdfIntakeError, extract_procedure_pdf
 
 chat = Blueprint("chat", __name__)
 
@@ -37,6 +38,8 @@ def _safe_route(function):
         try:
             return function(*args, **kwargs)
         except ChatProblem as exc:
+            return jsonify({"error": {"code": exc.code, "message": exc.message}}), exc.status
+        except PdfIntakeError as exc:
             return jsonify({"error": {"code": exc.code, "message": exc.message}}), exc.status
         except Exception as exc:
             # Exception details may include credentials or input. Log the class only.
@@ -193,6 +196,50 @@ def dialogflow_webhook():
 
 def _dialogflow_error():
     return ChatProblem("dialogflow_unavailable", "The conversation could not be refreshed. Please retry.", 503)
+
+
+@chat.post("/chat/document")
+@_safe_route
+@require_user
+def post_chat_document():
+    employee_id = request.form.get("employee_id")
+    upload = request.files.get("file")
+    if not isinstance(employee_id, str) or not employee_id.strip() or upload is None:
+        raise ChatProblem("invalid_input", "Choose a PDF and a current plan.", 422)
+    document = extract_procedure_pdf(upload.stream, upload.filename)
+    config = _config()
+    profiles = _profiles(config)
+    employee = _with_reports(g.uid, _employee(profiles, employee_id))
+    signer = SessionSigner(config.signing_key)
+    token = request.form.get("session_id") or signer.create(employee_id, profiles.fixture_set_id, uid=g.uid)
+    try:
+        claims = signer.verify(token, employee_id=employee_id,
+                               fixture_set_id=profiles.fixture_set_id, uid=g.uid)
+    except ValueError as exc:
+        raise ChatProblem("invalid_context", "Invalid or expired session. Start a new conversation.", 409) from exc
+    try:
+        response = dialogflow_client.detect_intent(config, claims.session_id, token, "",
+                                                    event="document.uploaded")
+    except Exception as exc:
+        current_app.logger.warning("Document chat handoff failed (%s).", type(exc).__name__)
+        raise _dialogflow_error() from exc
+    result = response.get("queryResult", {})
+    if result.get("currentPage", {}).get("displayName") != "Procedure":
+        raise _dialogflow_error()
+    candidates = document["candidates"]
+    if len(candidates) == 1:
+        prompt = f"I found {candidates[0]['label']} in {document['filename']}. Please confirm that is the procedure you mean."
+        choices = candidates + [{"label": "Another procedure", "value": "another procedure"}]
+    elif candidates:
+        prompt = f"I found several possible procedures in {document['filename']}. Which one are you asking about?"
+        choices = candidates
+    else:
+        prompt = f"I extracted text from {document['filename']}, but could not identify a supported procedure. What procedure are you planning?"
+        choices = _procedure_choices()
+    return jsonify({"session_id": token, "messages": [prompt], "choices": choices,
+                    "conversation_state": "Procedure", "estimate": None, "dentists": None,
+                    "benefits": employee.benefits(config.reference_date),
+                    "conversation_mode": "dialogflow", "demo_data": True, "document": document})
 
 
 @chat.post("/chat")

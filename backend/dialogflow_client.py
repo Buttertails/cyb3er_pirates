@@ -20,13 +20,16 @@ def _dentist_directory_request(text: str) -> bool:
     )
 
 
-def detect_intent(config: ChatConfig, session_id: str, context_token: str, text: str) -> dict:
+def detect_intent(config: ChatConfig, session_id: str, context_token: str, text: str,
+                  *, event: str | None = None) -> dict:
     # ADC is resolved by the SDK only when a live chat turn is requested.
     from google.cloud import dialogflowcx_v3 as cx
     from google.protobuf.json_format import MessageToDict
 
     query = cx.QueryInput(language_code=config.language_code)
-    if _dentist_directory_request(text):
+    if event:
+        query.event = cx.EventInput(event=event)
+    elif _dentist_directory_request(text):
         query.event = cx.EventInput(event="dentists.find")
     else:
         query.text = cx.TextInput(text=text)

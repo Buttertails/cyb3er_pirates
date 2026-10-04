@@ -4,7 +4,6 @@ import {
   ComparisonCard, EstimateCard, LincolnLoader, SequenceCard, useDocumentTitle, useFlowGuard,
 } from '../components.jsx';
 import { SignedOutError, submitErrorMessage } from '../lib/api.js';
-import { signOut } from '../lib/auth.js';
 import { firstStep, greeting, STEPS } from '../lib/chatScript.js';
 import { waitForBotReply } from '../lib/botTiming.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
@@ -12,7 +11,6 @@ import { LiveBenefitsChat } from './LiveBenefitsChat.jsx';
 import {
   clearAnswers,
   readStep,
-  ROUTES,
   saveStep,
   inOnboarding,
   inUpdate,
@@ -105,8 +103,7 @@ function GuidedChatPage() {
     } catch (cause) {
       setTyping(false);
       if (cause instanceof SignedOutError) {
-        await signOut();
-        navigate(`${ROUTES.signIn}?signed-out=1`);
+        await reAsk('Your account session could not be verified. Please try again or sign out and sign back in.');
         return;
       }
       await reAsk(submitErrorMessage(cause));
@@ -232,7 +229,7 @@ function GuidedChatPage() {
   );
 }
 
-export function ChatPage() {
+export function ChatPage({ liveChatSession, setLiveChatSession }) {
   if (inOnboarding() || inUpdate()) return <GuidedChatPage />;
-  return <LiveBenefitsChat />;
+  return <LiveBenefitsChat chatSession={liveChatSession} setChatSession={setLiveChatSession} />;
 }
