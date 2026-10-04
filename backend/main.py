@@ -25,6 +25,7 @@ Signed-in user (Authorization: Bearer <Firebase ID token>):
     PUT  /api/me/location   body: {state, zip}  -> same shape; saved once, reused on later sign-ins
     POST /api/me/estimate   {employee_id, procedure_id, network?} -> single-procedure estimate
     POST /api/me/sequence   {employee_id, procedures[], network?, urgent[]?} -> cross-plan-year plan
+    POST /api/me/compare    {employee_id, procedure_id} -> in- vs out-of-network cost
     GET  /api/me/saved      ?employee_id=... -> saved estimates/sequence plans
     POST /api/me/saved      {employee_id, id, kind, result, label?} -> keep a snapshot
     DELETE /api/me/saved/<id> ?employee_id=... -> remove a saved item
@@ -438,6 +439,10 @@ def post_my_sequence():
 @api_bp.post("/me/compare")
 @require_user
 def post_my_compare():
+    """Compare in-network vs out-of-network cost for one procedure.
+
+    Body: {employee_id, procedure_id, as_of?}. Uses confirmed-care usage.
+    """
     body = request.get_json(silent=True)
     if not isinstance(body, dict) or set(body) - {"employee_id", "procedure_id", "as_of"}:
         return jsonify({"error": "Provide a supported procedure."}), 422
@@ -447,13 +452,14 @@ def post_my_compare():
         if not isinstance(procedure, str) or procedure not in catalog.PROCEDURE_CATALOG:
             raise ValueError("Choose a supported procedure.")
         treatment_date = iso_date(body["as_of"]) if body.get("as_of") is not None else date.today()
-        comparison = engine.compare_networks(
-            employee.plan, employee.usage, [procedure], as_of=treatment_date,
-            enrollment_date=employee.enrollment_date,
+        result = engine.compare_networks(
+            employee.plan, employee.usage, [procedure],
+            as_of=treatment_date, enrollment_date=employee.enrollment_date,
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 422
-    return jsonify({"comparison": {**comparison, **employee.identity(), "demo_data": True},
+    return jsonify({"comparison": {**result, **employee.identity(),
+                                   "procedure_id": procedure, "demo_data": True},
                     "benefits": employee.benefits(treatment_date)})
 
 
