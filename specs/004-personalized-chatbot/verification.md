@@ -48,3 +48,47 @@ unreviewed. This paragraph records the state before the cloud changes below.
   restoring any route; do not overwrite teammate changes. Cloud Run revision
   can be rolled back by moving traffic to the verified prior revision after
   inspecting it. Do not alter Firebase Auth or Firestore.
+
+## Procedure language training increment — 2026-10-03
+
+- Before snapshots: `chat/agent-config/live-before-training-2026-10-03.json`
+  and `live-before-annotation-repair-2026-10-03.json`, both with webhook
+  authorization redacted. `tools/dialogflow/training_batch.py` checked the
+  live target fields against each snapshot and patched only the
+  `procedure.direct` training phrases and `dental_procedure` synonyms.
+- The direct-procedure intent grew from 6 to 18 phrases and the existing
+  procedure entity gained 16 synonyms. Eight newly added phrases had their
+  article moved outside the annotated procedure span in a second scoped patch;
+  the live intent readback confirmed 18 phrases after correction. Existing
+  intent and entity entries remained present.
+- `python -m unittest discover -s tools/dialogflow/tests -p 'test_*.py'`
+  passed (3 tests). Through deployed Hosting `/api/chat`, Pat's "My dentist
+  says I need a filling" reached Network then a $160 plan / $40 employee
+  estimate; Lee's "My dentist proposed a bridge" reached Network then a
+  $680 plan / $1,020 employee estimate. In a separate live conversation,
+  "metal braces" on the Procedure page advanced to Network. No usage writes
+  were made.
+- The bridge's T008 remains open: this increment covers procedure wording,
+  while the remaining navigation, unsure branch, and complete scoped restore
+  tooling still need implementation and verification. The new upload and
+  provider-finder ideas are recorded in README planned features, outside the
+  approved 004 delivery contract.
+
+## Menu and network language training increment — 2026-10-03
+
+- Fresh sanitized snapshot:
+  `chat/agent-config/live-before-menu-training-2026-10-03.json`. The scoped
+  patch added 10 phrases each to `benefits.review`, `estimate.start`, and
+  `network.compare`, plus 6 aliases to `dentist_network`. Their live readbacks
+  matched the proposed sets; no pages, fulfillment, policies or data changed.
+- `python -m unittest discover -s tools/dialogflow/tests -p 'test_*.py'`
+  passed (5 tests). In the first live test after the patch, "Show my benefits
+  balance" reached Benefits, but "Can we price a procedure?" fell back to Menu.
+  A later retry after the agent's automatic training interval reached
+  Procedure, then "dental exam" → Network and "within my network" → a real
+  Lee estimate ($120.00 plan / $0.00 employee). "Is it cheaper to stay in
+  network?" reached Procedure, and "outside my network" produced Pat's
+  out-of-network filling estimate ($174.00 plan / $116.00 employee).
+- Treat an immediate no-match after an intent patch as a possible training
+  delay and retry after training before changing routes. T008 remains open;
+  new pages should accompany working backend behavior, not empty prompts.
