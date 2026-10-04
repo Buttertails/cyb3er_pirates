@@ -54,6 +54,11 @@ export async function idToken() {
   return auth.currentUser ? auth.currentUser.getIdToken() : null;
 }
 
+export async function currentAuthUser() {
+  if (demoLoginActive()) return null;
+  return (await authReady()).currentUser;
+}
+
 export function authMessage(error, fallback) {
   switch (error?.code) {
     case 'auth/invalid-credential':

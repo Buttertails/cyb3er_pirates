@@ -9,7 +9,7 @@
 - Successful response has normal `/api/chat` fields plus `document`:
 
 ```json
-{"document":{"filename":"treatment-plan.pdf","page_count":1,"excerpt":"Orthodontic treatment: braces","candidates":[{"value":"braces","label":"Braces"}]}}
+{"document":{"filename":"treatment-plan.pdf","page_count":1,"excerpt":"Orthodontic treatment: braces","candidates":[{"value":"orthodontics","label":"Orthodontics"}]}}
 ```
 
 The server sends the bounded excerpt and candidate IDs into the current CX session with a `document.uploaded` event. CX asks for confirmation before estimating. The document is not stored. A failed upload adds no chat message.
