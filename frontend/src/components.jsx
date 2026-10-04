@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from './lib/auth.js';
 import { SignedOutError, submitErrorMessage } from './lib/api.js';
 import {
@@ -31,6 +31,8 @@ export function useSessionUser() {
 export function Header() {
   const user = useSessionUser();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const showNav = Boolean(user) && !inOnboarding() && !inUpdate();
 
   async function handleSignOut() {
     await signOut();
@@ -43,24 +45,35 @@ export function Header() {
   }
 
   return (
-    <header className="brand">
-      <span className="brand-mark" aria-hidden="true" />
-      <p className="brand-name">Lincoln Financial</p>
-      {user && (
-        <span className="brand-user">
-          <strong className="brand-username">{user}</strong>
-          {' · '}
-          {!inOnboarding() && !inUpdate() && (
-            <>
-              <Link className="link" to={ROUTES.profile}>Profile</Link>
-              {' · '}
-              <button className="link-btn" type="button" onClick={handleUpdate}>Update info</button>
-              {' · '}
-            </>
-          )}
-          <button className="link-btn" type="button" onClick={handleSignOut}>Sign out</button>
-        </span>
-      )}
+    <header className="topbar">
+      <div className="topbar-inner">
+        <Link className="topbar-brand" to={showNav ? ROUTES.chat : ROUTES.signIn}>
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-name">Lincoln Financial</span>
+        </Link>
+        {user && (
+          <nav className="topbar-nav" aria-label="Account">
+            {showNav && (
+              <>
+                <Link
+                  className="topbar-item"
+                  to={ROUTES.profile}
+                  aria-current={pathname === ROUTES.profile ? 'page' : undefined}
+                >
+                  Account
+                </Link>
+                <button className="topbar-item" type="button" onClick={handleUpdate}>
+                  Update dental history
+                </button>
+              </>
+            )}
+            <span className="topbar-user" title={user}>{user}</span>
+            <button className="topbar-item topbar-signout" type="button" onClick={handleSignOut}>
+              Sign out
+            </button>
+          </nav>
+        )}
+      </div>
     </header>
   );
 }
