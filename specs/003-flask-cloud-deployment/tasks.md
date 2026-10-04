@@ -14,7 +14,7 @@ requested by the user. Keep private credentials and unrelated resources intact.
 
 ## Phase 3: Cloud Delivery
 
-- [ ] T003 [US1] Commit source and build the production Dockerfile into the existing gcf-artifacts repository using the existing source bucket and service account; deploy dental-api in us-central1 with min 0/max 2 instances, 1 CPU, 512 MiB, concurrency 4 and timeout 60 seconds; verify direct live routes before switching Hosting and record evidence in specs/003-flask-cloud-deployment/verification.md (FR-001, FR-003, FR-006, FR-007).
+- [x] T003 [US1] Commit source and build the production Dockerfile into the existing gcf-artifacts repository using the existing source bucket and service account; deploy dental-api in us-central1 with min 0/max 2 instances, 1 CPU, 512 MiB, concurrency 4 and timeout 60 seconds; verify direct live routes before switching Hosting and record evidence in specs/003-flask-cloud-deployment/verification.md (FR-001, FR-003, FR-006, FR-007).
 
 ## Phase 4: Review and Verification
 
