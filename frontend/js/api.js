@@ -40,6 +40,15 @@ class SignedOutError extends Error {}
 // The backend rejected the input (422). The message is safe to show the user.
 class RejectedError extends Error {}
 
+// The app API could not be reached or returned an unexpected error.
+class AppServiceError extends Error {
+  constructor(status, options) {
+    super(status ? 'App API request failed with status ' + status : 'App API is unavailable', options);
+    this.name = 'AppServiceError';
+    this.status = status;
+  }
+}
+
 const STEP_EVENTS = {
   location: 'intake.location',
   office: 'intake.office',
@@ -65,18 +74,23 @@ async function apiFetch(path, method, body) {
 
   const headers = { Authorization: 'Bearer ' + token };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, {
-    method: method,
-    headers: headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      method: method,
+      headers: headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
+    });
+  } catch (error) {
+    throw new AppServiceError(null, { cause: error });
+  }
   if (response.status === 401) throw new SignedOutError('Sign-in rejected');
   if (response.status === 422) {
     const data = await response.json().catch(function () { return {}; });
     throw new RejectedError(data.error || 'That was not accepted. Check your answer.');
   }
-  if (!response.ok) throw new Error('Request failed with status ' + response.status);
+  if (!response.ok) throw new AppServiceError(response.status);
   return response.json();
 }
 
@@ -87,20 +101,45 @@ function profileDetailsSent() {
 
 // { uid, email, name, company, office, location: { state, zip } or null }
 async function fetchProfile() {
-  const profile = demoLoginActive() ? demoProfile() : await apiFetch(API_CONFIG.profileEndpoint, 'GET');
-  if (profileDetailsSent()) return profile;
+  let profile;
+  let usingLocalProfile = demoLoginActive();
+  if (usingLocalProfile) {
+    profile = demoProfile();
+  } else {
+    try {
+      profile = await apiFetch(API_CONFIG.profileEndpoint, 'GET');
+    } catch (error) {
+      if (!(error instanceof AppServiceError)) throw error;
+      console.warn('Profile API unavailable; using this browser\'s saved profile.', error);
+      profile = demoProfile();
+      usingLocalProfile = true;
+    }
+  }
+  if (profileDetailsSent() && !usingLocalProfile) return profile;
   return Object.assign({ name: null, company: null, office: null }, profile, localDetails(profile.email));
 }
 
 // Save the user's location so later sign-ins don't ask again. Returns the profile.
-function saveProfileLocation(state, zip) {
-  if (demoLoginActive()) return Promise.resolve(saveDemoLocation(state, zip));
-  return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+async function saveProfileLocation(state, zip) {
+  if (demoLoginActive()) return saveDemoLocation(state, zip);
+  try {
+    return await apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+  } catch (error) {
+    if (!(error instanceof AppServiceError)) throw error;
+    console.warn('Profile API unavailable; saving location in this browser.', error);
+    return saveDemoLocation(state, zip);
+  }
 }
 
 // Save some of the new-user answers to the profile: any of { name, company, office }.
 function saveProfileDetails(details) {
-  if (profileDetailsSent()) return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details);
+  if (profileDetailsSent()) {
+    return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details).catch(function (error) {
+      if (!(error instanceof AppServiceError)) throw error;
+      console.warn('Profile API unavailable; saving profile details in this browser.', error);
+      saveLocalDetails(details);
+    });
+  }
   saveLocalDetails(details);
   return Promise.resolve();
 }
@@ -130,9 +169,8 @@ function saveLocalDetails(details) {
   } catch (e) { /* ignore: these are asked for again next time */ }
 }
 
-// TEMPORARY stand-in for the profile routes while the demo sign-in is on
-// (DEMO_LOGIN in shared.js). Each email's location is kept in this browser's
-// localStorage, so it is still asked for only once.
+// Keep locations in this browser for UI demo mode and when the profile API is
+// unavailable. Each email's location is still asked for only once per browser.
 const DEMO_PROFILES_KEY = 'demo_profiles';
 
 function readDemoProfiles() {
@@ -243,6 +281,10 @@ async function submitThenGo(button, work, page) {
     button.disabled = false;
     showSendError(button, e instanceof RejectedError
       ? e.message
+      : e instanceof AppServiceError
+        ? 'Sign-in succeeded, but the app couldn\'t load your profile'
+          + (e.status ? ' (HTTP ' + e.status + ')' : '')
+          + '. Start the Firebase Hosting and Functions backend, then try again.'
       : "We couldn't send that just now. Please try again.");
     return;
   }
