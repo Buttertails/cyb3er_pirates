@@ -41,6 +41,8 @@ export function Header() {
   const showNav = Boolean(user) && !inOnboarding();
   const showAccount = Boolean(user) && pathname !== ROUTES.signIn && pathname !== '/';
 
+  console.log("inOnboarding: " + inOnboarding());
+
   async function handleSignOut() {
     await signOut();
     navigate(ROUTES.signIn);
@@ -441,9 +443,9 @@ export function PurpleBackground() {
   useEffect(() => {
     // Animate the background when the user is in the chat
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (location.pathname === ROUTES.chat) {
+    if (location.pathname === ROUTES.profile) {
       animate(bgRef.current, {
-        top: '30%',
+        top: '-100%',
         duration: 1200,
         easing: 'easeOutCubic'
       });
@@ -461,9 +463,70 @@ export function PurpleBackground() {
 }
 
 export function OrangeBackground() {
-  return <img className="orange-bg" src={orangeWave} alt="" />;
+  const bgRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    // Animate the background when the user is in the chat
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Higher when in chat
+    if (location.pathname === ROUTES.chat) {
+      animate(bgRef.current, {
+        top: '-30%',
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } 
+    else if (location.pathname === ROUTES.history) {
+      animate(bgRef.current, {
+        top: '-100%',
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } 
+    // Reset position when leaving chat
+    else {
+      animate(bgRef.current, {
+        top: '-13%',
+        duration: 1000,
+        easing: 'easeOutCubic'
+      });
+    }
+  }, [location.pathname]);
+
+  return <img ref={bgRef} className="orange-bg" src={orangeWave} alt="" />;
 }
 
 export function LightPurpleBackground() {
-  return <img className="light-purple-bg" src={lightPurpleWave} alt="" />;
+  const bgRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Animate background to light purple background when in chat
+    if (location.pathname === ROUTES.chat || location.pathname === ROUTES.history) {
+      animate(bgRef.current, {
+        top: '-100%',
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } 
+    else if (location.pathname === ROUTES.profile) {
+      animate(bgRef.current, {
+        top: '-80%',
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } 
+    // Reset position when leaving chat
+    else {
+      animate(bgRef.current, {
+        top: '-13%',
+        duration: 1000,
+        easing: 'easeOutCubic'
+      });
+    }
+  }, [location.pathname]); 
+
+  return <img ref={bgRef} className="light-purple-bg" src={lightPurpleWave} alt="" />;
 }

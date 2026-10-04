@@ -75,7 +75,6 @@ body {
 
 .light-purple-bg, .orange-bg, .purple-bg {
   position: fixed;
-  top: -13%;
   left: 0;
   width: 100%;
   z-index: 0;
