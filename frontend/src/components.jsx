@@ -1,5 +1,5 @@
-import { useEffect, useReducer, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useReducer, useState, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from './lib/auth.js';
 import { SignedOutError, submitErrorMessage } from './lib/api.js';
 import {
@@ -14,6 +14,7 @@ import {
   startUpdate,
   stepPosition,
 } from './lib/storage.js';
+import { animate } from 'animejs';
 
 export function useDocumentTitle(title) {
   useEffect(() => {
@@ -203,4 +204,39 @@ export function useSubmitTask() {
   }
 
   return { busy, error, setError, run };
+}
+
+// Components for background wave animations
+export function PurpleBackground() {
+  const bgRef = useRef(null);
+  const location = useLocation(); // Tracks the current URL path
+
+  useEffect(() => {
+    // 
+    if (location.pathname === '/chat') {
+      animate(bgRef.current, {
+        translateY: 1000,
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } 
+    // Reset position when leaving chat
+    else {
+      animate(bgRef.current, {
+        translateX: 0,
+        translateY: 0,
+        duration: 1000,
+        easing: 'easeOutCubic'
+      });
+    }
+  }, [location.pathname]); 
+  return <img ref={bgRef} className="purple-bg" src="../res/purple-wave.svg" />;
+}
+
+export function OrangeBackground() {
+  return <img className="orange-bg" src="../res/orange-wave.svg" />;
+}
+
+export function LightPurpleBackground() {
+  return <img className="light-purple-bg" src="../res/light-purple-wave.svg" />;
 }

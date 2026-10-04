@@ -17,6 +17,7 @@ import { SignInPage, SignupPage } from './pages/AccountPages.jsx';
 import { ConfirmPage, ResultsPage, SummaryPage } from './pages/ResultsPages.jsx';
 import { LocationCheckPage, ProceduresPage, ProfilePage } from './pages/ProfilePages.jsx';
 import { ROUTES } from './lib/storage.js';
+import { LightPurpleBackground, OrangeBackground, PurpleBackground } from './components.jsx';
 
 const EXIT_DURATION = 160;
 
@@ -70,6 +71,9 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <>
+      <LightPurpleBackground />
+      <OrangeBackground />
+      <PurpleBackground />
       <Header />
       <AnimatedRoutes />
     </>

@@ -73,6 +73,15 @@ body {
   to { opacity: 0; }
 }
 
+.light-purple-bg, .orange-bg, .purple-bg {
+  position: fixed;
+  top: -13%;
+  left: 0;
+  width: 100%;
+  z-index: -1;          
+  pointer-events:  none; 
+}
+
 /* Text wordmark standing in for the real logo lockup. */
 .brand {
   display: flex;
