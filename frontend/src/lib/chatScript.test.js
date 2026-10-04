@@ -128,7 +128,7 @@ describe('conversation flow', () => {
     expect(await STEPS.location.answer({ text: 'PA 19103' })).toEqual({ next: 'office' });
     expect(readStep('offices')).toHaveLength(3);
 
-    expect(await STEPS.office.answer({ text: 'Placeholder Smiles' })).toEqual({ next: 'category' });
+    expect(await STEPS.office.answer({ text: 'Parkview Smiles' })).toEqual({ next: 'category' });
     expect(readStep('office')).toBe('demo-office-2');
 
     const result = await STEPS.category.answer({ text: 'broken tooth' });

@@ -4,9 +4,9 @@
 // 'acme-co' matches the sample employer the backend seeds (backend/dental/catalog.py),
 // so these ids are meant to line up with employers/{employerId} later.
 export const COMPANIES = [
-  { id: 'acme-co', label: 'Acme Corporation', description: 'Sample employer' },
-  { id: 'demo-company-2', label: 'Placeholder Industries', description: 'Sample employer' },
-  { id: 'demo-company-3', label: 'Example Health Partners', description: 'Sample employer' },
+  { id: 'acme-co', label: 'Acme Corporation', description: 'Dental benefits available' },
+  { id: 'demo-company-2', label: 'Northstar Industries', description: 'Dental benefits available' },
+  { id: 'demo-company-3', label: 'Riverside Health Partners', description: 'Dental benefits available' },
   { id: 'other', label: "My company isn't listed", description: 'You can still look for care' },
 ];
 
@@ -227,7 +227,7 @@ export const ZIP_PREFIXES = {
 // Local demo only: stand-ins for the dentist offices the backend will return for
 // step 2. Fictional. api.js fills in the state and ZIP the user entered.
 export const LOCAL_DEMO_OFFICES = [
-  { id: 'demo-office-1', name: 'Sample Family Dental', street: '100 Example Street', distance_miles: 1.2 },
-  { id: 'demo-office-2', name: 'Placeholder Smiles', street: '250 Sample Avenue', distance_miles: 3.4 },
-  { id: 'demo-office-3', name: 'Demo Dental Group', street: '75 Test Boulevard', distance_miles: 5.8 },
+  { id: 'demo-office-1', name: 'Family Dental Care', street: '100 Main Street', distance_miles: 1.2 },
+  { id: 'demo-office-2', name: 'Parkview Smiles', street: '250 Park Avenue', distance_miles: 3.4 },
+  { id: 'demo-office-3', name: 'Lakeside Dental Group', street: '75 Lake Boulevard', distance_miles: 5.8 },
 ];

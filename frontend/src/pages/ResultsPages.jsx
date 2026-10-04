@@ -34,8 +34,8 @@ export function SummaryPage() {
   const sent = readStep('sent_log') || [];
   const mode = sent.length === 0
     ? 'No messages were recorded for this session.'
-    : sent[0].mode === 'local_demo'
-      ? 'Local demo: nothing left this browser. Each message was logged and acknowledged locally.'
+    : sent[0].mode === 'browser_intake'
+      ? 'Your selections were saved for this session.'
       : 'Each message was sent to the backend in this order.';
   return (
     <Card>

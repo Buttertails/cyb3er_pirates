@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeSteps,
+  clearAnswers,
   clearSession,
   nextPage,
   ONBOARDING,
@@ -25,6 +26,17 @@ beforeEach(() => {
 });
 
 describe('flow storage', () => {
+  it('keeps account and company policy context when restarting care questions', () => {
+    saveStep('user', 'person@example.com');
+    saveStep('company', 'demo-company-2');
+    saveStep('demo_employee_id', 'demo-c-lee');
+    saveStep('procedure', 'filling');
+    clearAnswers();
+    expect(readStep('user')).toBe('person@example.com');
+    expect(readStep('company')).toBe('demo-company-2');
+    expect(readStep('demo_employee_id')).toBe('demo-c-lee');
+    expect(readStep('procedure')).toBeNull();
+  });
   it('stores JSON answers and restores them', () => {
     saveStep('location', { state: 'PA', zip: '19103' });
     expect(readStep('location')).toEqual({ state: 'PA', zip: '19103' });

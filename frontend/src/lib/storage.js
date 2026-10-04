@@ -72,9 +72,12 @@ export function saveStep(key, value) {
 }
 
 export function clearAnswers() {
-  const user = readStep('user');
+  const retained = Object.fromEntries(
+    ['user', 'name', 'company', 'demo_employee_id'].map((key) => [key, readStep(key)]));
   try { sessionStorage.clear(); } catch { /* storage can be unavailable */ }
-  if (user) saveStep('user', user);
+  for (const [key, value] of Object.entries(retained)) {
+    if (value) saveStep(key, value);
+  }
   storageEvent();
 }
 

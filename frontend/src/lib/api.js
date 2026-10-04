@@ -136,7 +136,7 @@ export function saveProfileDetails(details) {
 }
 
 export async function fetchProcedures(employeeId) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const result = await proposedRoute('GET', `/procedures?employee_id=${encodeURIComponent(employeeId)}`, undefined, () => ({
     procedures: localDetails(readStep('user')).procedures || [],
   }));
@@ -145,7 +145,7 @@ export async function fetchProcedures(employeeId) {
 
 export function saveProcedures(entries, employeeId) {
   if (!entries.length) return Promise.resolve({ procedures: [] });
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const reports = entries.map((entry) => ({
     ...entry,
     submission_id: entry.submission_id || window.crypto?.randomUUID?.() || `care-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -190,12 +190,12 @@ export function recordSignIn() {
 }
 
 export async function fetchBenefits(employeeId) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   return apiFetch(`/api/me/benefits?employee_id=${encodeURIComponent(employeeId)}`, 'GET');
 }
 
 export async function sendLiveChat(employeeId, sessionId, message) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const body = { employee_id: employeeId, ...(sessionId ? { session_id: sessionId } : {}), ...message };
   return apiFetch('/api/chat', 'POST', body);
 }
@@ -282,7 +282,7 @@ const PROCEDURE_TO_ENGINE = {
 export async function requestEstimate(intakeProcedureId, options = {}) {
   const engineId = PROCEDURE_TO_ENGINE[intakeProcedureId];
   if (!engineId) throw new Error('unmapped-procedure');
-  if (!options.employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!options.employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const body = {
     employee_id: options.employeeId,
     procedure_id: engineId,

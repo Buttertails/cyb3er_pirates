@@ -4,7 +4,7 @@ import { EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx'
 import { SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { firstStep, greeting, STEPS } from '../lib/chatScript.js';
-import { DEMO_EMPLOYEES } from '../lib/demoEmployees.js';
+import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { LiveBenefitsChat } from './LiveBenefitsChat.jsx';
 import {
   clearAnswers,
@@ -44,7 +44,7 @@ function GuidedChatPage() {
   const [busy, setBusy] = useState(false);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState('');
-  const [employeeId, setEmployeeId] = useState(() => readStep('demo_employee_id') || '');
+  const employeeId = readStep('demo_employee_id') || employeeIdForCompany(readStep('company'));
   const logRef = useRef(log);
   const nodeRef = useRef(readStep('chat_node'));
   const startedRef = useRef(false);
@@ -146,6 +146,7 @@ function GuidedChatPage() {
 
   useEffect(() => {
     if (blocked || startedRef.current || !employeeId) return;
+    saveStep('demo_employee_id', employeeId);
     startedRef.current = true;
     const last = logRef.current.at(-1);
     if (nodeRef.current && STEPS[nodeRef.current] && last?.from === 'bot') return;
@@ -178,20 +179,6 @@ function GuidedChatPage() {
 
   return (
     <main className="card chat">
-      <div className="field">
-        <label htmlFor="demo-employee">Fictional employee and company plan</label>
-        <select id="demo-employee" value={employeeId} onChange={(event) => {
-          const selected = event.target.value;
-          saveStep('demo_employee_id', selected || null);
-          ['chat_log', 'chat_node', 'session_id', 'category', 'procedure', 'timing'].forEach((key) => saveStep(key, null));
-          setEmployeeId(selected);
-          navigate(`${ROUTES.chat}?employee=${encodeURIComponent(selected)}&v=${Date.now()}`);
-        }}>
-          <option value="">Choose a demo employee</option>
-          {DEMO_EMPLOYEES.map((employee) => <option key={employee.id} value={employee.id}>{employee.label}</option>)}
-        </select>
-      </div>
-      {!employeeId && <p className="note">Choose a fictional employee to use their company plan and recorded benefits.</p>}
       <div className="chat-scroll" ref={scrollRef}>
         <ol className="chat-log" role="log" aria-live="polite" aria-label="Conversation">
           {log.map((message) => (

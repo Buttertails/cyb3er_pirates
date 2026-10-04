@@ -161,7 +161,7 @@ export function EstimateCard({ estimate }) {
   return (
     <div className="estimate">
       {estimate._local_demo && (
-        <p className="estimate-flag">Local demo estimate — approximate figures, nothing left your browser.</p>
+        <p className="estimate-flag">Approximate estimate from this browser session.</p>
       )}
       <div className="cost-grid">
         <div className="cost-cell">
@@ -182,7 +182,7 @@ export function EstimateCard({ estimate }) {
         <ul className="reasons">{line.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
       )}
       <p className="disclaimer">
-        This is an approximate estimate using fictional plan data, not a claims decision or clinical advice.
+        This is an approximate estimate, not a final claims decision or clinical advice.
       </p>
     </div>
   );

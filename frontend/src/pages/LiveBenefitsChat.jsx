@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
 import { sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
-import { DEMO_EMPLOYEES } from '../lib/demoEmployees.js';
-import { readStep, ROUTES, saveStep, startUpdate } from '../lib/storage.js';
+import { employeeIdForCompany } from '../lib/demoEmployees.js';
+import { readStep, ROUTES, saveStep } from '../lib/storage.js';
+
+const RESTART = /^(start over|restart|reset|start again)[.!]?$/i;
 
 export function LiveBenefitsChat() {
   useDocumentTitle('Dental benefits assistant');
   const { blocked } = useFlowGuard([]);
   const navigate = useNavigate();
-  const [employeeId, setEmployeeId] = useState(() => readStep('demo_employee_id') || '');
+  const employeeId = readStep('demo_employee_id') || employeeIdForCompany(readStep('company'));
   const [messages, setMessages] = useState([]);
   const [choices, setChoices] = useState([]);
   const [draft, setDraft] = useState('');
@@ -47,6 +49,7 @@ export function LiveBenefitsChat() {
 
   useEffect(() => {
     if (blocked || !employeeId) return;
+    saveStep('demo_employee_id', employeeId);
     setMessages([]);
     setChoices([]);
     session.current = null;
@@ -57,33 +60,23 @@ export function LiveBenefitsChat() {
   function answer(value) {
     const text = value.trim();
     if (!employeeId || !text || busy) return;
+    if (RESTART.test(text)) {
+      session.current = null;
+      setMessages([]);
+      setChoices([]);
+      setDraft('');
+      send({ event: 'restart' }, employeeId, null);
+      return;
+    }
     setMessages((previous) => previous.concat({ from: 'user', text }));
     setDraft('');
     setChoices([]);
     send({ text });
   }
 
-  function chooseEmployee(event) {
-    const selected = event.target.value;
-    saveStep('demo_employee_id', selected || null);
-    setEmployeeId(selected);
-    setMessages([]);
-    setChoices([]);
-    session.current = null;
-    latest.current += 1;
-  }
-
   if (blocked) return null;
   return (
     <main className="card chat">
-      <div className="field">
-        <label htmlFor="live-employee">Fictional employee and company plan</label>
-        <select id="live-employee" value={employeeId} onChange={chooseEmployee}>
-          <option value="">Choose a demo employee</option>
-          {DEMO_EMPLOYEES.map((employee) => <option key={employee.id} value={employee.id}>{employee.label}</option>)}
-        </select>
-      </div>
-      <p className="note">Estimates use fictional policy and usage data. They do not record completed care.</p>
       <div className="chat-scroll">
         <ol className="chat-log" role="log" aria-live="polite" aria-label="Conversation">
           {messages.map((message, index) => (
@@ -102,17 +95,9 @@ export function LiveBenefitsChat() {
       <form className="chat-form" onSubmit={(event) => { event.preventDefault(); answer(draft); }}>
         <label className="visually-hidden" htmlFor="live-chat-input">Your message</label>
         <input id="live-chat-input" type="text" value={draft} onChange={(event) => setDraft(event.target.value)}
-          placeholder={employeeId ? 'Ask about your coverage' : 'Choose an employee first'} disabled={!employeeId || busy} />
-        <button className="btn chat-send" type="submit" disabled={!employeeId || busy || !draft.trim()}>Send</button>
+          placeholder="Ask about your coverage" disabled={busy} />
+        <button className="btn chat-send" type="submit" disabled={busy || !draft.trim()}>Send</button>
       </form>
-      <p className="actions"><button type="button" className="link" disabled={!employeeId || busy} onClick={() => {
-        session.current = null;
-        setMessages([]);
-        setChoices([]);
-        send({ event: 'restart' }, employeeId, null);
-      }}>Start a new conversation</button></p>
-      <p className="actions"><Link className="link" to={ROUTES.profile}>View benefits and care history</Link>
-        {' · '}<button type="button" className="link" disabled={!employeeId} onClick={() => navigate(startUpdate('manual', ROUTES.profile))}>Record recent care</button></p>
     </main>
   );
 }

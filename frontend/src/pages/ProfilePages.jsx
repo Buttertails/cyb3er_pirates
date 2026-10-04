@@ -8,7 +8,7 @@ import {
   useFlowGuard,
 } from '../components.jsx';
 import { fetchAppointments, fetchBenefits, fetchProcedures, submitErrorMessage } from '../lib/api.js';
-import { DEMO_EMPLOYEES } from '../lib/demoEmployees.js';
+import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
   describeProcedure,
   dollars,
@@ -27,12 +27,13 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState({ appointments: [], sample: false });
   const [procedures, setProcedures] = useState([]);
-  const [employeeId, setEmployeeId] = useState(() => readStep('demo_employee_id') || '');
+  const employeeId = readStep('demo_employee_id') || employeeIdForCompany(readStep('company'));
   const [benefits, setBenefits] = useState(null);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     let active = true;
+    saveStep('demo_employee_id', employeeId);
     setProcedures([]);
     setBenefits(null);
     setLoadError('');
@@ -75,18 +76,7 @@ export function ProfilePage() {
         ['Dental office', saved.office ? officeLabel(saved.office) : notProvided],
       ]} />
 
-      <h2 className="subhead">Fictional plan and usage</h2>
-      <div className="field">
-        <label htmlFor="profile-employee">Demo employee</label>
-        <select id="profile-employee" value={employeeId} onChange={(event) => {
-          const selected = event.target.value;
-          saveStep('demo_employee_id', selected || null);
-          setEmployeeId(selected);
-        }}>
-          <option value="">Choose a demo employee</option>
-          {DEMO_EMPLOYEES.map((employee) => <option key={employee.id} value={employee.id}>{employee.label}</option>)}
-        </select>
-      </div>
+      <h2 className="subhead">Your plan and usage</h2>
       {loadError && <p className="error" role="alert">{loadError}</p>}
       {benefits && <AnswerList rows={[
         ['Plan', benefits.plan_name],
@@ -94,18 +84,17 @@ export function ProfilePage() {
         ['Used this plan year', dollars(benefits.used)],
         ['Remaining', dollars(benefits.remaining)],
       ]} />}
-      <p className="note">Fictional plan data. Confirmed care for this employee is included in the usage shown above.</p>
+      <p className="note">Confirmed care is included in the usage shown above. Estimates may differ from a final claim.</p>
 
       <h2 className="subhead">Appointments</h2>
       {appointments.sample && dated.length > 0 && (
-        <p className="note">Sample appointments: scheduling isn't connected yet.</p>
+        <p className="note">Appointment scheduling isn't connected yet.</p>
       )}
       {dated.length === 0 && <p className="lead">No appointments yet.</p>}
       {upcoming.length > 0 && <ProfileList title="Upcoming" items={upcoming.map(describeAppointment)} />}
       {past.length > 0 && <ProfileList title="Past" items={past.map(describeAppointment)} />}
 
       <h2 className="subhead">Confirmed dental work</h2>
-      {!employeeId && <p className="lead">Choose a demo employee to view their records.</p>}
       {procedures.length === 0 ? (
         <p className="lead">Nothing recorded yet.</p>
       ) : (
@@ -115,7 +104,7 @@ export function ProfilePage() {
           ))}
         </div>
       )}
-      <button type="button" className="btn" disabled={!employeeId} onClick={() => navigate(startUpdate('manual', ROUTES.profile))}>
+      <button type="button" className="btn" onClick={() => navigate(startUpdate('manual', ROUTES.profile))}>
         Update recent visits
       </button>
       <p className="actions"><Link className="link" to={ROUTES.chat}>Find a dental office</Link></p>

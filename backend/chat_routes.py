@@ -21,8 +21,8 @@ chat = Blueprint("chat", __name__)
 
 NETWORK_CHOICES = [{"label": "In network", "value": "in_network"},
                    {"label": "Out of network", "value": "out_of_network"}]
-ASSUMPTIONS = ["Fictional demo prices and employee usage; this is an approximate estimate.",
-               "Coverage percentages use the existing demo policy adapter's assumed category rates.",
+ASSUMPTIONS = ["Illustrative prices and prior usage; this is an approximate estimate.",
+               "Coverage percentages use assumed category rates for this policy.",
                "An estimate does not record completed care or change benefits usage."]
 
 
@@ -57,14 +57,14 @@ def _profiles(config):
     try:
         return load_profiles(config.fixture_path, as_of=config.reference_date)
     except (OSError, ValueError) as exc:
-        raise ChatProblem("demo_data_unavailable", "The fictional employee data could not be loaded.", 503) from exc
+        raise ChatProblem("demo_data_unavailable", "Plan information could not be loaded. Please retry.", 503) from exc
 
 
 def _employee(profiles, employee_id):
     try:
         return profiles.employee(employee_id)
     except KeyError as exc:
-        raise ChatProblem("unknown_employee", "Select a supported fictional employee.", 404) from exc
+        raise ChatProblem("unknown_employee", "Your plan information could not be found.", 404) from exc
 
 
 def _with_reports(uid, employee):
@@ -101,7 +101,7 @@ def _estimate(employee, procedure, network, treatment_date):
 
 def _estimate_text(estimate):
     line = estimate["lines"][0]
-    text = (f"Approximate demo estimate for {line['label']}: insurance pays ${line['plan_pays']:,.2f} "
+    text = (f"Approximate estimate for {line['label']}: insurance pays ${line['plan_pays']:,.2f} "
             f"and you owe ${line['employee_owes']:,.2f}. "
             f"The estimated remaining allowance after this care is ${estimate['annual_max_remaining_after']:,.2f}. "
             "Your recorded benefits usage has not changed.")
@@ -151,7 +151,7 @@ def dialogflow_webhook():
     if fulfillment["tag"] == "benefits.summary":
         benefits = employee.benefits(config.reference_date)
         return _fulfillment(employee, config,
-            f"For {employee.company_name}, your fictional plan has ${benefits['remaining']:,.2f} "
+            f"Your plan has ${benefits['remaining']:,.2f} "
             "remaining this plan year. What procedure are you planning?", choices=_procedure_choices())
     if fulfillment["tag"] != "benefits.estimate":
         return _fulfillment(employee, config, "I can help estimate one procedure under your current plan.",
@@ -191,7 +191,7 @@ def post_chat():
         raise ChatProblem("invalid_input", "Only employee_id, session_id, text or event are supported.", 422)
     employee_id = body.get("employee_id")
     if not isinstance(employee_id, str) or not employee_id.strip():
-        raise ChatProblem("invalid_input", "Select a fictional employee.", 422)
+        raise ChatProblem("invalid_input", "Your plan information is required.", 422)
     if ("text" in body) == ("event" in body):
         raise ChatProblem("invalid_input", "Provide exactly one of text or event.", 422)
     if "text" in body:
@@ -258,7 +258,7 @@ def post_chat():
             messages = [_estimate_text(estimate)]
         elif payload.get("status") == "ok":
             benefits = employee.benefits(config.reference_date)
-            messages = [f"For {employee.company_name}, your fictional plan has "
+            messages = [f"Your plan has "
                         f"${benefits['remaining']:,.2f} remaining this plan year. "
                         "What procedure are you planning?"]
         else:

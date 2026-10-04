@@ -310,11 +310,11 @@ def put_my_location():
 
 def _care_employee(employee_id):
     if not isinstance(employee_id, str):
-        raise ValueError("Select a fictional employee.")
+        raise ValueError("Your plan information is required.")
     try:
         return load_profiles(os.environ.get("CHAT_FIXTURE_PATH")).employee(employee_id)
     except KeyError:
-        raise ValueError("Select a supported fictional employee.") from None
+        raise ValueError("Your plan information could not be found.") from None
 
 
 def _care_json(report):

@@ -11,6 +11,7 @@ import {
   useSubmitTask,
 } from '../components.jsx';
 import { authMessage, demoLoginActive, signIn, signUp } from '../lib/auth.js';
+import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
   fetchProfile,
   finishFlow,
@@ -70,6 +71,7 @@ export function SignInPage() {
       ['name', 'company', 'office'].forEach((key) => {
         if (profile[key]) saveStep(key, profile[key]);
       });
+      saveStep('demo_employee_id', employeeIdForCompany(profile.company));
       if (profile.location) {
         const savedLocation = { state: profile.location.state, zip: profile.location.zip || '' };
         saveStep('location', savedLocation);
@@ -199,6 +201,7 @@ export function SignupPage() {
 
   function saveAnswer(value) {
     saveStep(key, value);
+    if (key === 'company') saveStep('demo_employee_id', employeeIdForCompany(value));
     const last = isLastStep(key);
     task.run(async () => {
       await saveProfileDetails({ [key]: value });
