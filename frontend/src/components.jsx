@@ -1,0 +1,206 @@
+import { useEffect, useReducer, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { signOut } from './lib/auth.js';
+import { SignedOutError, submitErrorMessage } from './lib/api.js';
+import {
+  firstMissing,
+  formatLocation,
+  inOnboarding,
+  inUpdate,
+  officeLabel,
+  readStep,
+  requiredFlow,
+  ROUTES,
+  startUpdate,
+  stepPosition,
+} from './lib/storage.js';
+
+export function useDocumentTitle(title) {
+  useEffect(() => {
+    document.title = `${title} | Lincoln Financial`;
+  }, [title]);
+}
+
+export function useSessionUser() {
+  const [, refresh] = useReducer((version) => version + 1, 0);
+  useEffect(() => {
+    window.addEventListener('session-change', refresh);
+    return () => window.removeEventListener('session-change', refresh);
+  }, []);
+  return readStep('user');
+}
+
+export function Header() {
+  const user = useSessionUser();
+  const navigate = useNavigate();
+
+  async function handleSignOut() {
+    await signOut();
+    navigate(ROUTES.signIn);
+  }
+
+  function handleUpdate() {
+    const here = `${window.location.pathname}${window.location.search}`;
+    navigate(startUpdate('manual', here));
+  }
+
+  return (
+    <header className="brand">
+      <span className="brand-mark" aria-hidden="true" />
+      <p className="brand-name">Lincoln Financial</p>
+      {user && (
+        <span className="brand-user">
+          <strong className="brand-username">{user}</strong>
+          {' · '}
+          {!inOnboarding() && !inUpdate() && (
+            <>
+              <Link className="link" to={ROUTES.profile}>Profile</Link>
+              {' · '}
+              <button className="link-btn" type="button" onClick={handleUpdate}>Update info</button>
+              {' · '}
+            </>
+          )}
+          <button className="link-btn" type="button" onClick={handleSignOut}>Sign out</button>
+        </span>
+      )}
+    </header>
+  );
+}
+
+export function Card({ children, className = '' }) {
+  return <main className={`card ${className}`.trim()}>{children}</main>;
+}
+
+export function Progress({ step, complete = false }) {
+  const position = step ? stepPosition(step) : { current: 1, total: 1 };
+  const percent = complete ? 100 : Math.round((position.current / position.total) * 100);
+  return (
+    <>
+      <div className="progress" aria-hidden="true"><span style={{ width: `${percent}%` }} /></div>
+      {step && <p className="step">Step {position.current} of {position.total}</p>}
+    </>
+  );
+}
+
+export function ChoiceCards({ name, items, value, onChange }) {
+  return (
+    <div>
+      {items.map((item) => (
+        <label className="option" key={item.id}>
+          <input
+            type="radio"
+            name={name}
+            value={item.id}
+            checked={value === item.id}
+            onChange={(event) => onChange(event.target.value)}
+          />
+          <span className="option-body">
+            <span className="option-title">{item.label ?? item.name}</span>
+            <span className="option-desc">{item.description}</span>
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+export function ChoiceForm({
+  name, items, value, onChange, onSubmit, busy = false, error = '', buttonLabel = 'Continue',
+}) {
+  return (
+    <form onSubmit={onSubmit}>
+      <fieldset>
+        <legend>Select one</legend>
+        <ChoiceCards name={name} items={items} value={value} onChange={onChange} />
+      </fieldset>
+      <button type="submit" className="btn" disabled={!value || busy}>
+        {busy ? 'Please wait…' : buttonLabel}
+      </button>
+      <FormError message={error} />
+    </form>
+  );
+}
+
+export function SummaryRow({ label, value, to, onLink, linkLabel = 'Change' }) {
+  if (!value) return null;
+  return (
+    <p className="summary">
+      <span>{label}: <strong>{value}</strong></span>
+      {to && <Link className="link" to={to} onClick={onLink}>{linkLabel}</Link>}
+    </p>
+  );
+}
+
+export function IntakeSummary({ saved, rows }) {
+  const values = {
+    location: formatLocation(saved.location),
+    office: saved.office ? officeLabel(saved.office) : '',
+    ...rows.reduce((result, row) => ({ ...result, [row.key]: row.value }), {}),
+  };
+  return (
+    <div className="summary-group">
+      {rows.map((row) => (
+        <SummaryRow
+          key={row.key}
+          label={row.label}
+          value={values[row.key]}
+          to={row.to}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function AnswerList({ rows }) {
+  return (
+    <dl className="answers">
+      {rows.map(([label, value]) => (
+        <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+      ))}
+    </dl>
+  );
+}
+
+export function FormError({ message }) {
+  return message ? <p className="error" role="alert">{message}</p> : null;
+}
+
+export function FieldError({ id, message }) {
+  return <p className="error" id={id} role="alert" hidden={!message}>{message}</p>;
+}
+
+export function useFlowGuard(keys) {
+  const navigate = useNavigate();
+  const result = firstMissing(requiredFlow(keys));
+  useEffect(() => {
+    if (result.missing) navigate(result.missing.page, { replace: true });
+  }, [navigate, result.missing?.page]);
+  return { saved: result.saved, blocked: Boolean(result.missing) };
+}
+
+export function useSubmitTask() {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function run(work, destination) {
+    setBusy(true);
+    setError('');
+    try {
+      const next = await work();
+      navigate(next || destination);
+      return true;
+    } catch (cause) {
+      if (cause instanceof SignedOutError) {
+        await signOut();
+        navigate(`${ROUTES.signIn}?signed-out=1`);
+        return false;
+      }
+      setBusy(false);
+      setError(submitErrorMessage(cause));
+      return false;
+    }
+  }
+
+  return { busy, error, setError, run };
+}

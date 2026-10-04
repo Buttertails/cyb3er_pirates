@@ -1,5 +1,6 @@
 firebaseConfig.json
 node_modules
+frontend/dist
 # Firebase emulator logs
 *-debug.log
 
@@ -8,6 +9,6 @@ node_modules
 *serviceAccount*.json
 *-sa.json
 cyb3r-pirates-firebase-adminsdk-fbsvc-5b5663e0e1.json
-
+backend/package-lock.json
 #agents
 .claude

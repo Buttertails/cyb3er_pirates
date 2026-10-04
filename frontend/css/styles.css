@@ -18,6 +18,8 @@
   --space: 1rem;
   --font-body: Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   --font-head: Georgia, "Times New Roman", serif;
+  --page-exit-duration: 160ms;
+  --page-enter-duration: 280ms;
 }
 
 * {
@@ -35,6 +37,39 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   line-height: 1.5;
+}
+
+/*
+ * Page-to-page transitions
+ *
+ * React keeps the outgoing route mounted for its exit animation, then swaps in
+ * the incoming route for this entrance animation. The persistent background and
+ * header stay steady, which avoids a white flash between screens.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  body > .brand,
+  .route-stage.page-enter > .card {
+    animation: page-fade-in var(--page-enter-duration) ease-out both;
+  }
+
+  .route-stage.page-exit > .card {
+    animation: page-fade-out var(--page-exit-duration) ease-in both;
+    pointer-events: none;
+  }
+}
+
+.route-stage {
+  width: 100%;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes page-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Text wordmark standing in for the real logo lockup. */

@@ -2,9 +2,9 @@
 
 Runs as a normal web server (not a Cloud Function). All API routes live under
 the ``/api`` prefix via a Blueprint, so the frontend calls e.g.
-``/api/estimate`` directly. The server can also serve the static ``frontend/``
-so the whole demo runs from one origin (no CORS needed); CORS is enabled anyway
-so a separately served frontend works too.
+``/api/estimate`` directly. The server can also serve the built React app from
+``frontend/dist`` so the whole demo runs from one origin (no CORS needed); CORS
+is enabled anyway so a separately served frontend works too.
 
 Run (dev):
     python main.py                       # http://127.0.0.1:8080
@@ -101,8 +101,8 @@ def _init_firebase() -> None:
 
 _init_firebase()
 
-# Where the static frontend lives (repo_root/frontend), served at "/".
-_FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
+# Vite's production output, served at "/" after `npm --prefix frontend run build`.
+_FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
 app = Flask(__name__)
 app.register_blueprint(chat, url_prefix="/api")
@@ -416,7 +416,7 @@ def _index():
 
 @app.get("/<path:filename>")
 def _serve_frontend(filename: str):
-    """Serve the static frontend so the whole demo runs from one origin.
+    """Serve a built asset or the React shell for a client-side route.
 
     API paths are never served from here: they live under the /api prefix and
     are matched first, and the error handlers below keep any unmatched /api/*
@@ -425,7 +425,12 @@ def _serve_frontend(filename: str):
     target = (_FRONTEND_DIR / filename)
     if _FRONTEND_DIR.exists() and target.is_file():
         return send_from_directory(_FRONTEND_DIR, filename)
-    return jsonify({"error": "not found"}), 404
+    if _wants_api_json():
+        return jsonify({"error": f"No such API route: {request.path}"}), 404
+    index = _FRONTEND_DIR / "index.html"
+    if index.is_file():
+        return send_from_directory(_FRONTEND_DIR, "index.html")
+    return jsonify({"error": "frontend build not found; run npm --prefix frontend run build"}), 404
 
 
 def _wants_api_json() -> bool:

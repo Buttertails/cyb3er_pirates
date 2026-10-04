@@ -1,13 +1,14 @@
-### Verify Firebase Authentication
+### Run the React frontend
 
-To serve the login and sign-up pages, use a static server (the config file must
-be served over HTTP; don't open the HTML file directly):
+Install the frontend dependencies and start Vite:
 
 ```bash
-python3 -m http.server 8000 --directory frontend
+cd frontend
+npm install
+npm run dev
 ```
 
-Then open http://127.0.0.1:8000. Login and sign-up use the Firebase web
+Then open the URL Vite prints. Login and sign-up use the Firebase web
 configuration in `frontend/js/firebaseConfig.json`. Enable the Email/Password
 provider in the Firebase console before creating accounts. Firebase login and
 the intake demo work without the backend. If `/api/me` is unavailable, the app
@@ -33,9 +34,11 @@ You need Node.js, Python 3.12 and Java 21 or newer (for the Firestore emulator).
    backend/venv/bin/pip install -r backend/requirements.txt
    ```
 
-2. Start the emulators:
+2. Build the React frontend, then start the emulators:
 
    ```bash
+   npm --prefix frontend install
+   npm --prefix frontend run build
    npx firebase-tools emulators:start --only hosting,functions,firestore
    ```
 
