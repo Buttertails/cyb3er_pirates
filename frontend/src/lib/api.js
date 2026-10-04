@@ -297,7 +297,7 @@ export async function requestEstimate(intakeProcedureId, options = {}) {
 // engine catalog here). `options.urgent` lists intake ids that must stay this
 // year. Returns the backend's sequence result (schedule, savings, summary).
 export async function requestSequence(intakeProcedureIds, options = {}) {
-  if (!options.employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!options.employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const procedures = [];
   for (const id of intakeProcedureIds) {
     const engineId = PROCEDURE_TO_ENGINE[id];
@@ -318,17 +318,28 @@ export async function requestSequence(intakeProcedureIds, options = {}) {
   return result.sequence;
 }
 
-// --- Saved estimates and sequence plans (kept on the user's profile) --------
+// Compare in-network vs out-of-network cost for one procedure.
+export async function requestComparison(intakeProcedureId, options = {}) {
+  const engineId = PROCEDURE_TO_ENGINE[intakeProcedureId];
+  if (!engineId) throw new Error('unmapped-procedure');
+  if (!options.employeeId) throw new RejectedError('Select a fictional employee first.');
+  const result = await apiFetch('/api/me/compare', 'POST', {
+    employee_id: options.employeeId,
+    procedure_id: engineId,
+  });
+  return result.comparison;
+}
+
+// --- Saved estimates, sequence plans, and comparisons ------------------------
 
 function newRecordId() {
   return window.crypto?.randomUUID?.() || `saved-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-// Persist a snapshot of an estimate or sequence result. `kind` is 'estimate'
-// or 'sequence'; `result` is the computed object the chat already rendered.
+// Persist a snapshot of an estimate, sequence, or comparison result.
 // Returns the stored record (with id + saved_at).
 export async function saveSavedPlan({ employeeId, kind, result, label, id }) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  if (!employeeId) throw new RejectedError('We could not load your plan. Please sign in again.');
   const body = {
     employee_id: employeeId,
     id: id || newRecordId(),

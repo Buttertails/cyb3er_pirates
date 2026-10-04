@@ -4,6 +4,7 @@ import { COMPANIES } from '../../js/options.js';
 import {
   AnswerList,
   Card,
+  ComparisonCard,
   EstimateCard,
   SequenceCard,
   useDocumentTitle,
@@ -22,6 +23,12 @@ import {
   saveStep,
   startUpdate,
 } from '../lib/storage.js';
+
+const SAVED_KIND_LABEL = {
+  estimate: 'Estimate',
+  sequence: 'Care plan',
+  comparison: 'Network comparison',
+};
 
 function formatSavedDate(iso) {
   const time = Date.parse(iso);
@@ -123,15 +130,15 @@ export function ProfilePage() {
         <div className="saved-item" key={item.id}>
           <div className="saved-item-head">
             <p className="step">
-              {item.kind === 'sequence' ? 'Care plan' : 'Estimate'}
+              {SAVED_KIND_LABEL[item.kind] || 'Estimate'}
               {item.label ? ` · ${item.label}` : ''}
             </p>
             <button type="button" className="link-btn" onClick={() => removeSaved(item.id)}>Remove</button>
           </div>
           {item.saved_at && <p className="saved-item-date">Saved {formatSavedDate(item.saved_at)}</p>}
-          {item.kind === 'sequence'
-            ? <SequenceCard sequence={item.result} />
-            : <EstimateCard estimate={item.result} />}
+          {item.kind === 'sequence' && <SequenceCard sequence={item.result} />}
+          {item.kind === 'comparison' && <ComparisonCard comparison={item.result} />}
+          {item.kind === 'estimate' && <EstimateCard estimate={item.result} />}
         </div>
       ))}
 

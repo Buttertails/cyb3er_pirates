@@ -239,6 +239,28 @@ def test_selected_employee_estimate_rejects_malformed_date(client, monkeypatch):
     assert response.status_code == 422
 
 
+def test_network_comparison_uses_signed_in_usage_and_rejects_invalid_input(client, monkeypatch):
+    report = {"submission_id": "care-compare1", "employee_id": "demo-c-lee",
+              "procedure": "filling", "category": "general", "date": "2026-09-01",
+              "cost_cents": 20000, "you_paid_cents": 10000,
+              "insurance_paid_cents": 10000}
+    monkeypatch.setattr(store, "list_care_reports",
+                        lambda uid, eid: [report] if (uid, eid) == ("user-pat", "demo-c-lee") else [])
+    body = {"employee_id": "demo-c-lee", "procedure_id": "root-canal",
+            "as_of": "2026-10-03"}
+    assert client.post("/api/me/compare", json=body).status_code == 401
+    result = client.post("/api/me/compare", headers=bearer("pat-token"), json=body)
+    assert result.status_code == 200
+    comparison = result.get_json()["comparison"]
+    assert comparison["plan_id"] == "C2"
+    assert comparison["in_network"]["annual_max_used_before"] == 600
+    other = client.post("/api/me/compare", headers=bearer("sam-token"), json=body)
+    assert other.get_json()["comparison"]["in_network"]["annual_max_used_before"] == 500
+    invalid = client.post("/api/me/compare", headers=bearer("pat-token"),
+                          json={**body, "procedure_id": "unsupported"})
+    assert invalid.status_code == 422
+
+
 @pytest.mark.parametrize("body", [
     {"state": "XX", "zip": None},
     {"state": "TX", "zip": "123"},

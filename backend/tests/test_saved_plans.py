@@ -103,6 +103,18 @@ def test_save_sequence_kind(client):
     assert any(item["kind"] == "sequence" for item in items)
 
 
+def test_save_comparison_kind(client):
+    body = {
+        "employee_id": EMPLOYEE_ID, "id": "cmp-00000001",
+        "kind": "comparison",
+        "result": {"in_network": {"totals": {"employee_owes": 40}},
+                   "out_of_network": {"totals": {"employee_owes": 75}}},
+    }
+    assert client.post("/api/me/saved", headers=bearer(), json=body).status_code == 200
+    items = client.get(f"/api/me/saved?employee_id={EMPLOYEE_ID}", headers=bearer()).get_json()["saved"]
+    assert items[0]["kind"] == "comparison"
+
+
 def test_delete_removes_item(client):
     client.post("/api/me/saved", headers=bearer(), json=_estimate_body("est-00000009"))
     deleted = client.delete(f"/api/me/saved/est-00000009?employee_id={EMPLOYEE_ID}", headers=bearer())

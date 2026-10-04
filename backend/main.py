@@ -435,6 +435,28 @@ def post_my_sequence():
                     "benefits": employee.benefits(treatment_date)})
 
 
+@api_bp.post("/me/compare")
+@require_user
+def post_my_compare():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or set(body) - {"employee_id", "procedure_id", "as_of"}:
+        return jsonify({"error": "Provide a supported procedure."}), 422
+    try:
+        employee = _with_reports(g.uid, _care_employee(body.get("employee_id")))
+        procedure = body.get("procedure_id")
+        if not isinstance(procedure, str) or procedure not in catalog.PROCEDURE_CATALOG:
+            raise ValueError("Choose a supported procedure.")
+        treatment_date = iso_date(body["as_of"]) if body.get("as_of") is not None else date.today()
+        comparison = engine.compare_networks(
+            employee.plan, employee.usage, [procedure], as_of=treatment_date,
+            enrollment_date=employee.enrollment_date,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    return jsonify({"comparison": {**comparison, **employee.identity(), "demo_data": True},
+                    "benefits": employee.benefits(treatment_date)})
+
+
 def _valid_record_id(value) -> bool:
     return (isinstance(value, str) and 8 <= len(value) <= 100
             and all(c.isalnum() or c in "-_" for c in value))
@@ -443,7 +465,7 @@ def _valid_record_id(value) -> bool:
 @api_bp.get("/me/saved")
 @require_user
 def get_my_saved():
-    """List the estimates and sequence plans the user saved for an employee."""
+    """List the estimate, sequence, and comparison snapshots saved for an employee."""
     try:
         employee = _care_employee(request.args.get("employee_id"))
     except ValueError as exc:
@@ -454,9 +476,9 @@ def get_my_saved():
 @api_bp.post("/me/saved")
 @require_user
 def post_my_saved():
-    """Save a snapshot of an estimate or sequence plan to the user's profile.
+    """Save a snapshot of an estimate, sequence, or comparison to the user's profile.
 
-    Body: {employee_id, id, kind: "estimate"|"sequence", result, label?}.
+    Body: {employee_id, id, kind: "estimate"|"sequence"|"comparison", result, label?}.
     ``result`` is the computed snapshot the frontend already has, stored as-is
     so the profile shows exactly what the user saw.
     """
@@ -467,8 +489,8 @@ def post_my_saved():
         employee = _care_employee(body.get("employee_id"))
         if not _valid_record_id(body.get("id")):
             raise ValueError("Provide a valid saved-item id.")
-        if body.get("kind") not in ("estimate", "sequence"):
-            raise ValueError("A saved item must be an estimate or a sequence plan.")
+        if body.get("kind") not in ("estimate", "sequence", "comparison"):
+            raise ValueError("A saved item must be an estimate, sequence plan, or comparison.")
         if not isinstance(body.get("result"), dict):
             raise ValueError("Provide the computed result to save.")
         label = body.get("label")
