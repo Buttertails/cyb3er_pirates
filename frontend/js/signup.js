@@ -66,15 +66,15 @@
   }
 
   // Save a profile answer (name or company), then go on to the next question.
-  // After the last one the sign-up is done and the intake picks up at the
-  // category step, with the location and office already chosen.
+  // After the last one the sign-up is done and nextPage hands over to the
+  // intake's category step, with the location and office already chosen.
   function saveAnswer(value) {
     saveStep(key, value);
-    const next = nextPage(key);
+    const last = isLastStep(key);
     submitThenGo(button, async function () {
       await saveProfileDetails({ [key]: value });
-      if (!next) saveStep('onboarding', false);
-    }, next || 'category.html');
+      if (last) await finishFlow();
+    }, nextPage(key));
   }
 
   // TEMPORARY: with the demo sign-in on (DEMO_LOGIN in shared.js) no account is

@@ -132,6 +132,12 @@ const CATEGORIES = [
   },
 ];
 
+// Update info: the categories whose entries are procedures someone has had, for
+// recording recent dental work. Emergency lists symptoms, not procedures.
+const HISTORY_CATEGORIES = CATEGORIES.filter(function (c) {
+  return c.id === 'checkup' || c.id === 'general';
+});
+
 // Step 5: when the user needs it done. Emergency work skips this and is recorded as ASAP.
 const TIMEFRAMES = [
   { id: 'asap', label: 'As soon as possible', description: "I'm in pain or it's urgent" },

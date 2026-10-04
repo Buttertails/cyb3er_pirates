@@ -1,7 +1,8 @@
 // Step 1: collect the user's location, save it, then move on to choose an office.
 // Asked once, as part of sign-up (see ONBOARDING in shared.js): sign-in skips this
-// page when the backend already has a location. The "Change" link on the review
-// page still comes back here to update it.
+// page when the backend already has a location. The update-info questions come
+// here when the user has moved (UPDATE), and the "Change" link on the review page
+// still comes back here to update it.
 (function () {
   // Nothing before this step is required except being signed in.
   if (!requireSteps([])) return;

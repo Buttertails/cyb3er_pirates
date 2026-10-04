@@ -27,10 +27,11 @@ const API_CONFIG = {
   endpoint: '/api/chat',
   profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
-  // TEMPORARY: the backend has no route yet for the new-user answers it can't
-  // store (name, company, office; PATCH /api/me in docs/frontend_json.md). While
-  // this is false they're kept per email in this browser. Set it to true once
-  // the route exists.
+  // TEMPORARY: the backend doesn't have the proposed profile routes yet (see
+  // docs/frontend_json.md): PATCH /api/me for name, company and office,
+  // GET and POST /api/me/procedures, and POST /api/me/sign-in. While this is
+  // false that data is kept per email in this browser. Set it to true once the
+  // routes exist.
   profileDetailsLive: false,
 };
 
@@ -131,21 +132,67 @@ async function saveProfileLocation(state, zip) {
   }
 }
 
-// Save some of the new-user answers to the profile: any of { name, company, office }.
-function saveProfileDetails(details) {
+// Call one of the proposed profile routes once profileDetailsLive is on. Until
+// then, or when the app API can't be reached, `fallback` uses this browser's
+// storage instead and its result is returned.
+async function proposedRoute(method, path, body, fallback) {
   if (profileDetailsSent()) {
-    return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details).catch(function (error) {
+    try {
+      return await apiFetch(API_CONFIG.profileEndpoint + path, method, body);
+    } catch (error) {
       if (!(error instanceof AppServiceError)) throw error;
-      console.warn('Profile API unavailable; saving profile details in this browser.', error);
-      saveLocalDetails(details);
-    });
+      console.warn('Profile API unavailable; using this browser instead.', error);
+    }
   }
-  saveLocalDetails(details);
-  return Promise.resolve();
+  return fallback();
 }
 
-// TEMPORARY stand-in for PATCH /api/me until profileDetailsLive is on: each
-// email's name, company and office in this browser's localStorage.
+// Save some of the new-user answers to the profile: any of { name, company, office }.
+function saveProfileDetails(details) {
+  return proposedRoute('PATCH', '', details, function () { saveLocalDetails(details); });
+}
+
+// The procedures the user has recorded: [{ id, procedure, category, date,
+// cost, you_paid, insurance_paid, recorded_at }].
+async function fetchProcedures() {
+  const result = await proposedRoute('GET', '/procedures', undefined, function () {
+    return { procedures: localDetails(readStep('user')).procedures || [] };
+  });
+  return result.procedures || [];
+}
+
+// Record recent procedures: [{ procedure, category, date, cost, you_paid,
+// insurance_paid }]. An empty list records that there's nothing new.
+function saveProcedures(entries) {
+  return proposedRoute('POST', '/procedures', { procedures: entries }, function () {
+    const now = new Date().toISOString();
+    const recorded = entries.map(function (entry, i) {
+      return Object.assign({ id: Date.now() + '-' + i, recorded_at: now }, entry);
+    });
+    const earlier = localDetails(readStep('user')).procedures || [];
+    saveLocalDetails({ procedures: earlier.concat(recorded) });
+  });
+}
+
+// Record that the user signed in now. The next sign-in compares against it for
+// the 90-day update check (profile.last_sign_in_at).
+function recordSignIn() {
+  return proposedRoute('POST', '/sign-in', {}, function () {
+    saveLocalDetails({ last_sign_in_at: new Date().toISOString() });
+  });
+}
+
+// Wrap up the sign-up or update questions once the last answer is saved. An
+// update records the sign-in only now, so one that's abandoned is asked again.
+async function finishFlow() {
+  if (inUpdate()) await recordSignIn();
+  ['onboarding', 'updating', 'update_reason', 'update_return', 'previous_sign_in',
+    'still_here', 'procedures_saved', 'procedures_draft'].forEach(function (key) { saveStep(key, null); });
+}
+
+// TEMPORARY stand-in for the proposed profile routes until profileDetailsLive
+// is on: each email's name, company, office, procedures and last sign-in in
+// this browser's localStorage.
 const LOCAL_DETAILS_KEY = 'profile_details';
 
 function readAllLocalDetails() {

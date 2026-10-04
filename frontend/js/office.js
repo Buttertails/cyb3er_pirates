@@ -1,13 +1,14 @@
 // Step 2: pick a dentist office from the list the backend returned for step 1.
-// Sign-up asks this too (see ONBOARDING in shared.js), with the same suggestions:
-// there the choice is the office the user goes to, saved to their profile.
+// Sign-up and the update-info questions ask this too (ONBOARDING and UPDATE in
+// shared.js), with the same suggestions: there the choice is the office the user
+// goes to, saved to their profile. It's the last update question.
 (function () {
   const saved = requireSteps(['location']);
   if (!saved) return;
 
-  const onboarding = inOnboarding();
+  const savesToProfile = inOnboarding() || inUpdate();
   renderStep('office');
-  if (onboarding) document.getElementById('heading').textContent = 'Which dental office do you go to?';
+  if (savesToProfile) document.getElementById('heading').textContent = 'Which dental office do you go to?';
   renderSummary('location-text', formatLocation(saved.location));
 
   const form = document.getElementById('office-form');
@@ -29,9 +30,11 @@
   setupChoiceForm(form, document.getElementById('continue'), 'office', saved.office,
     function (id, button) {
       saveStep('office', id);
+      const last = isLastStep('office');
       submitThenGo(button, async function () {
-        if (onboarding) await saveProfileDetails({ office: id });
+        if (savesToProfile) await saveProfileDetails({ office: id });
         await sendStep('office', { office: id });
+        if (last) await finishFlow();
       }, nextPage('office'));
     });
 })();

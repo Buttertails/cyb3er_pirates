@@ -23,6 +23,19 @@ const ONBOARDING = [
   { key: 'company', page: 'signup.html?q=company' },
 ];
 
+// The update-info questions, asked when the user's last sign-in was more than
+// STALE_SIGN_IN_DAYS ago, or whenever they pick "Update info" in the header.
+// Location and office reuse the intake pages and are only asked when the user
+// says they've moved (see updateSteps). Finishing returns to where it started.
+const UPDATE = [
+  { key: 'procedures', page: 'procedures.html' },
+  { key: 'location-check', page: 'location-check.html' },
+  { key: 'location', page: 'location.html' },
+  { key: 'office', page: 'office.html' },
+];
+
+const STALE_SIGN_IN_DAYS = 90;
+
 // Set to true only for a local UI demo that should bypass Firebase Auth.
 const DEMO_LOGIN = false;
 
@@ -77,6 +90,36 @@ function inOnboarding() {
   return readStep('onboarding') === true;
 }
 
+// True while the user is answering the UPDATE questions.
+function inUpdate() {
+  return readStep('updating') === true;
+}
+
+// The UPDATE steps that apply: location and office only once the user says
+// they're no longer where we have them.
+function updateSteps() {
+  if (readStep('still_here') === 'no') return UPDATE;
+  return UPDATE.filter(function (step) { return step.key !== 'location' && step.key !== 'office'; });
+}
+
+// Begin the update questions and return the page to go to. `reason` is 'stale'
+// (the 90-day sign-in check) or 'manual'; `returnTo` is where finishing lands.
+function startUpdate(reason, returnTo) {
+  ['still_here', 'procedures_saved', 'procedures_draft'].forEach(function (key) { saveStep(key, null); });
+  saveStep('updating', true);
+  saveStep('update_reason', reason);
+  saveStep('update_return', returnTo);
+  return UPDATE[0].page;
+}
+
+// True when the recorded sign-in (an ISO time) is more than STALE_SIGN_IN_DAYS
+// ago. No record counts as recent: the first sign-in just records one.
+function signInIsStale(lastSignInAt) {
+  const time = Date.parse(lastSignInAt || '');
+  if (Number.isNaN(time)) return false;
+  return Date.now() - time > STALE_SIGN_IN_DAYS * 24 * 60 * 60 * 1000;
+}
+
 function answeredSteps() {
   const location = readStep('location');
   const user = readStep('user');
@@ -87,6 +130,8 @@ function answeredSteps() {
     password: user,
     name: readStep('name'),
     company: readStep('company'),
+    procedures: readStep('procedures_saved'),
+    'location-check': readStep('still_here'),
     location: location && location.state ? location : null,
     office: readStep('office'),
     category: readStep('category'),
@@ -171,18 +216,29 @@ function totalSteps() {
   return category && category.skipTiming ? 4 : 5;
 }
 
-// The steps of the flow the user is on: the new-user questions while
-// onboarding, otherwise the intake steps (signing in isn't counted as one).
+// The steps of the flow the user is on: the new-user or update questions while
+// one is under way, otherwise the intake steps (signing in isn't counted as one).
 function activeSteps() {
   if (inOnboarding()) return ONBOARDING;
+  if (inUpdate()) return updateSteps();
   return FLOW.filter(function (step) { return step.key !== 'user'; });
 }
 
-// The page after step `key` in the flow the user is on.
+function isLastStep(key) {
+  const steps = activeSteps();
+  return steps.length > 0 && steps[steps.length - 1].key === key;
+}
+
+// The page after step `key` in the flow the user is on. After the last sign-up
+// question the intake picks up at the category step; after the last update
+// question the user goes back to where the update started.
 function nextPage(key) {
   const steps = activeSteps();
   const next = steps[steps.findIndex(function (step) { return step.key === key; }) + 1];
-  return next ? next.page : null;
+  if (next) return next.page;
+  if (inOnboarding()) return 'category.html';
+  if (inUpdate()) return readStep('update_return') || 'office.html';
+  return null;
 }
 
 // Fill in the "Step 2 of 4" label and the progress bar at the top of the card,
@@ -190,7 +246,7 @@ function nextPage(key) {
 function renderStep(key) {
   const steps = activeSteps();
   const current = steps.findIndex(function (step) { return step.key === key; }) + 1;
-  const total = inOnboarding() ? steps.length : totalSteps();
+  const total = inOnboarding() || inUpdate() ? steps.length : totalSteps();
   const label = document.getElementById('step-label');
   const fill = document.getElementById('progress');
   if (label) label.textContent = 'Step ' + current + ' of ' + total;
@@ -270,6 +326,14 @@ function renderRadioCards(container, name, items) {
   });
 }
 
+// The two radio cards of a yes/no question, for renderRadioCards.
+function yesNoOptions(yesLabel, yesDescription, noLabel, noDescription) {
+  return [
+    { id: 'yes', label: yesLabel, description: yesDescription },
+    { id: 'no', label: noLabel, description: noDescription },
+  ];
+}
+
 // Wire a radio-card form: preselect any saved answer, keep the button in step,
 // and hand the chosen id and the button to onSubmit.
 function setupChoiceForm(form, button, name, savedId, onSubmit) {
@@ -311,7 +375,24 @@ function renderAccount() {
     window.location.href = link.href;
   });
 
-  wrapper.append(name, ' \u00b7 ', link);
+  wrapper.append(name, ' \u00b7 ');
+
+  // Update recent procedures and location at any time, then come back here.
+  // Not offered in the middle of sign-up or of an update.
+  if (!inOnboarding() && !inUpdate()) {
+    const update = document.createElement('a');
+    update.className = 'link';
+    update.href = UPDATE[0].page;
+    update.textContent = 'Update info';
+    update.addEventListener('click', function (event) {
+      event.preventDefault();
+      const here = window.location.pathname.split('/').pop() || 'office.html';
+      window.location.href = startUpdate('manual', here + window.location.search);
+    });
+    wrapper.append(update, ' \u00b7 ');
+  }
+
+  wrapper.append(link);
   header.appendChild(wrapper);
 }
 
