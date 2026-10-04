@@ -75,7 +75,6 @@ body {
 
 .light-purple-bg, .orange-bg, .purple-bg {
   position: fixed;
-  top: -13%;
   left: 0;
   width: 100%;
   z-index: 0;
@@ -105,7 +104,6 @@ body {
   z-index: 1;
 }
 
-/* Text wordmark standing in for the real logo lockup. */
 .brand-mark {
   width: 24px;
   height: 24px;
@@ -113,6 +111,12 @@ body {
   border-radius: 50% 50% 50% 2px;
   box-shadow: 3px 3px 0 var(--color-button-hover);
 }
+
+.brand-logo {
+  width: 30px;
+  height: 30px;
+}
+
 .brand-name {
   font-family: var(--font-head);
   font-size: 1.25rem;
