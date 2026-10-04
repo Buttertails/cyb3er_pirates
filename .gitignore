@@ -2,3 +2,6 @@ firebaseConfig.json
 node_modules
 # Firebase emulator logs
 *-debug.log
+
+#agents
+.claude

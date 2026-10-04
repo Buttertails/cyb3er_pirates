@@ -47,35 +47,56 @@ That runs the pure engine and location tests. With the packages from
 `tests/test_user_routes.py` run too. Otherwise they're skipped. They fake token
 checks and Firestore, so nothing is contacted.
 
-## Run the API locally (Firebase emulators)
+## Run the API locally (standalone server)
+
+The backend is a plain Flask server (not a Cloud Function). It mounts the API
+under `/api` and also serves the static `frontend/` at `/`, so the whole demo
+runs from one origin.
+
+```powershell
+# from backend/
+python -m venv venv
+venv/Scripts/Activate.ps1
+python -m pip install -r requirements.txt
+
+python main.py            # http://127.0.0.1:8080  (set PORT/HOST to change)
+```
+
+For a production-style run (Windows-friendly WSGI server):
+
+```powershell
+waitress-serve --listen=127.0.0.1:8080 main:app
+```
+
+### Firestore + Auth (optional for the engine routes)
+
+The engine routes (`/api/estimate`, `/api/mock-plans`, `/api/catalog`,
+`/api/health`) need no Firebase — the server boots even without credentials.
+The signed-in routes (`/api/me`) and the Firestore-backed CRUD do. For those,
+start the emulators and point the Admin SDK at them:
 
 ```powershell
 # from the repo root (where firebase.json lives)
-python -m venv backend/venv
-backend/venv/Scripts/Activate.ps1
-python -m pip install -r backend/requirements.txt
-firebase emulators:start
+firebase emulators:start --only auth,firestore
+
+# then, in the shell that runs the server:
+$env:GOOGLE_CLOUD_PROJECT = "cyb3er-pirates-dental"
+$env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
+python main.py
 ```
 
-This also starts the Auth emulator, which the signed-in routes (`/api/me`)
-check tokens against. No credentials are needed. The Functions emulator points
-the Admin SDK at the Auth emulator. Under the Firestore emulator, `store.db()`
-connects without Google credentials, which the Admin SDK's `firestore.client()`
-would otherwise require.
-
-The routes are registered without the `/api` prefix. Through Hosting
-(`http://127.0.0.1:5002/api/...`) the function receives the full path, and
-`api()` strips the prefix. Calling the function directly
-(`http://localhost:5001/<project>/us-central1/api/...`) works without it.
+Under the Firestore emulator, `store.db()` connects without Google credentials
+(which the Admin SDK's `firestore.client()` would otherwise require).
 
 Then seed sample data and try the engine:
 
 ```powershell
 # seed Acme employer + plan + Jane + usage history
-curl -X POST http://localhost:5001/<project>/us-central1/api/seed
+curl -X POST http://127.0.0.1:8080/api/seed
 
 # estimate cost for a root canal + crown using the seeded employee
-curl -X POST http://localhost:5001/<project>/us-central1/api/estimate `
+curl -X POST http://127.0.0.1:8080/api/estimate `
   -H "Content-Type: application/json" `
   -d '{"employer_id":"acme-co","employee_id":"emp-jane","procedures":["root-canal","crown-bridge"]}'
 ```
