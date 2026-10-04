@@ -4,8 +4,10 @@ import { signOut } from './lib/auth.js';
 import { SignedOutError, submitErrorMessage } from './lib/api.js';
 import {
   firstMissing,
+  formatLocation,
   inOnboarding,
   inUpdate,
+  officeLabel,
   readStep,
   requiredFlow,
   ROUTES,
@@ -146,6 +148,26 @@ export function SummaryRow({ label, value, to, onLink, linkLabel = 'Change' }) {
   );
 }
 
+export function IntakeSummary({ saved, rows }) {
+  const values = {
+    location: formatLocation(saved.location),
+    office: saved.office ? officeLabel(saved.office) : '',
+    ...rows.reduce((result, row) => ({ ...result, [row.key]: row.value }), {}),
+  };
+  return (
+    <div className="summary-group">
+      {rows.map((row) => (
+        <SummaryRow
+          key={row.key}
+          label={row.label}
+          value={values[row.key]}
+          to={row.to}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function AnswerList({ rows }) {
   return (
     <dl className="answers">
@@ -154,6 +176,7 @@ export function AnswerList({ rows }) {
       ))}
     </dl>
   );
+
 }
 
 function money(value) {
@@ -408,32 +431,34 @@ export function useSubmitTask() {
 // Components for background wave animations
 export function PurpleBackground() {
   const bgRef = useRef(null);
-  const location = useLocation();
+  const location = useLocation(); // Tracks the current URL path
 
   useEffect(() => {
+    // Animate the background when the user is in the chat
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (location.pathname === ROUTES.chat) {
       animate(bgRef.current, {
-        translateY: -24,
+        top: '30%',
         duration: 1200,
         easing: 'easeOutCubic'
       });
-    } else {
+    } 
+    // Reset position when leaving chat
+    else {
       animate(bgRef.current, {
-        translateX: 0,
-        translateY: 0,
+        top: '-13%',
         duration: 1000,
         easing: 'easeOutCubic'
       });
     }
-  }, [location.pathname]);
-  return <img ref={bgRef} className="purple-bg" src={purpleWave} alt="" aria-hidden="true" />;
+  }, [location.pathname]); 
+  return <img ref={bgRef} className="purple-bg" src="../res/purple-wave.svg" />;
 }
 
 export function OrangeBackground() {
-  return <img className="orange-bg" src={orangeWave} alt="" aria-hidden="true" />;
+  return <img className="orange-bg" src="../res/orange-wave.svg" />;
 }
 
 export function LightPurpleBackground() {
-  return <img className="light-purple-bg" src={lightPurpleWave} alt="" aria-hidden="true" />;
+  return <img className="light-purple-bg" src="../res/light-purple-wave.svg" />;
 }
