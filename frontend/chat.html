@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dental benefits chat | Lincoln Financial</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+  <main class="card">
+    <p class="step">Dental benefits assistant</p>
+    <h1>Explore your dental benefits</h1>
+    <p class="lead">Ask about a planned procedure under a fictional employee's current plan.</p>
+    <p class="note">Demo employees and prices are fictional. Choose the employee whose plan you want to explore. Your signed-in account is separate from this demo choice.</p>
+    <p id="sign-in-note" class="note" hidden>Sign in to use live chat. <a class="link" href="index.html">Go to sign in</a></p>
+    <div class="field">
+      <label for="demo-employee">Fictional employee</label>
+      <select id="demo-employee">
+        <option value="demo-a-pat">Pat — Demo Company A</option>
+        <option value="demo-a-sam">Sam — Demo Company A</option>
+        <option value="demo-c-lee">Lee — Demo Company C</option>
+      </select>
+    </div>
+    <button type="button" class="btn" id="start-chat">Start conversation</button>
+    <p id="chat-context" class="estimate-flag" aria-live="polite"></p>
+    <ol id="chat-messages" class="chat-messages" aria-live="polite" aria-label="Conversation"></ol>
+    <div id="chat-choices" class="chat-choices" aria-label="Suggested replies"></div>
+    <section id="chat-estimate" class="note" hidden aria-label="Current estimate"></section>
+    <form id="chat-form" hidden>
+      <label for="chat-text">Your message</label>
+      <input id="chat-text" name="message" type="text" maxlength="1000" autocomplete="off">
+      <button type="submit" class="btn" id="chat-send">Send</button>
+    </form>
+    <p id="chat-status" class="error" role="alert" hidden></p>
+    <p class="actions"><a class="link" href="profile.html">Back to profile</a></p>
+  </main>
+  <script type="module" src="js/chat.js"></script>
+</body>
+</html>

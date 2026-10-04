@@ -321,6 +321,16 @@ legend {
   margin-top: var(--space);
 }
 
+.chat-messages {
+  max-height: 24rem;
+  overflow-y: auto;
+  margin: 1rem 0;
+  padding-left: 1.4rem;
+}
+.chat-messages li { margin-bottom: 0.65rem; }
+.chat-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.chat-choices .link-btn { width: auto; }
+
 /* Marks a scaffolding page that is not meant to ship. */
 .temp-banner {
   margin: 0 0 calc(var(--space) * 1.25);
