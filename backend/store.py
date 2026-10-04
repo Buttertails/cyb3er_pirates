@@ -174,23 +174,63 @@ def saved_plans_collection(uid: str, employee_id: str):
 def save_plan_record(uid: str, employee_id: str, record: dict[str, Any]) -> dict[str, Any]:
     """Persist one saved estimate/sequence snapshot and return it.
 
-    ``record`` must carry an ``id`` and ``kind`` ("estimate" or "sequence"); a
-    server timestamp is stamped on write. Writing the same id again overwrites
-    (idempotent, so a retried save doesn't duplicate).
+    ``record`` must carry an ``id`` and ``kind`` ("estimate"/"sequence"/
+    "comparison"); a server timestamp is stamped on write. ``uid`` and
+    ``employee_id`` are stamped too, so the whole user's saved items can be
+    listed with one collection-group query regardless of which employee bucket
+    they live in. Writing the same id overwrites (idempotent).
     """
-    saved = {**record, "saved_at": datetime.now(timezone.utc).isoformat()}
+    saved = {**record, "uid": uid, "employee_id": employee_id,
+             "saved_at": datetime.now(timezone.utc).isoformat()}
     saved_plans_collection(uid, employee_id).document(record["id"]).set(saved)
     return saved
 
 
 def list_plan_records(uid: str, employee_id: str) -> list[dict[str, Any]]:
-    """All saved snapshots for this employee, newest first."""
+    """All saved snapshots for one employee bucket, newest first."""
     records = [snap.to_dict() for snap in saved_plans_collection(uid, employee_id).stream()]
     return sorted(records, key=lambda r: r.get("saved_at", ""), reverse=True)
 
 
-def delete_plan_record(uid: str, employee_id: str, record_id: str) -> None:
-    saved_plans_collection(uid, employee_id).document(record_id).delete()
+def list_all_plan_records(uid: str) -> list[dict[str, Any]]:
+    """Every saved snapshot for the user, across all demo-employee buckets.
+
+    Uses a collection-group query keyed by the ``uid`` stamped on each record,
+    so a plan saved under one employee still shows even if the profile now
+    resolves to a different employee. De-duplicates by record id (newest wins).
+    """
+    try:
+        query = db().collection_group("saved_plans").where("uid", "==", uid)
+        rows = [snap.to_dict() for snap in query.stream()]
+    except Exception:
+        # Fall back to scanning each demo-employee bucket if the index/field
+        # isn't available (e.g. older records without a uid field).
+        rows = []
+        for emp in user_ref(uid).collection("demo_employees").stream():
+            rows.extend(snap.to_dict()
+                        for snap in emp.reference.collection("saved_plans").stream())
+    by_id: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        existing = by_id.get(row.get("id"))
+        if existing is None or row.get("saved_at", "") > existing.get("saved_at", ""):
+            by_id[row.get("id")] = row
+    return sorted(by_id.values(), key=lambda r: r.get("saved_at", ""), reverse=True)
+
+
+def delete_plan_record(uid: str, employee_id: Optional[str], record_id: str) -> None:
+    """Delete a saved record. If ``employee_id`` is known, delete directly;
+    otherwise find which bucket holds the id and delete it there."""
+    if employee_id:
+        saved_plans_collection(uid, employee_id).document(record_id).delete()
+        return
+    try:
+        query = (db().collection_group("saved_plans")
+                 .where("uid", "==", uid).where("id", "==", record_id))
+        for snap in query.stream():
+            snap.reference.delete()
+    except Exception:
+        for emp in user_ref(uid).collection("demo_employees").stream():
+            emp.reference.collection("saved_plans").document(record_id).delete()
 
 
 class CareConflict(Exception):

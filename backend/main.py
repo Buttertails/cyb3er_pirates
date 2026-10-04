@@ -490,12 +490,20 @@ def _valid_record_id(value) -> bool:
 @api_bp.get("/me/saved")
 @require_user
 def get_my_saved():
-    """List the estimate, sequence, and comparison snapshots saved for an employee."""
-    try:
-        employee = _care_employee(request.args.get("employee_id"))
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 422
-    return jsonify({"saved": store.list_plan_records(g.uid, employee.employee_id)})
+    """List all of the user's saved estimate/sequence/comparison snapshots.
+
+    Lists across every demo-employee bucket so an item saved under one employee
+    still appears even if the profile now resolves to a different employee. An
+    optional ``employee_id`` query param narrows to a single bucket.
+    """
+    employee_id = request.args.get("employee_id")
+    if employee_id:
+        try:
+            employee = _care_employee(employee_id)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 422
+        return jsonify({"saved": store.list_plan_records(g.uid, employee.employee_id)})
+    return jsonify({"saved": store.list_all_plan_records(g.uid)})
 
 
 @api_bp.post("/me/saved")
@@ -536,14 +544,17 @@ def post_my_saved():
 @api_bp.delete("/me/saved/<record_id>")
 @require_user
 def delete_my_saved(record_id: str):
+    if not _valid_record_id(record_id):
+        return jsonify({"error": "Provide a valid saved-item id."}), 422
+    # employee_id is optional: when absent, the store finds the right bucket.
     employee_id = request.args.get("employee_id")
-    try:
-        employee = _care_employee(employee_id)
-        if not _valid_record_id(record_id):
-            raise ValueError("Provide a valid saved-item id.")
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 422
-    store.delete_plan_record(g.uid, employee.employee_id, record_id)
+    resolved = None
+    if employee_id:
+        try:
+            resolved = _care_employee(employee_id).employee_id
+        except ValueError:
+            resolved = None  # unknown employee: fall back to a cross-bucket delete
+    store.delete_plan_record(g.uid, resolved, record_id)
     return jsonify({"deleted": record_id})
 
 
