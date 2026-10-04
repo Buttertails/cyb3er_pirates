@@ -1,57 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in | Lincoln Financial</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <header class="brand">
-    <span class="brand-mark" aria-hidden="true"></span>
-    <p class="brand-name">Lincoln Financial</p>
-  </header>
-
-  <main class="card">
-    <!-- Optional local UI demo: see DEMO_LOGIN in js/shared.js. -->
-    <p class="temp-banner" id="demo-login" hidden>
-      <strong>Demo sign-in.</strong> Any email and password works. Nothing is checked
-      or sent, and your answers are remembered in this browser only.
-    </p>
-
-    <p class="note" id="signed-out" role="status" hidden>You were signed out. Please sign in again.</p>
-
-    <h1>Sign in</h1>
-    <p class="lead">Sign in to find a dental office and get started.</p>
-
-    <form id="auth-form" novalidate>
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email"
-               autocapitalize="none" spellcheck="false" aria-describedby="email-error">
-        <p class="error" id="email-error" role="alert" hidden></p>
-      </div>
-
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password"
-               aria-describedby="password-error">
-        <p class="error" id="password-error" role="alert" hidden></p>
-      </div>
-
-      <button type="submit" class="btn" id="auth-submit">Sign in</button>
-    </form>
-
-    <!-- New users answer one question per screen on signup.html. -->
-    <p class="form-switch">
-      New here? <a class="link" href="signup.html">Create an account</a>
-    </p>
-  </main>
-
-  <script src="js/options.js"></script>
-  <script src="js/shared.js"></script>
-  <script src="js/api.js"></script>
-  <script type="module" src="js/firebase.js"></script>
-  <script src="js/login.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#650030" />
+    <title>Dental benefits assistant | Lincoln Financial</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

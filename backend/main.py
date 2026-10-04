@@ -2,9 +2,9 @@
 
 Runs as a normal web server (not a Cloud Function). All API routes live under
 the ``/api`` prefix via a Blueprint, so the frontend calls e.g.
-``/api/estimate`` directly. The server can also serve the static ``frontend/``
-so the whole demo runs from one origin (no CORS needed); CORS is enabled anyway
-so a separately served frontend works too.
+``/api/estimate`` directly. The server can also serve the built React app from
+``frontend/dist`` so the whole demo runs from one origin (no CORS needed); CORS
+is enabled anyway so a separately served frontend works too.
 
 Run (dev):
     python main.py                       # http://127.0.0.1:8080
@@ -61,13 +61,14 @@ first two need no Firestore, which is handy for the frontend demo and tests.
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 import firebase_admin
-from firebase_admin import initialize_app
+from firebase_admin import credentials, initialize_app
 from flask import Blueprint, Flask, g, jsonify, request, send_from_directory
 
 try:
@@ -85,26 +86,83 @@ from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord
 import store
 
 
-def _init_firebase() -> None:
-    """Initialize the Admin SDK once, tolerant of local runs without creds.
+logger = logging.getLogger("dental.server")
 
-    ``initialize_app()`` normally discovers Application Default Credentials.
-    Under the emulators that isn't needed, but the call can still fail if no
-    creds are present; swallow that so the server boots for routes that don't
-    touch Firestore/Auth (health, catalog, mock-plans, estimate by plan_id).
+# Repo root is the parent of backend/.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _find_service_account_key() -> Optional[Path]:
+    """Locate a Firebase service-account key so the server works without the
+    operator having to export GOOGLE_APPLICATION_CREDENTIALS.
+
+    Search order:
+      1. GOOGLE_APPLICATION_CREDENTIALS (if set and the file exists)
+      2. FIREBASE_SERVICE_ACCOUNT (same idea, explicit)
+      3. a ``*firebase-adminsdk*.json`` file in the repo root or backend/
+    """
+    for env_var in ("GOOGLE_APPLICATION_CREDENTIALS", "FIREBASE_SERVICE_ACCOUNT"):
+        value = os.environ.get(env_var)
+        if value and Path(value).is_file():
+            return Path(value)
+
+    for directory in (_REPO_ROOT, _REPO_ROOT / "backend"):
+        matches = sorted(directory.glob("*firebase-adminsdk*.json"))
+        if matches:
+            return matches[0]
+    return None
+
+
+def _init_firebase() -> None:
+    """Initialize the Admin SDK once, auto-loading a service-account key.
+
+    If a key is found it is used explicitly (so Firestore/Auth work whether or
+    not GOOGLE_APPLICATION_CREDENTIALS was exported). If none is found the
+    server still boots -- routes that don't touch Firestore/Auth keep working --
+    but a clear warning is logged, because /api/me and token verification will
+    return 401 until a key is provided.
     """
     if firebase_admin._apps:  # already initialized
         return
+
+    # When pointed at the emulators, no service-account key is needed.
+    if os.environ.get("FIRESTORE_EMULATOR_HOST") or os.environ.get("FIREBASE_AUTH_EMULATOR_HOST"):
+        try:
+            initialize_app(options={"projectId": os.environ.get("GOOGLE_CLOUD_PROJECT", "demo-project")})
+            logger.info("Firebase initialized for the local emulators.")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Emulator Firebase init failed (%s); continuing.", type(exc).__name__)
+        return
+
+    key_path = _find_service_account_key()
+    if key_path is not None:
+        try:
+            initialize_app(credentials.Certificate(str(key_path)))
+            logger.info("Firebase initialized with service-account key: %s", key_path.name)
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Found a service-account key (%s) but could not initialize Firebase (%s). "
+                "Auth and Firestore routes will fail.", key_path.name, type(exc).__name__)
+            return
+
+    # Last resort: Application Default Credentials (e.g. a deployed environment).
     try:
         initialize_app()
-    except Exception:  # noqa: BLE001 - best effort; Firestore/Auth routes will surface errors
-        pass
+        logger.info("Firebase initialized with Application Default Credentials.")
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "No Firebase service-account key found and no default credentials. "
+            "The server will run, but /api/me and auth-protected routes will "
+            "return 401 until a key is placed in the repo root (named "
+            "*firebase-adminsdk*.json) or GOOGLE_APPLICATION_CREDENTIALS is set.")
 
 
+logging.basicConfig(level=logging.INFO)
 _init_firebase()
 
-# Where the static frontend lives (repo_root/frontend), served at "/".
-_FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
+# Vite's production output, served at "/" after `npm --prefix frontend run build`.
+_FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
 app = Flask(__name__)
 app.register_blueprint(chat, url_prefix="/api")
@@ -527,7 +585,7 @@ def _index():
 
 @app.get("/<path:filename>")
 def _serve_frontend(filename: str):
-    """Serve the static frontend so the whole demo runs from one origin.
+    """Serve a built asset or the React shell for a client-side route.
 
     API paths are never served from here: they live under the /api prefix and
     are matched first, and the error handlers below keep any unmatched /api/*
@@ -536,7 +594,12 @@ def _serve_frontend(filename: str):
     target = (_FRONTEND_DIR / filename)
     if _FRONTEND_DIR.exists() and target.is_file():
         return send_from_directory(_FRONTEND_DIR, filename)
-    return jsonify({"error": "not found"}), 404
+    if _wants_api_json():
+        return jsonify({"error": f"No such API route: {request.path}"}), 404
+    index = _FRONTEND_DIR / "index.html"
+    if index.is_file():
+        return send_from_directory(_FRONTEND_DIR, "index.html")
+    return jsonify({"error": "frontend build not found; run npm --prefix frontend run build"}), 404
 
 
 def _wants_api_json() -> bool:

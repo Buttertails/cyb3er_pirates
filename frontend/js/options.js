@@ -3,7 +3,7 @@
 // New-user sign-up: the employers to choose from. Fictional, except that
 // 'acme-co' matches the sample employer the backend seeds (backend/dental/catalog.py),
 // so these ids are meant to line up with employers/{employerId} later.
-const COMPANIES = [
+export const COMPANIES = [
   { id: 'acme-co', label: 'Acme Corporation', description: 'Sample employer' },
   { id: 'demo-company-2', label: 'Placeholder Industries', description: 'Sample employer' },
   { id: 'demo-company-3', label: 'Example Health Partners', description: 'Sample employer' },
@@ -14,7 +14,7 @@ const COMPANIES = [
 // ?q= value. Location and office reuse the intake pages (see ONBOARDING in shared.js).
 // Text questions build their error messages from `label`; `confirmLabel` adds a
 // second field that must match. Choice questions show `options` as radio cards.
-const SIGNUP_QUESTIONS = {
+export const SIGNUP_QUESTIONS = {
   email: {
     heading: "What's your email?",
     lead: "You'll use it to sign in.",
@@ -54,7 +54,7 @@ const SIGNUP_QUESTIONS = {
 };
 
 // Step 1: where the user is.
-const STATES = [
+export const STATES = [
   { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' },
   { code: 'AZ', name: 'Arizona' }, { code: 'AR', name: 'Arkansas' },
   { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
@@ -86,7 +86,7 @@ const STATES = [
 // Steps 3 and 4: the three categories, each holding the procedures that fall under it.
 // `prompt` is the heading shown on step 3. `skipTiming` ends the flow after step 3
 // and records the timing as ASAP, which is what emergency work uses.
-const CATEGORIES = [
+export const CATEGORIES = [
   {
     id: 'checkup',
     label: 'Cleaning or checkup',
@@ -134,14 +134,14 @@ const CATEGORIES = [
 
 // Update info: the categories whose entries are procedures someone has had, for
 // recording recent dental work. Emergency lists symptoms, not procedures.
-const HISTORY_CATEGORIES = CATEGORIES.filter(function (c) {
+export const HISTORY_CATEGORIES = CATEGORIES.filter(function (c) {
   return c.id === 'checkup' || c.id === 'general';
 });
 
 // Profile page: placeholder plan details. The profile doesn't hold a plan yet
 // (the coverage estimate also runs against a demo plan, see ESTIMATE_DEFAULTS in
 // api.js), so this mirrors plan A in Data/plans.json, adult coverage.
-const DEMO_PLAN = {
+export const DEMO_PLAN = {
   name: 'Plan A (company plan)',
   covered: ['Routine', 'Basic'],
   maxCoverage: 7500,
@@ -150,13 +150,13 @@ const DEMO_PLAN = {
 
 // Profile page, local demo only: sample appointments shown until the backend
 // has a route for them. Each is placed relative to today at the user's office.
-const SAMPLE_APPOINTMENTS = [
+export const SAMPLE_APPOINTMENTS = [
   { daysFromNow: 14, hour: 9, minute: 30, reason: 'Routine cleaning' },
   { daysFromNow: -120, hour: 14, minute: 0, reason: 'Exam and X-rays' },
 ];
 
 // Step 5: when the user needs it done. Emergency work skips this and is recorded as ASAP.
-const TIMEFRAMES = [
+export const TIMEFRAMES = [
   { id: 'asap', label: 'As soon as possible', description: "I'm in pain or it's urgent" },
   { id: 'two-weeks', label: 'Within 2 weeks', description: 'Soon, but not an emergency' },
   { id: 'one-to-three-months', label: '1 to 3 months', description: 'Scheduling ahead' },
@@ -170,7 +170,7 @@ const TIMEFRAMES = [
 // from memory of the USPS ranges, not generated from a dataset, so treat it as
 // approximate. A prefix no state claims (territories, military) is never flagged,
 // and a prefix that straddles a border is listed under both states.
-const ZIP_PREFIXES = {
+export const ZIP_PREFIXES = {
   AL: [[350, 352], [354, 369]],
   AK: [[995, 999]],
   AZ: [[850, 850], [852, 853], [855, 857], [859, 860], [863, 865]],
@@ -226,7 +226,7 @@ const ZIP_PREFIXES = {
 
 // Local demo only: stand-ins for the dentist offices the backend will return for
 // step 2. Fictional. api.js fills in the state and ZIP the user entered.
-const LOCAL_DEMO_OFFICES = [
+export const LOCAL_DEMO_OFFICES = [
   { id: 'demo-office-1', name: 'Sample Family Dental', street: '100 Example Street', distance_miles: 1.2 },
   { id: 'demo-office-2', name: 'Placeholder Smiles', street: '250 Sample Avenue', distance_miles: 3.4 },
   { id: 'demo-office-3', name: 'Demo Dental Group', street: '75 Test Boulevard', distance_miles: 5.8 },

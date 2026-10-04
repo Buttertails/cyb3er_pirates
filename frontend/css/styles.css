@@ -18,6 +18,8 @@
   --space: 1rem;
   --font-body: Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   --font-head: Georgia, "Times New Roman", serif;
+  --page-exit-duration: 160ms;
+  --page-enter-duration: 280ms;
 }
 
 * {
@@ -35,6 +37,39 @@ body {
   color: var(--color-text);
   font-family: var(--font-body);
   line-height: 1.5;
+}
+
+/*
+ * Page-to-page transitions
+ *
+ * React keeps the outgoing route mounted for its exit animation, then swaps in
+ * the incoming route for this entrance animation. The persistent background and
+ * header stay steady, which avoids a white flash between screens.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  body > .brand,
+  .route-stage.page-enter > .card {
+    animation: page-fade-in var(--page-enter-duration) ease-out both;
+  }
+
+  .route-stage.page-exit > .card {
+    animation: page-fade-out var(--page-exit-duration) ease-in both;
+    pointer-events: none;
+  }
+}
+
+.route-stage {
+  width: 100%;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes page-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Text wordmark standing in for the real logo lockup. */
@@ -459,6 +494,168 @@ pre {
   color: var(--color-muted);
 }
 
+/* Read by screen readers, hidden on screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Chat: the conversation scrolls inside the card and the answer box stays
+ * pinned to the bottom, so the card fills the screen under the header.
+ */
+body:has(.chat) {
+  padding-bottom: var(--space);
+}
+.chat {
+  --chat-offset: 5.5rem; /* header height plus the gap under the card */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--chat-offset));
+  min-height: 24rem;
+  padding: 0;
+}
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(var(--space) * 1.25);
+  overscroll-behavior: contain;
+}
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bubble {
+  position: relative;
+  max-width: 85%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 14px;
+  font-size: 0.97rem;
+}
+.bubble-text {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.bubble-bot {
+  align-self: flex-start;
+  background: var(--color-bg);
+  border-bottom-left-radius: var(--radius);
+}
+.bubble-user {
+  align-self: flex-end;
+  color: #fff;
+  background: var(--color-primary);
+  border-bottom-right-radius: var(--radius);
+}
+/* The estimate needs the full width for its three cost cells. */
+.bubble-wide {
+  max-width: 100%;
+  width: 100%;
+}
+.bubble-wide .bubble-text {
+  margin-bottom: var(--space);
+}
+.bubble-wide .cost-cell {
+  background: #fff;
+}
+.bubble-wide .answers {
+  margin-bottom: 0;
+}
+
+/* Three dots while the assistant "types". */
+.typing {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.85rem 0.9rem;
+}
+.typing span {
+  width: 7px;
+  height: 7px;
+  background: var(--color-muted);
+  border-radius: 50%;
+  opacity: 0.4;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .typing span {
+    animation: typing-dot 1s ease-in-out infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  .bubble {
+    animation: page-fade-in 200ms ease-out both;
+  }
+}
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Quick replies under the latest question. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: var(--space);
+}
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--color-primary);
+  background: #fff;
+  border: 1px solid var(--color-primary);
+  border-radius: 18px;
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--color-selected-bg);
+}
+.chip:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.chip-label {
+  font-weight: 500;
+}
+.chip-desc {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem calc(var(--space) * 1.25);
+  border-top: 1px solid var(--color-border);
+}
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+.chat-send {
+  width: auto;
+  padding: 0.6rem 1.1rem;
+}
+
 @media (max-width: 480px) {
   .card {
     padding: var(--space);
@@ -472,5 +669,18 @@ pre {
   /* Stack the cost cells on narrow screens. */
   .cost-grid {
     grid-template-columns: 1fr;
+  }
+  .chat {
+    --chat-offset: 7.25rem; /* the header wraps onto two lines */
+    padding: 0;
+  }
+  .chat-scroll {
+    padding: var(--space);
+  }
+  .chat-form {
+    padding: 0.75rem var(--space);
+  }
+  .bubble {
+    max-width: 92%;
   }
 }
