@@ -12,7 +12,7 @@ from auth import require_user
 from chat_context import ChatConfig, SessionSigner
 from chat_profiles import iso_date, load_profiles
 from completed_care import report_usage
-from dental import catalog, engine
+from dental import catalog, dentists, engine
 from dental.models import Network
 import dialogflow_client
 import store
@@ -148,6 +148,14 @@ def dialogflow_webhook():
     except ValueError as exc:
         raise ChatProblem("invalid_context", "Invalid or expired session. Start a new conversation.", 409) from exc
     employee = _with_reports(claims.uid, _employee(profiles, claims.employee_id))
+    if fulfillment["tag"] == "dentists.find":
+        directory = dentists.for_profile(store.get_user_profile(claims.uid), dentists.load_directory())
+        prompt = "Here are the sample dentist results for your saved location. You can ask about a procedure next."
+        if directory["status"] != "ok":
+            prompt = directory["message"] + " You can ask about a procedure next."
+        return jsonify({"fulfillmentResponse": {"mergeBehavior": "REPLACE",
+                                                "messages": [{"text": {"text": [prompt]}}]},
+                        "payload": {"type": "dentist_directory", **directory}})
     if fulfillment["tag"] == "benefits.summary":
         benefits = employee.benefits(config.reference_date)
         return _fulfillment(employee, config,
@@ -233,6 +241,7 @@ def post_chat():
     state = result.get("currentPage", {}).get("displayName", "")
     choices = NETWORK_CHOICES if state == "Network" else _procedure_choices() if state == "Procedure" else []
     estimate = None
+    directory = None
     payloads = [payload for payload in result.get("webhookPayloads", [])
                 if isinstance(payload, dict) and payload.get("type") == "dental_benefits"]
     # Only the final fulfillment controls the displayed result and message.
@@ -266,9 +275,18 @@ def post_chat():
             if not isinstance(prompt, str) or not prompt.strip():
                 raise _dialogflow_error()
             messages = [prompt]
+    dentist_payloads = [payload for payload in result.get("webhookPayloads", [])
+                        if isinstance(payload, dict) and payload.get("type") == "dentist_directory"]
+    for payload in dentist_payloads[-1:]:
+        if payload.get("status") not in {"ok", "missing_zip", "unknown_plan", "unsupported_zip", "no_offices"}:
+            raise _dialogflow_error()
+        if not isinstance(payload.get("message"), str) or not isinstance(payload.get("offices"), list):
+            raise _dialogflow_error()
+        directory = {"status": payload["status"], "message": payload["message"],
+                     "offices": payload["offices"]}
     if not messages:
         raise _dialogflow_error()
     return jsonify({"session_id": token, "messages": messages, "choices": choices,
-                    "conversation_state": state, "estimate": estimate,
+                    "conversation_state": state, "estimate": estimate, "dentists": directory,
                     "benefits": employee.benefits(config.reference_date),
                     "conversation_mode": "dialogflow", "demo_data": True})

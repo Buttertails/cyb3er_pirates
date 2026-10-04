@@ -325,21 +325,7 @@ def get_my_dentists():
         logger.exception("Unable to load signed-in dentist directory")
         return jsonify({"error": "Sample dentist directory is temporarily unavailable. Please retry."}), 503
 
-    def outcome(status, message, offices=None):
-        return jsonify({"status": status, "message": message, "offices": offices or []})
-
-    if profile is None or not profile.zip:
-        return outcome("missing_zip", "Save your ZIP in Update info, then try finding dentists again.")
-    plan_id = directory["company_plans"].get(profile.company)
-    if not plan_id:
-        return outcome("unknown_plan", "We could not match your company plan to the sample dentist directory.")
-    if not any(center["zip"] == profile.zip and center["state"] == profile.state
-               for center in directory["zip_centers"]):
-        return outcome("unsupported_zip", "No sample offices are available near this ZIP. Update your location to try another area.")
-    offices = dentists.nearby(directory, profile.zip, plan_id)
-    if not offices:
-        return outcome("no_offices", "No sample in-network offices are available near this ZIP. Update your location to try another area.")
-    return outcome("ok", "Sample in-network offices near your saved ZIP. Network status is unverified demo data.", offices)
+    return jsonify(dentists.for_profile(profile, directory))
 
 
 def _care_employee(employee_id):

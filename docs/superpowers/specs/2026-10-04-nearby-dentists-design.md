@@ -31,15 +31,25 @@ location.
 
 ## Experience and data flow
 
-1. A **Find in-network dentists** action is available in the signed-in React
-   chat. It opens the results in that chat, without moving to the profile page.
-2. React requests a signed-in Flask endpoint for nearby offices. Flask reads
+1. The signed-in employee asks for nearby in-network dentists in ordinary chat
+   text. Dialogflow CX recognizes this request from the current conversation
+   and enters a dentist-finding branch. The separate button under the chat is
+   removed.
+2. The branch requests the directory for the signed-in employee and displays
+   the result card in the conversation. Afterward, the employee can ask another
+   benefits question without restarting the chat.
+   The existing signed chat request reaches Dialogflow first; a CX intent for
+   dentist lookup invokes a webhook fulfillment. Flask uses the signed session
+   context to resolve the account and returns directory data in a structured
+   payload. The chat API passes that payload to React for the existing result
+   card. Other chat intents keep their current behavior.
+3. React requests a signed-in Flask endpoint for nearby offices. Flask reads
    the caller's Firebase profile, resolves their single company plan, filters
    the curated office list by network membership, calculates approximate
    distances, and returns the closest matches in ascending order.
-3. Each card shows name, sample rating, phone number, approximate miles,
+4. Each card shows name, sample rating, phone number, approximate miles,
    address, and **Open in Maps**. The maps URL targets the stored coordinates.
-4. The chat provides clear states for missing ZIP, unsupported ZIP area, no
+5. The chat provides clear states for missing ZIP, unsupported ZIP area, no
    in-network office, and temporary request failure. It does not invent a
    nearby office or claim that a provider's network status has been verified.
 

@@ -144,6 +144,27 @@ def test_summary_returns_recorded_balance_without_estimate(client):
     assert (payload["benefits"]["used"], payload["benefits"]["remaining"]) == (250,7250)
 
 
+def test_dentist_webhook_uses_signed_uid_and_saved_profile(client, monkeypatch):
+    observed = []
+    def profile_for(uid):
+        observed.append(uid)
+        return main.UserProfile.from_dict({"uid": uid, "company": "acme-co",
+                                           "state": "NC", "zip": "27519"})
+    monkeypatch.setattr(store, "get_user_profile", profile_for)
+    body = webhook_body(company="demo-company-2", zip="27577")
+    body["fulfillmentInfo"]["tag"] = "dentists.find"
+
+    response = webhook(client, body)
+    assert response.status_code == 200
+    payload = response.get_json()["payload"]
+    assert observed == ["test-firebase-token"]
+    assert payload["type"] == "dentist_directory"
+    assert payload["status"] == "ok"
+    assert "cary-c0" in {office["id"] for office in payload["offices"]}
+    assert "cary-c2" not in {office["id"] for office in payload["offices"]}
+    assert "uid" not in payload and "zip" not in payload
+
+
 @pytest.fixture
 def fake_agent(client, monkeypatch):
     """Replace only the remote boundary; real webhook/calculation still run."""
@@ -154,6 +175,16 @@ def fake_agent(client, monkeypatch):
         if text == "hello":
             state.clear()
             page, messages, payloads = "Procedure", ["What procedure are you planning?"], []
+        elif text == "find in-network dentists near me":
+            response = webhook(client, {
+                "fulfillmentInfo": {"tag": "dentists.find"},
+                "sessionInfo": {"session": config.session_path(session_id),
+                                "parameters": {"backend_context": context_token}}})
+            assert response.status_code == 200
+            result = response.get_json()
+            page = "Dentists"
+            messages = result["fulfillmentResponse"]["messages"][0]["text"]["text"]
+            payloads = [result["payload"]]
         elif text == "change network":
             state.pop("network", None)
             page, messages, payloads = "Network", ["Which network?"], []
@@ -233,6 +264,22 @@ def test_complete_chat_and_changed_network_use_real_calculator(client, fake_agen
     result = turn(client, "out_of_network", session=session).get_json()
     assert result["estimate"]["totals"] == {"plan_pays":174,"employee_owes":116}
     assert result["benefits"]["used"] == 250
+
+
+def test_dentist_lookup_stays_in_chat_then_allows_a_procedure(client, fake_agent, monkeypatch):
+    monkeypatch.setattr(store, "get_user_profile", lambda uid: main.UserProfile.from_dict(
+        {"uid": uid, "company": "acme-co", "state": "NC", "zip": "27519"}))
+    start = turn(client, event="start").get_json()
+    assert start["dentists"] is None
+    session = start["session_id"]
+    found = turn(client, "find in-network dentists near me", session=session).get_json()
+    assert found["conversation_state"] == "Dentists"
+    assert found["dentists"]["status"] == "ok"
+    assert found["dentists"]["offices"]
+    assert found["session_id"] == session
+    next_turn = turn(client, "filling", session=session).get_json()
+    assert next_turn["conversation_state"] == "Network"
+    assert next_turn["dentists"] is None
 
 
 def test_profile_switch_requires_a_new_session(client, fake_agent):

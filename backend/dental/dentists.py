@@ -102,3 +102,22 @@ def nearby(directory: dict, zip_code: str, plan_id: str) -> list[dict]:
            "maps_url": "https://www.google.com/maps/search/?" + urlencode({"api": 1, "query": f'{office["latitude"]},{office["longitude"]}'})}
         for distance, office in ranked[:5]
     ]
+
+
+def for_profile(profile, directory: dict) -> dict:
+    """Use only a stored profile to produce the existing directory response."""
+    def outcome(status, message, offices=None):
+        return {"status": status, "message": message, "offices": offices or []}
+
+    if profile is None or not profile.zip:
+        return outcome("missing_zip", "Save your ZIP in Update info, then try finding dentists again.")
+    plan_id = directory["company_plans"].get(profile.company)
+    if not plan_id:
+        return outcome("unknown_plan", "We could not match your company plan to the sample dentist directory.")
+    if not any(center["zip"] == profile.zip and center["state"] == profile.state
+               for center in directory["zip_centers"]):
+        return outcome("unsupported_zip", "No sample offices are available near this ZIP. Update your location to try another area.")
+    offices = nearby(directory, profile.zip, plan_id)
+    if not offices:
+        return outcome("no_offices", "No sample in-network offices are available near this ZIP. Update your location to try another area.")
+    return outcome("ok", "Sample in-network offices near your saved ZIP. Network status is unverified demo data.", offices)

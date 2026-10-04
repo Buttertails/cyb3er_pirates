@@ -52,3 +52,25 @@ def test_sdk_propagates_failures_for_route_to_handle(monkeypatch):
     monkeypatch.setattr(cx, "SessionsClient", FailingClient)
     with pytest.raises(TimeoutError):
         module.detect_intent(config(), "session123", "signed-reference", "hello")
+
+
+def test_clear_directory_requests_use_cx_event_even_during_form_filling(monkeypatch):
+    module = importlib.import_module("dialogflow_client")
+    requests = []
+    class FakeClient:
+        def __init__(self, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def detect_intent(self, **kwargs):
+            requests.append(kwargs["request"])
+            return cx.DetectIntentResponse()
+    monkeypatch.setattr(cx, "SessionsClient", FakeClient)
+
+    for phrase in ("find in-network dentists near me", "show nearby dentists",
+                   "which dentists take my plan"):
+        module.detect_intent(config(), "session123", "signed-reference", phrase)
+    module.detect_intent(config(), "session123", "signed-reference",
+                         "should I use an in-network dentist for my crown?")
+
+    assert [request.query_input.event.event for request in requests[:3]] == ["dentists.find"] * 3
+    assert requests[3].query_input.text.text == "should I use an in-network dentist for my crown?"

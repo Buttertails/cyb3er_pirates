@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DentistResults, EstimateCard, LincolnLoader, useDocumentTitle, useFlowGuard } from '../components.jsx';
-import { fetchNearbyDentists, sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
+import { sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { waitForBotReply } from '../lib/botTiming.js';
+import { botMessagesFromReply } from '../lib/chatMessages.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { readStep, ROUTES, saveStep } from '../lib/storage.js';
 
@@ -33,10 +34,7 @@ export function LiveBenefitsChat() {
       session.current = result.session_id;
       await waitForBotReply();
       if (requestId !== latest.current) return;
-      setMessages((previous) => previous.concat(
-        ...result.messages.map((text) => ({ from: 'bot', text })),
-        ...(result.estimate ? [{ from: 'bot', estimate: result.estimate }] : []),
-      ));
+      setMessages((previous) => previous.concat(botMessagesFromReply(result)));
       setChoices(result.choices || []);
     } catch (cause) {
       if (requestId !== latest.current) return;
@@ -46,34 +44,6 @@ export function LiveBenefitsChat() {
         return;
       }
       setError(submitErrorMessage(cause));
-    } finally {
-      if (requestId === latest.current) setBusy(false);
-    }
-  }
-
-  async function findDentists() {
-    if (busy) return;
-    const requestId = ++latest.current;
-    setBusy(true);
-    setError('');
-    setMessages((previous) => previous.filter((message) => !message.dentists)
-      .concat({ from: 'user', text: 'Find in-network dentists near me' }));
-    try {
-      const result = await fetchNearbyDentists();
-      if (requestId !== latest.current) return;
-      await waitForBotReply();
-      if (requestId !== latest.current) return;
-      setMessages((previous) => previous.concat({ from: 'bot', dentists: result }));
-    } catch (cause) {
-      if (requestId !== latest.current) return;
-      if (cause instanceof SignedOutError) {
-        await signOut();
-        navigate(`${ROUTES.signIn}?signed-out=1`);
-        return;
-      }
-      setMessages((previous) => previous.concat({ from: 'bot', dentists: {
-        status: 'error', offices: [], message: `${submitErrorMessage(cause)} Please try again.`,
-      } }));
     } finally {
       if (requestId === latest.current) setBusy(false);
     }
@@ -135,11 +105,6 @@ export function LiveBenefitsChat() {
         </div>}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="chat-actions">
-        <button className="chip" type="button" disabled={busy} onClick={findDentists}>
-          {busy ? 'Please wait…' : 'Find in-network dentists'}
-        </button>
-      </div>
       <form className="chat-form" onSubmit={(event) => { event.preventDefault(); answer(draft); }}>
         <label className="visually-hidden" htmlFor="live-chat-input">Your message</label>
         <input id="live-chat-input" type="text" value={draft} onChange={(event) => setDraft(event.target.value)}
