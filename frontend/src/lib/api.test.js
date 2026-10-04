@@ -5,7 +5,8 @@ vi.mock('./auth.js', () => ({
   idToken: async () => 'signed-in-token',
 }));
 
-import { AppServiceError, fetchNearbyDentists, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, SignedOutError } from './api.js';
+import { AppServiceError, fetchNearbyDentists, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, sendStep, SignedOutError } from './api.js';
+import { readStep, saveStep } from './storage.js';
 
 beforeEach(() => {
   vi.stubGlobal('window', { crypto: { randomUUID: () => 'care-12345678' } });
@@ -59,5 +60,30 @@ describe('cloud-backed React API', () => {
     await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(AppServiceError);
     fetch.mockResolvedValueOnce({ ok: false, status: 401 });
     await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(SignedOutError);
+  });
+
+  it('retains a saved office when a directory refresh still includes it', async () => {
+    const values = new Map();
+    vi.stubGlobal('sessionStorage', { getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) });
+    window.dispatchEvent = vi.fn();
+    saveStep('office', 'cary-c0');
+    fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({
+      status: 'ok', message: 'Sample offices', offices: [{ id: 'cary-c0', name: 'Sample Cary Family Dental' }],
+    }) });
+    await sendStep('location', { state: 'NC', zip: '27519' });
+    expect(readStep('office')).toBe('cary-c0');
+  });
+
+  it('keeps a saved office and returns a retry message if the directory is unavailable', async () => {
+    const values = new Map();
+    vi.stubGlobal('sessionStorage', { getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) });
+    window.dispatchEvent = vi.fn();
+    saveStep('office', 'cary-c0');
+    fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(sendStep('location', { state: 'NC', zip: '27519' })).resolves.toBeUndefined();
+    expect(readStep('office')).toBe('cary-c0');
+    expect(readStep('office_directory_message')).toMatch(/try again/i);
   });
 });

@@ -17,7 +17,6 @@ import {
   finishFlow,
   recordSignIn,
   saveProfileDetails,
-  sendStep,
 } from '../lib/api.js';
 import {
   answeredSteps,
@@ -99,7 +98,6 @@ export function SignInPage() {
       if (profile.location) {
         const savedLocation = { state: profile.location.state, zip: profile.location.zip || '' };
         saveStep('location', savedLocation);
-        await sendStep('location', { state: savedLocation.state, zip: savedLocation.zip || null });
       }
 
       const answers = answeredSteps();

@@ -163,8 +163,21 @@ describe('conversation flow', () => {
     }) })));
     expect(await STEPS.location.answer({ text: 'PA 19103' })).toEqual({ next: 'office' });
     expect(readStep('offices')).toEqual([]);
-    expect(STEPS.office.ask()[0].text).toBe('No sample offices are available near this ZIP.');
+    expect((await STEPS.office.ask())[0].text).toBe('No sample offices are available near this ZIP.');
     expect(STEPS.office.choices().map((choice) => choice.id)).toEqual(['change-location']);
+  });
+
+  it('loads offices after sign-in when location was saved but office was not', async () => {
+    saveStep('location', { state: 'NC', zip: '27519' });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      status: 'ok', message: 'Sample offices near your ZIP', offices: [{
+        id: 'cary-c0', name: 'Sample Cary Family Dental',
+        address: '100 Demo Way, Cary, NC 27519', distance_miles: 1.2,
+      }],
+    }) })));
+    const prompt = await STEPS.office.ask();
+    expect(prompt[0].text).toContain('Here are dental offices');
+    expect(readStep('offices')[0].id).toBe('cary-c0');
   });
 
   it('shows a few buttons but still accepts every typed answer', async () => {

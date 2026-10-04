@@ -5,10 +5,11 @@
 - Read-only inspection of current test profiles found four NC ZIPs: 27519, 27577, 27858, 27863. No names, emails, or account IDs were copied into the fixture.
 - Directory fixture loads for all four ZIPs and the company plans used by those profiles. ZIP centers use the 2026 Census ZCTA Gazetteer; office names, ratings, phone numbers, network membership, street labels, and map pins are sample data.
 - Backend `python -m pytest -q`: passed, including directory validation, plan isolation, ordering, authenticated route, and empty/error outcomes.
-- Frontend `npm test`: 29 Vitest tests and the Firebase configuration Node test passed. Result cards, map coordinates, signed-in request shape, failure states, and onboarding consistency are covered.
+- Frontend `npm test`: 32 Vitest tests and the Firebase configuration Node test passed. Result cards, map coordinates, signed-in request shape, failure states, onboarding consistency, and saved-office preservation are covered.
 - Frontend `npm run build`: passed. `git diff --check`: clean.
 - `rg` found no `DEMO_EMPLOYEES`, `profile-employee`, or “Fictional employee and company plan” selector in the React source or CSS.
 - `.dockerignore` and `.gcloudignore` explicitly include `backend/fixtures/dentists.json` in the production build context.
+- Review found that the first version could clear a saved office or block sign-in when the directory failed. Sign-in no longer calls the directory, and guided office selection loads it when needed. Service failures retain a saved office and show a retry message. The new regression tests passed after the fix.
 
 ## Release
 

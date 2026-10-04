@@ -223,12 +223,19 @@ export async function sendStep(step, parameters, autoSet = false) {
   if (step === 'location') {
     saveStep('offices', []);
     saveStep('office_directory_message', null);
-    saveStep('office', null);
-    const directory = await fetchNearbyDentists();
-    const offices = Array.isArray(directory?.offices) ? directory.offices : [];
-    saveStep('office_directory_message', directory.message || null);
-    saveStep('offices', offices);
-    response.offices = offices;
+    try {
+      const directory = await fetchNearbyDentists();
+      const offices = Array.isArray(directory?.offices) ? directory.offices : [];
+      saveStep('office_directory_message', directory.message || null);
+      saveStep('offices', offices);
+      const selected = readStep('office');
+      if (selected && !offices.some((office) => office.id === selected)) saveStep('office', null);
+      response.offices = offices;
+    } catch (error) {
+      if (error instanceof SignedOutError) throw error;
+      saveStep('office_directory_message', 'Sample offices are unavailable. Please try again by changing your location.');
+      response.offices = [];
+    }
   }
   const log = readStep('sent_log') || [];
   saveStep('sent_log', log.concat({ mode: API_CONFIG.mode, request: message }));
