@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DentistResults, EstimateCard, LincolnLoader, useDocumentTitle, useFlowGuard } from '../components.jsx';
 import { fetchNearbyDentists, sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
+import { waitForBotReply } from '../lib/botTiming.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { readStep, ROUTES, saveStep } from '../lib/storage.js';
 
@@ -30,6 +31,8 @@ export function LiveBenefitsChat() {
       const result = await sendLiveChat(selected, current, message);
       if (requestId !== latest.current) return;
       session.current = result.session_id;
+      await waitForBotReply();
+      if (requestId !== latest.current) return;
       setMessages((previous) => previous.concat(
         ...result.messages.map((text) => ({ from: 'bot', text })),
         ...(result.estimate ? [{ from: 'bot', estimate: result.estimate }] : []),
@@ -57,6 +60,8 @@ export function LiveBenefitsChat() {
       .concat({ from: 'user', text: 'Find in-network dentists near me' }));
     try {
       const result = await fetchNearbyDentists();
+      if (requestId !== latest.current) return;
+      await waitForBotReply();
       if (requestId !== latest.current) return;
       setMessages((previous) => previous.concat({ from: 'bot', dentists: result }));
     } catch (cause) {

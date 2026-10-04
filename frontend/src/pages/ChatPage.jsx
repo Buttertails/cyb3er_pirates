@@ -6,6 +6,7 @@ import {
 import { SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { firstStep, greeting, STEPS } from '../lib/chatScript.js';
+import { waitForBotReply } from '../lib/botTiming.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { LiveBenefitsChat } from './LiveBenefitsChat.jsx';
 import {
@@ -17,15 +18,10 @@ import {
   inUpdate,
 } from '../lib/storage.js';
 
-const TYPING_MS = 450;
 const RESTART = /^(start over|restart|reset|start again)[.!]?$/i;
 
 function reducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function pause(ms) {
-  return new Promise((resolve) => { window.setTimeout(resolve, ms); });
 }
 
 function messageId() {
@@ -68,7 +64,7 @@ function GuidedChatPage() {
     for (const message of messages) {
       if (!reducedMotion()) {
         setTyping(true);
-        await pause(TYPING_MS);
+        await waitForBotReply();
         setTyping(false);
       }
       append({ from: 'bot', ...message });
