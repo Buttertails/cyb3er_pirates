@@ -6,7 +6,7 @@ record; the bridge owns inline execution. No product implementation in planning.
 
 ## Phase 1: Setup
 
-- [x] T001 Establish isolated feature worktree, baseline tests and current cloud/agent configuration inventory; save full sanitized CX backup under chat/agent-config/ and record resource IDs and rollback in specs/004-personalized-chatbot/verification.md (FR-013).
+- [ ] T001 Establish isolated feature worktree, baseline tests and current cloud/agent configuration inventory; save full sanitized CX backup under chat/agent-config/ and record resource IDs and rollback in specs/004-personalized-chatbot/verification.md (FR-013).
 
 ## Phase 2: Foundation
 
