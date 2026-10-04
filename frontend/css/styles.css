@@ -720,3 +720,9 @@ body:has(.chat) {
   font-size: 0.85rem;
   color: var(--color-muted);
 }
+
+/* In/out-of-network comparison card. */
+.comparison-title {
+  margin: 0 0 var(--space);
+  font-weight: 500;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EstimateCard, SequenceCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
+import { ComparisonCard, EstimateCard, SequenceCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
 import { SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { firstStep, greeting, STEPS } from '../lib/chatScript.js';
@@ -197,12 +197,13 @@ function GuidedChatPage() {
           {log.map((message) => (
             <li
               key={message.id}
-              className={`bubble bubble-${message.from}${(message.kind === 'estimate' || message.kind === 'sequence') ? ' bubble-wide' : ''}`}
+              className={`bubble bubble-${message.from}${['estimate', 'sequence', 'comparison'].includes(message.kind) ? ' bubble-wide' : ''}`}
             >
               <span className="visually-hidden">{message.from === 'bot' ? 'Assistant: ' : 'You: '}</span>
               {message.text && <p className="bubble-text">{message.text}</p>}
               {message.kind === 'estimate' && <EstimateCard estimate={message.data} />}
               {message.kind === 'sequence' && <SequenceCard sequence={message.data} />}
+              {message.kind === 'comparison' && <ComparisonCard comparison={message.data} />}
             </li>
           ))}
           {typing && (

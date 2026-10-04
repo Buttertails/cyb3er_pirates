@@ -318,6 +318,18 @@ export async function requestSequence(intakeProcedureIds, options = {}) {
   return result.sequence;
 }
 
+// Compare in-network vs out-of-network cost for one procedure.
+export async function requestComparison(intakeProcedureId, options = {}) {
+  const engineId = PROCEDURE_TO_ENGINE[intakeProcedureId];
+  if (!engineId) throw new Error('unmapped-procedure');
+  if (!options.employeeId) throw new RejectedError('Select a fictional employee first.');
+  const result = await apiFetch('/api/me/compare', 'POST', {
+    employee_id: options.employeeId,
+    procedure_id: engineId,
+  });
+  return result.comparison;
+}
+
 // --- Saved estimates and sequence plans (kept on the user's profile) --------
 
 function newRecordId() {

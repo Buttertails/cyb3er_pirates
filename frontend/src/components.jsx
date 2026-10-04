@@ -262,6 +262,46 @@ export function SequenceCard({ sequence }) {
   );
 }
 
+export function ComparisonCard({ comparison }) {
+  const inNet = comparison?.in_network;
+  const outNet = comparison?.out_of_network;
+  if (!inNet?.totals || !outNet?.totals) return null;
+  const label = inNet.lines?.[0]?.label || outNet.lines?.[0]?.label || 'This procedure';
+  const savings = Number(comparison.employee_savings_in_network) || 0;
+
+  return (
+    <div className="estimate comparison">
+      <p className="comparison-title">{label}: in-network vs out-of-network</p>
+      <div className="cost-grid">
+        <div className="cost-cell cost-cell-plan">
+          <span className="cost-label">You pay in-network</span>
+          <span className="cost-value">{money(inNet.totals.employee_owes)}</span>
+        </div>
+        <div className="cost-cell">
+          <span className="cost-label">You pay out-of-network</span>
+          <span className="cost-value">{money(outNet.totals.employee_owes)}</span>
+        </div>
+        <div className="cost-cell cost-cell-you">
+          <span className="cost-label">In-network saves</span>
+          <span className="cost-value">{money(savings)}</span>
+        </div>
+      </div>
+
+      <AnswerList rows={[
+        ['Plan pays in-network', money(inNet.totals.plan_pays)],
+        ['Plan pays out-of-network', money(outNet.totals.plan_pays)],
+      ]} />
+
+      {comparison.recommendation && <p className="sequence-summary">{comparison.recommendation}</p>}
+
+      <p className="disclaimer">
+        Approximate figures from fictional plan data. Out-of-network coverage and
+        provider charges vary; this is not a claims decision.
+      </p>
+    </div>
+  );
+}
+
 export function FormError({ message }) {
   return message ? <p className="error" role="alert">{message}</p> : null;
 }

@@ -12,6 +12,7 @@ import {
 import {
   fetchProcedures,
   finishFlow,
+  requestComparison,
   requestEstimate,
   requestSequence,
   saveProcedures,
@@ -676,6 +677,7 @@ export const STEPS = {
   estimate: {
     choices: () => [
       chip('save', 'Save this estimate', ['save', 'keep', 'remember', 'bookmark']),
+      chip('compare', 'Compare in vs out of network', ['compare', 'network', 'out of network', 'in network', 'out-of-network']),
       chip('plan-year', 'Plan care across the year', ['plan', 'sequence', 'schedule', 'maximize', 'multiple', 'several']),
       chip('another', 'Estimate another procedure', ['another', 'different procedure', 'something else']),
       chip('change', 'Change something', ['change', 'edit']),
@@ -684,7 +686,7 @@ export const STEPS = {
       RESTART_CHIP,
     ],
     suggestions() {
-      return featured(this.choices(), ['save', 'plan-year', 'another']);
+      return featured(this.choices(), ['save', 'compare', 'plan-year']);
     },
     async ask() {
       const saved = answeredSteps();
@@ -721,6 +723,7 @@ export const STEPS = {
         });
         return { next: 'estimate-saved' };
       }
+      if (choice.id === 'compare') return { next: 'compare-review' };
       if (choice.id === 'plan-year') {
         // Seed the plan with the procedure they just estimated.
         const started = readStep('procedure') ? [readStep('procedure')] : [];
@@ -732,6 +735,57 @@ export const STEPS = {
         return { next: 'category' };
       }
       return { next: 'change' };
+    },
+  },
+
+  'compare-review': {
+    choices: () => [
+      chip('save', 'Save this comparison', ['save', 'keep', 'remember', 'bookmark']),
+      chip('care', 'Back to care options', ['care', 'estimate', 'back']),
+      chip('another', 'Estimate another procedure', ['another', 'different']),
+      RESTART_CHIP,
+    ],
+    suggestions() {
+      return featured(this.choices(), ['save', 'care', 'another']);
+    },
+    async ask() {
+      const saved = answeredSteps();
+      try {
+        const comparison = await requestComparison(saved.procedure, { employeeId: readStep('demo_employee_id') });
+        saveStep('last_comparison', comparison);
+        return [
+          { kind: 'comparison', data: comparison, text: 'Here’s how your cost compares in- and out-of-network.' },
+          { text: 'Want to save this, or do something else?' },
+        ];
+      } catch (cause) {
+        saveStep('last_comparison', null);
+        return [{
+          text: cause?.message === 'unmapped-procedure'
+            ? 'I can’t compare that selection yet. Try a different procedure.'
+            : 'I couldn’t compare networks just now.',
+          choices: featured(this.choices(), ['care', 'another', 'restart']),
+        }];
+      }
+    },
+    async answer(input) {
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: NOT_SURE };
+      if (choice.id === 'restart') return { restart: true };
+      if (choice.id === 'save') {
+        const comparison = readStep('last_comparison');
+        if (!comparison) return { error: 'There’s no comparison to save right now.' };
+        const label = comparison.in_network?.lines?.[0]?.label;
+        await saveSavedPlan({
+          employeeId: readStep('demo_employee_id'), kind: 'comparison', result: comparison,
+          ...(label ? { label } : {}),
+        });
+        return { next: 'estimate-saved' };
+      }
+      if (choice.id === 'another') {
+        ['category', 'procedure', 'timing'].forEach((key) => saveStep(key, null));
+        return { next: 'category' };
+      }
+      return { next: 'estimate' };
     },
   },
 
