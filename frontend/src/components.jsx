@@ -414,7 +414,7 @@ export function PurpleBackground() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (location.pathname === ROUTES.chat) {
       animate(bgRef.current, {
-        translateY: 1000,
+        translateY: -24,
         duration: 1200,
         easing: 'easeOutCubic'
       });
