@@ -13,4 +13,8 @@
 
 ## Release
 
-Pending Cloud Run and Firebase Hosting update. No repeated authenticated website smoke test is planned at the user's direction; the tests above cover the new behavior without reading or writing account data during release.
+- Cloud Build `b011a3ac-1bf8-4447-b5fc-07cd2185093d` succeeded using the existing source bucket, compute service account, and `gcf-artifacts` repository. Image: `us-central1-docker.pkg.dev/cyb3r-pirates/gcf-artifacts/dental-api:0d3d654`.
+- Existing Cloud Run service `dental-api` serves revision `dental-api-00006-7lx` at 100% traffic. Previous ready revision `dental-api-00005-lnl` remains available for rollback; no rollback was performed.
+- Existing Firebase Hosting site released `sites/cyb3r-pirates/releases/1791096180757000` from version `1875abb8be5aa6c8`, uploading the three React build files. Live HTML references the expected `index-qdeccueU.js` and `index-dNjnPsME.css` assets. The existing Hosting API rewrite returned `{"status":"ok"}` from `/api/health`.
+- A fresh remote branch check found `inoutbranch`, `ui-updates`, `sequenceUIbranch`, and `react` all ancestors of the deployed source commit. The employee demo dropdown was not reintroduced.
+- No repeated authenticated website smoke test was run at the user's direction. No Firebase Auth, Firestore, or other cloud resources were changed during this release.
