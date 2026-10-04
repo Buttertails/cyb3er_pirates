@@ -261,6 +261,69 @@ def test_network_comparison_uses_signed_in_usage_and_rejects_invalid_input(clien
     assert invalid.status_code == 422
 
 
+def test_dentist_directory_uses_signed_in_profile_for_zip_and_plan(client, saved):
+    saved["user-pat"] = main.UserProfile.from_dict(
+        {"uid": "user-pat", "company": "acme-co", "state": "NC", "zip": "27519"})
+    saved["user-sam"] = main.UserProfile.from_dict(
+        {"uid": "user-sam", "company": "demo-company-2", "state": "NC", "zip": "27519"})
+    assert client.get("/api/me/dentists").status_code == 401
+    pat = client.get("/api/me/dentists?company=demo-company-2&zip=27577",
+                     headers=bearer("pat-token"))
+    sam = client.get("/api/me/dentists", headers=bearer("sam-token"))
+    assert pat.status_code == sam.status_code == 200
+    pat_data, sam_data = pat.get_json(), sam.get_json()
+    assert pat_data["status"] == sam_data["status"] == "ok"
+    assert 1 <= len(pat_data["offices"]) <= 5
+    assert 1 <= len(sam_data["offices"]) <= 5
+    assert "cary-c0" in {office["id"] for office in pat_data["offices"]}
+    assert "cary-c2" not in {office["id"] for office in pat_data["offices"]}
+    assert "cary-c2" in {office["id"] for office in sam_data["offices"]}
+    assert "cary-c0" not in {office["id"] for office in sam_data["offices"]}
+    for data in (pat_data, sam_data):
+        assert "uid" not in data and "zip" not in data and "company" not in data
+        assert [office["distance_miles"] for office in data["offices"]] == sorted(
+            office["distance_miles"] for office in data["offices"])
+
+
+@pytest.mark.parametrize("profile,status", [
+    ({"company": "acme-co", "state": "NC"}, "missing_zip"),
+    ({"company": "acme-co", "state": "NC", "zip": "27601"}, "unsupported_zip"),
+    ({"company": "unknown-company", "state": "NC", "zip": "27519"}, "unknown_plan"),
+])
+def test_dentist_directory_empty_outcomes(client, saved, profile, status):
+    saved["user-pat"] = main.UserProfile.from_dict({"uid": "user-pat", **profile})
+    result = client.get("/api/me/dentists", headers=bearer("pat-token"))
+    assert result.status_code == 200
+    assert result.get_json()["status"] == status
+    assert result.get_json()["offices"] == []
+    assert result.get_json()["message"]
+
+
+def test_dentist_directory_no_offices_or_service_failure(client, saved, monkeypatch):
+    from dental import dentists
+    saved["user-pat"] = main.UserProfile.from_dict(
+        {"uid": "user-pat", "company": "acme-co", "state": "NC", "zip": "27519"})
+    directory = dentists.load_directory()
+    monkeypatch.setattr(dentists, "load_directory", lambda: {**directory, "offices": []})
+    empty = client.get("/api/me/dentists", headers=bearer("pat-token"))
+    assert empty.get_json()["status"] == "no_offices"
+    assert empty.get_json()["offices"] == []
+
+    def broken_directory():
+        raise ValueError("invalid sample data")
+    monkeypatch.setattr(dentists, "load_directory", broken_directory)
+    failure = client.get("/api/me/dentists", headers=bearer("pat-token"))
+    assert failure.status_code == 503
+    assert "offices" not in failure.get_json()
+
+    monkeypatch.setattr(dentists, "load_directory", lambda: directory)
+    def profile_unavailable(uid):
+        raise Exception("temporary Firestore failure")
+    monkeypatch.setattr(store, "get_user_profile", profile_unavailable)
+    unavailable = client.get("/api/me/dentists", headers=bearer("pat-token"))
+    assert unavailable.status_code == 503
+
+
 @pytest.mark.parametrize("body", [
     {"state": "XX", "zip": None},
     {"state": "TX", "zip": "123"},

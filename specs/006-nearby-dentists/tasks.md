@@ -12,16 +12,16 @@ before product code.
 **Purpose**: Reuse current deployment and account context without adding a
 new provider service.
 
-- [ ] T001 Inspect distinct saved ZIPs and company IDs of current Firebase test accounts read-only, retaining no names/emails/UIDs; select the small supported ZIP set, including North Carolina where present, for `backend/fixtures/dentists.json`.
+- [x] T001 Inspect distinct saved ZIPs and company IDs of current Firebase test accounts read-only, retaining no names/emails/UIDs; select the small supported ZIP set, including North Carolina where present, for `backend/fixtures/dentists.json`.
 
 ## Phase 2: Foundational
 
 **Purpose**: Establish a validated sample directory and account-context
 contract used by the stories.
 
-- [ ] T002 Write failing fixture validation and raw-distance ordering tests in `backend/tests/test_dentists.py`; cover unique IDs, finite coordinates, 0–5 rating, reserved fictional US phone, known plan IDs, ZIP/state consistency, and stable equal-distance ties.
-- [ ] T003 Create versioned office and ZIP-center records for the selected test areas in `backend/fixtures/dentists.json`; include no user identifiers, names or emails.
-- [ ] T004 Implement fixture loading, validation, company-plan filtering and Haversine sorting in `backend/dental/dentists.py`; return at most five offices, sort unrounded distance then ID, and display one-decimal approximate miles.
+- [x] T002 Write failing fixture validation and raw-distance ordering tests in `backend/tests/test_dentists.py`; cover unique IDs, finite coordinates, 0–5 rating, reserved fictional US phone, known plan IDs, ZIP/state consistency, and stable equal-distance ties.
+- [x] T003 Create versioned office and ZIP-center records for the selected test areas in `backend/fixtures/dentists.json`; include no user identifiers, names or emails.
+- [x] T004 Implement fixture loading, validation, company-plan filtering and Haversine sorting in `backend/dental/dentists.py`; return at most five offices, sort unrounded distance then ID, and display one-decimal approximate miles.
 
 **Checkpoint**: A pure backend lookup can rank validated fictional offices.
 
@@ -33,10 +33,10 @@ chat.
 **Independent Test**: Two accounts on different company plans at a supported
 ZIP see only their own plan's nearest offices.
 
-- [ ] T005 [US1] Write failing authentication, saved-profile context, plan isolation, and five-result contract tests for `GET /api/me/dentists` in `backend/tests/test_user_routes.py`.
-- [ ] T006 [US1] Add `GET /api/me/dentists` in `backend/main.py`; derive UID, company and ZIP from the verified profile, never request parameters, and return the contract shape from `specs/006-nearby-dentists/contracts/nearby-dentists.md`.
-- [ ] T007 [US1] Write failing signed-in request tests in `frontend/src/lib/api.test.js`; verify no demo employee or company override is sent.
-- [ ] T008 [US1] Add the authenticated nearby-dentists request to `frontend/src/lib/api.js` and a Find in-network dentists action/result state in `frontend/src/pages/LiveBenefitsChat.jsx`; keep it in chat and disable duplicate requests.
+- [x] T005 [US1] Write failing authentication, saved-profile context, plan isolation, and five-result contract tests for `GET /api/me/dentists` in `backend/tests/test_user_routes.py`.
+- [x] T006 [US1] Add `GET /api/me/dentists` in `backend/main.py`; derive UID, company and ZIP from the verified profile, never request parameters, and return the contract shape from `specs/006-nearby-dentists/contracts/nearby-dentists.md`.
+- [x] T007 [US1] Write failing signed-in request tests in `frontend/src/lib/api.test.js`; verify no demo employee or company override is sent.
+- [x] T008 [US1] Add the authenticated nearby-dentists request to `frontend/src/lib/api.js` and a Find in-network dentists action/result state in `frontend/src/pages/LiveBenefitsChat.jsx`; keep it in chat and disable duplicate requests.
 
 **Checkpoint**: The user can retrieve the correct sorted list in chat.
 
@@ -47,8 +47,8 @@ ZIP see only their own plan's nearest offices.
 **Independent Test**: A returned card shows all six details and opens its
 stored map pin.
 
-- [ ] T009 [US2] Write failing result-card tests in `frontend/src/components.test.jsx`; cover name, address, sample rating, fictional phone, approximate miles and map link coordinates.
-- [ ] T010 [US2] Render reusable sample office cards in `frontend/src/components.jsx` and responsive styling in `frontend/css/styles.css`; label sample data and link to the stored map pin.
+- [x] T009 [US2] Write failing result-card tests in `frontend/src/components.test.jsx`; cover name, address, sample rating, fictional phone, approximate miles and map link coordinates.
+- [x] T010 [US2] Render reusable sample office cards in `frontend/src/components.jsx` and responsive styling in `frontend/css/styles.css`; label sample data and link to the stored map pin.
 
 **Checkpoint**: A listed office has complete details and a working location
 link.
@@ -60,16 +60,16 @@ link.
 **Independent Test**: Missing ZIP, unsupported ZIP, unknown plan, no matching
 office and service failure each show the correct chat state.
 
-- [ ] T011 [US3] Write failing backend outcome tests in `backend/tests/test_user_routes.py`, frontend response/error tests in `frontend/src/lib/api.test.js`, and presentational empty/error state tests in `frontend/src/components.test.jsx` using the installed React server renderer; ensure no stale or fabricated list is shown.
-- [ ] T012 [US3] Implement explicit directory outcomes and retry/sign-out states in `backend/main.py` and `frontend/src/pages/LiveBenefitsChat.jsx`, with no fallback provider generation.
-- [ ] T013 [US3] Write failing onboarding consistency tests in `frontend/src/lib/chatScript.test.js`, then replace generic address/distance generation in `frontend/src/lib/api.js` and `frontend/src/lib/chatScript.js` with directory results for supported ZIPs; preserve clear no-results behavior elsewhere.
+- [x] T011 [US3] Write failing backend outcome tests in `backend/tests/test_user_routes.py`, frontend response/error tests in `frontend/src/lib/api.test.js`, and presentational empty/error state tests in `frontend/src/components.test.jsx` using the installed React server renderer; ensure no stale or fabricated list is shown.
+- [x] T012 [US3] Implement explicit directory outcomes and retry/sign-out states in `backend/main.py` and `frontend/src/pages/LiveBenefitsChat.jsx`, with no fallback provider generation.
+- [x] T013 [US3] Write failing onboarding consistency tests in `frontend/src/lib/chatScript.test.js`, then replace generic address/distance generation in `frontend/src/lib/api.js` and `frontend/src/lib/chatScript.js` with directory results for supported ZIPs; preserve clear no-results behavior elsewhere.
 
 **Checkpoint**: All unavailable states and the onboarding picker agree with
 the ranked directory.
 
 ## Phase 6: Verification and release
 
-- [ ] T014 Run backend pytest, frontend tests and production build; verify directory ranking, map links and the absence of a demo employee selector through focused automated checks; record evidence in `specs/006-nearby-dentists/verification.md`.
+- [x] T014 Run backend pytest, frontend tests and production build; verify directory ranking, map links and the absence of a demo employee selector through focused automated checks; record evidence in `specs/006-nearby-dentists/verification.md`.
 - [ ] T015 Deploy the tested API and React assets through the existing Cloud Run and Firebase Hosting path; verify live health, deployed asset revision and a working rollback revision in `specs/006-nearby-dentists/verification.md`.
 
 ## Dependencies and execution order

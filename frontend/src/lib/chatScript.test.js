@@ -124,18 +124,47 @@ describe('conversation flow', () => {
   });
 
   it('walks location, office and emergency care straight to the review', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      status: 'ok', message: 'Sample offices near your ZIP', offices: [{
+        id: 'cary-c0', name: 'Sample Cary Family Dental',
+        address: '100 Demo Way, Cary, NC 27519', distance_miles: 1.2,
+      }],
+    }) })));
     expect((await STEPS.location.answer({ text: 'Ohio 19103' })).error).toBeTruthy();
-    expect(await STEPS.location.answer({ text: 'PA 19103' })).toEqual({ next: 'office' });
-    expect(readStep('offices')).toHaveLength(3);
+    expect(await STEPS.location.answer({ text: 'NC 27519' })).toEqual({ next: 'office' });
+    expect(readStep('offices')).toHaveLength(1);
 
-    expect(await STEPS.office.answer({ text: 'Parkview Smiles' })).toEqual({ next: 'category' });
-    expect(readStep('office')).toBe('demo-office-2');
+    expect(await STEPS.office.answer({ text: 'Sample Cary Family Dental' })).toEqual({ next: 'category' });
+    expect(readStep('office')).toBe('cary-c0');
 
     const result = await STEPS.category.answer({ text: 'broken tooth' });
     expect(result.next).toBe('confirm');
     expect(result.replies.at(-1)).toMatch(/emergency care/);
     expect(readStep('timing')).toBe('asap');
     expect(nextIntakeStep()).toBe('confirm');
+  });
+
+  it('uses directory addresses and distances for a supported saved ZIP', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      status: 'ok', message: 'Sample offices near your ZIP', offices: [{
+        id: 'cary-c0', name: 'Sample Cary Family Dental',
+        address: '100 Demo Way, Cary, NC 27519', distance_miles: 1.2,
+      }],
+    }) })));
+    expect(await STEPS.location.answer({ text: 'NC 27519' })).toEqual({ next: 'office' });
+    expect(readStep('offices')).toEqual([{ id: 'cary-c0', name: 'Sample Cary Family Dental',
+      address: '100 Demo Way, Cary, NC 27519', distance_miles: 1.2 }]);
+    expect(STEPS.office.choices()[0].description).toBe('100 Demo Way, Cary, NC 27519 · 1.2 mi away');
+  });
+
+  it('shows the directory limit instead of invented offices for another ZIP', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      status: 'unsupported_zip', message: 'No sample offices are available near this ZIP.', offices: [],
+    }) })));
+    expect(await STEPS.location.answer({ text: 'PA 19103' })).toEqual({ next: 'office' });
+    expect(readStep('offices')).toEqual([]);
+    expect(STEPS.office.ask()[0].text).toBe('No sample offices are available near this ZIP.');
+    expect(STEPS.office.choices().map((choice) => choice.id)).toEqual(['change-location']);
   });
 
   it('shows a few buttons but still accepts every typed answer', async () => {

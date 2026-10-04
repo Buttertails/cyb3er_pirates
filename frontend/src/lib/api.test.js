@@ -5,7 +5,7 @@ vi.mock('./auth.js', () => ({
   idToken: async () => 'signed-in-token',
 }));
 
-import { fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat } from './api.js';
+import { AppServiceError, fetchNearbyDentists, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, SignedOutError } from './api.js';
 
 beforeEach(() => {
   vi.stubGlobal('window', { crypto: { randomUUID: () => 'care-12345678' } });
@@ -40,5 +40,24 @@ describe('cloud-backed React API', () => {
     await sendLiveChat('demo-a-sam', null, { event: 'start' });
     expect(fetch.mock.calls[1][0]).toBe('/api/chat');
     expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ employee_id: 'demo-a-sam', event: 'start' });
+  });
+
+  it('requests nearby dentists with only the signed-in account context', async () => {
+    fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({
+      status: 'ok', offices: [{ id: 'cary-c0' }], message: 'Sample offices',
+    }) });
+    const result = await fetchNearbyDentists();
+    expect(result.offices).toEqual([{ id: 'cary-c0' }]);
+    expect(fetch.mock.calls[0][0]).toBe('/api/me/dentists');
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'GET',
+      headers: { Authorization: 'Bearer signed-in-token' } });
+    expect(fetch.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it('does not fabricate offices when directory request fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(AppServiceError);
+    fetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(SignedOutError);
   });
 });

@@ -201,6 +201,32 @@ export function EstimateCard({ estimate }) {
   );
 }
 
+export function DentistResults({ result }) {
+  if (!result) return null;
+  const offices = result.status === 'ok' && Array.isArray(result.offices) ? result.offices : [];
+  return (
+    <section className="dentist-results" aria-label="Nearby dentist results">
+      <p>{result.message}</p>
+      {offices.length > 0 && (
+        <>
+          <p className="dentist-disclosure">These are fictional sample offices. Ratings, phone numbers, and network status are unverified demo data. Map pins show sample locations.</p>
+          <ol className="dentist-list">
+            {offices.map((office) => (
+              <li className="dentist-card" key={office.id}>
+                <strong>{office.name}</strong>
+                <span>{office.address}</span>
+                <span>Approximately {office.distance_miles} miles away · Sample rating {office.rating}/5</span>
+                <span>Fictional phone: {office.phone}</span>
+                <a href={office.maps_url} target="_blank" rel="noopener noreferrer">Open in Maps</a>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function SequenceCard({ sequence }) {
   if (!sequence || !Array.isArray(sequence.schedule)) return null;
   const thisYear = sequence.schedule.filter((item) => item.when === 'this_year');

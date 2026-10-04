@@ -71,3 +71,9 @@ No fallback generates office names, addresses, ratings or distances.
 
 **Rationale**: The small fixture must not masquerade as a nationwide
 directory or as verified provider information.
+# Seeded test areas
+
+Read-only inspection of current test-account profiles found North Carolina ZIPs
+27519, 27577, 27858, and 27863. Only ZIP, state, and company IDs were used;
+no names, emails, or account IDs were retained. The approximate centers for
+these four ZIP areas come from the [2026 Census ZCTA Gazetteer](https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html).
