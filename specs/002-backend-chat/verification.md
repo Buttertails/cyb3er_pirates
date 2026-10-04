@@ -88,3 +88,35 @@ Fresh verification:
 Actual Firebase sign-in and live Dialogflow calls were not exercised. No cloud
 resources, auth providers, databases, billing or deployed files changed.
 Compatibility fixes are on feat/backend-chat; main contains the pulled team code.
+
+
+## Merge and cloud update
+
+On 2026-10-03 (America/New_York), at the user's explicit request, fast-forwarded
+main through 60b938f and preserved the prior bridge event and snapshot in
+0a7ce47. The earlier draft/handoff files remain backed up in a named stash;
+the active versioned handoff is feature 002, complete.
+
+Fresh main verification: 166 backend tests, 4 Firebase configuration tests,
+Firebase module syntax, and git diff whitespace checks passed.
+
+Deployed that application source to the existing api function (Python 3.12,
+us-central1) and existing Hosting site in cyb3r-pirates. Packaged Data beside
+backend using the existing deployment wrapper. The CLI required the quota
+project environment variable; only that invocation used cyb3r-pirates. The
+function update succeeded, then the CLI stopped at its artifact cleanup policy
+prompt. No cleanup policy was changed. A separate Hosting-only deployment
+completed successfully. No database, auth provider or agent configuration was
+created or changed.
+
+Live checks through https://cyb3r-pirates.web.app:
+
+- Health, procedure catalog, C0/C2 plan catalog, and a dummy filling estimate: 200.
+- Anonymous /api/me: 401, preserving login protection.
+- Hosting Firebase init configuration resolves to cyb3r-pirates; both new login
+  configuration modules are served: 200.
+- Both chat routes are deployed and return the expected 503 chat_not_configured.
+  Live Dialogflow server configuration, webhook attachment and frontend chat
+  integration remain pending. No successful live conversation is claimed.
+- Actual account sign-in was not exercised; no test accounts or database writes
+  were made. No Git push was performed.
