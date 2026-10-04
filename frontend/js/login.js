@@ -1,7 +1,8 @@
 // Sign in with Firebase Auth (see firebase.js); new users sign up on signup.html.
 // Then ask the backend what it remembers about the user: a sign-up that wasn't
-// finished picks up at its first unanswered question, otherwise the user goes on
-// to choose an office, with their own office preselected.
+// finished picks up at its first unanswered question; a user whose last sign-in
+// was more than 90 days ago answers the update-info questions first; otherwise
+// the user goes on to choose an office, with their own office preselected.
 (function () {
   const form = document.getElementById('auth-form');
   const button = document.getElementById('auth-submit');
@@ -30,7 +31,9 @@
   // still sent as the intake message, which returns the offices to choose from
   // and drops a saved office that's no longer among them. Then pick up the first
   // sign-up question still unanswered (an unfinished sign-up, or an account made
-  // before sign-up asked it), or go on to choose an office.
+  // before sign-up asked it), or the update questions when the last sign-in was
+  // long ago, or go on to choose an office. A long-ago sign-in isn't replaced
+  // until the update is finished (finishFlow), so skipping it asks again.
   function continueAs(user) {
     clearSession();
     saveStep('user', user.email);
@@ -48,9 +51,15 @@
       const answers = answeredSteps();
       const unanswered = ONBOARDING.find(function (step) { return !answers[step.key]; });
       if (unanswered) {
+        await recordSignIn();
         saveStep('onboarding', true);
         return unanswered.page;
       }
+      if (signInIsStale(profile.last_sign_in_at)) {
+        saveStep('previous_sign_in', profile.last_sign_in_at);
+        return startUpdate('stale', 'office.html');
+      }
+      await recordSignIn();
     }, 'office.html');
   }
 

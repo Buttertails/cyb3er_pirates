@@ -145,7 +145,8 @@ legend {
 select,
 input[type="text"],
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+input[type="month"] {
   width: 100%;
   padding: 0.7rem 0.75rem;
   font: inherit;
@@ -157,12 +158,13 @@ input[type="password"] {
 select:hover,
 input[type="text"]:hover,
 input[type="email"]:hover,
-input[type="password"]:hover {
+input[type="password"]:hover,
+input[type="month"]:hover {
   border-color: var(--color-muted);
 }
 
 select:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible,
-input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible, .link-btn:focus-visible {
+input[type="password"]:focus-visible, input[type="month"]:focus-visible, .btn:focus-visible, .link:focus-visible, .link-btn:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -195,6 +197,16 @@ input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible, .
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* A lesser action inside a form, like "Add procedure" above the form's Continue. */
+.btn-secondary {
+  margin-bottom: var(--space);
+  color: var(--color-primary);
+  background: #fff;
+}
+.btn-secondary:hover:not(:disabled) {
+  color: #fff;
 }
 
 .link {
