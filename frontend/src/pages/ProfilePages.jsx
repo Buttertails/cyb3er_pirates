@@ -4,10 +4,12 @@ import { COMPANIES } from '../../js/options.js';
 import {
   AnswerList,
   Card,
+  EstimateCard,
+  SequenceCard,
   useDocumentTitle,
   useFlowGuard,
 } from '../components.jsx';
-import { fetchAppointments, fetchBenefits, fetchProcedures, submitErrorMessage } from '../lib/api.js';
+import { deleteSavedPlan, fetchAppointments, fetchBenefits, fetchProcedures, fetchSavedPlans, submitErrorMessage } from '../lib/api.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
   describeProcedure,
@@ -21,6 +23,14 @@ import {
   startUpdate,
 } from '../lib/storage.js';
 
+function formatSavedDate(iso) {
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) return '';
+  return new Date(time).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
 export function ProfilePage() {
   useDocumentTitle('Your profile');
   const { saved, blocked } = useFlowGuard([]);
@@ -29,6 +39,7 @@ export function ProfilePage() {
   const [procedures, setProcedures] = useState([]);
   const employeeId = readStep('demo_employee_id') || employeeIdForCompany(readStep('company'));
   const [benefits, setBenefits] = useState(null);
+  const [savedPlans, setSavedPlans] = useState([]);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
@@ -36,15 +47,32 @@ export function ProfilePage() {
     saveStep('demo_employee_id', employeeId);
     setProcedures([]);
     setBenefits(null);
+    setSavedPlans([]);
     setLoadError('');
     fetchAppointments().then((value) => { if (active) setAppointments(value); }).catch(() => {});
-    if (employeeId) Promise.all([fetchProcedures(employeeId), fetchBenefits(employeeId)]).then(([reports, summary]) => {
+    if (employeeId) Promise.all([
+      fetchProcedures(employeeId),
+      fetchBenefits(employeeId),
+      fetchSavedPlans(employeeId),
+    ]).then(([reports, summary, savedItems]) => {
       if (!active) return;
       setProcedures(reports);
       setBenefits(summary.benefits);
+      setSavedPlans(savedItems);
     }).catch((error) => { if (active) setLoadError(submitErrorMessage(error)); });
     return () => { active = false; };
   }, [employeeId]);
+
+  async function removeSaved(id) {
+    const previous = savedPlans;
+    setSavedPlans((items) => items.filter((item) => item.id !== id));
+    try {
+      await deleteSavedPlan(id, employeeId);
+    } catch (error) {
+      setSavedPlans(previous); // restore on failure
+      setLoadError(submitErrorMessage(error));
+    }
+  }
 
   if (blocked) return null;
   const notProvided = 'Not provided';
@@ -85,6 +113,27 @@ export function ProfilePage() {
         ['Remaining', dollars(benefits.remaining)],
       ]} />}
       <p className="note">Confirmed care is included in the usage shown above. Estimates may differ from a final claim.</p>
+
+      <h2 className="subhead">Saved estimates &amp; plans</h2>
+      {!employeeId && <p className="lead">Select a supported company plan to view saved items.</p>}
+      {employeeId && savedPlans.length === 0 && (
+        <p className="lead">Nothing saved yet. Save an estimate or a care plan from the assistant to see it here.</p>
+      )}
+      {savedPlans.map((item) => (
+        <div className="saved-item" key={item.id}>
+          <div className="saved-item-head">
+            <p className="step">
+              {item.kind === 'sequence' ? 'Care plan' : 'Estimate'}
+              {item.label ? ` · ${item.label}` : ''}
+            </p>
+            <button type="button" className="link-btn" onClick={() => removeSaved(item.id)}>Remove</button>
+          </div>
+          {item.saved_at && <p className="saved-item-date">Saved {formatSavedDate(item.saved_at)}</p>}
+          {item.kind === 'sequence'
+            ? <SequenceCard sequence={item.result} />
+            : <EstimateCard estimate={item.result} />}
+        </div>
+      ))}
 
       <h2 className="subhead">Appointments</h2>
       {appointments.sample && dated.length > 0 && (
