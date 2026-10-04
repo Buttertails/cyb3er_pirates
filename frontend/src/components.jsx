@@ -61,8 +61,8 @@ export function Header() {
     <header className="topbar">
       <div className="topbar-inner">
         <Link className="topbar-brand" to={showNav ? ROUTES.chat : ROUTES.signIn}>
-          <span className="brand-mark" aria-hidden="true" />
-          <span className="brand-name">Lincoln Financial</span>
+          <img className="brand-logo" src="./res/lincoln-favicon.png" alt="Tooth30 logo" />
+          <span className="brand-name">Tooth30</span>
         </Link>
         {showAccount && (
           <nav className="topbar-nav" aria-label="Account">
