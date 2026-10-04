@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 
 /* Palette sampled from lincolnfinancial.com: maroon #650030 on a #f2f4f6 page,
    #222 body text, #5a5a5a secondary text, Roboto UI type, square corners.
@@ -20,7 +20,9 @@
   --font-head: Georgia, "Times New Roman", serif;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 /* Keep the hidden attribute working on elements given a display below, like .summary. */
 [hidden] { display: none !important; }
@@ -51,7 +53,9 @@ body {
   border-radius: 50% 50% 50% 2px;
 }
 /* Signed-in name and sign-out link, pushed to the right of the header. */
-.brand { flex-wrap: wrap; }
+.brand {
+  flex-wrap: wrap;
+}
 .brand-user {
   display: flex;
   align-items: baseline;
@@ -89,7 +93,8 @@ body {
 /* Progress bar sits flush against the top edge of the card. */
 .progress {
   height: 4px;
-  margin: calc(var(--space) * -2) calc(var(--space) * -2) calc(var(--space) * 1.5);
+  margin: calc(var(--space) * -2) calc(var(--space) * -2)
+    calc(var(--space) * 1.5);
   background: var(--color-track);
 }
 .progress span {
@@ -117,14 +122,30 @@ h1 {
   line-height: 1.25;
   color: var(--color-primary);
 }
-.lead { margin: 0 0 calc(var(--space) * 1.5); color: var(--color-muted); }
+.lead {
+  margin: 0 0 calc(var(--space) * 1.5);
+  color: var(--color-muted);
+}
 
 /* Form fields */
-.field { margin-bottom: var(--space); }
-label, legend { display: block; margin-bottom: 0.35rem; font-weight: 500; }
-.optional { font-weight: 400; color: var(--color-muted); }
+.field {
+  margin-bottom: var(--space);
+}
+label,
+legend {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+}
+.optional {
+  font-weight: 400;
+  color: var(--color-muted);
+}
 
-select, input[type="text"], input[type="email"], input[type="password"] {
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"] {
   width: 100%;
   padding: 0.7rem 0.75rem;
   font: inherit;
@@ -133,16 +154,27 @@ select, input[type="text"], input[type="email"], input[type="password"] {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
-select:hover, input[type="text"]:hover, input[type="email"]:hover, input[type="password"]:hover { border-color: var(--color-muted); }
+select:hover,
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover {
+  border-color: var(--color-muted);
+}
 
 select:focus-visible, input[type="text"]:focus-visible, input[type="email"]:focus-visible,
-input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible {
+input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible, .link-btn:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.error { margin: 0.35rem 0 0; font-size: 0.9rem; color: var(--color-error); }
-[aria-invalid="true"] { border-color: var(--color-error); }
+.error {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-error);
+}
+[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
 
 /* Buttons and links */
 .btn {
@@ -156,16 +188,39 @@ input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible {
   border-radius: var(--radius);
   cursor: pointer;
 }
-.btn:hover:not(:disabled) { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
-.link { color: var(--color-primary); font-weight: 500; }
+.link {
+  color: var(--color-primary);
+  font-weight: 500;
+}
 
-/* Sign-in and sign-up pages: "New here? Create an account" under the form. */
+/* A button that looks like .link, for actions that don't navigate. */
+.link-btn {
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Sign-in page: "New here? Create an account" under the form. */
 .form-switch { margin: var(--space) 0 0; text-align: center; color: var(--color-muted); }
 
 /* Answers carried forward from earlier steps */
-.summary-group { margin-bottom: calc(var(--space) * 1.25); }
+.summary-group {
+  margin-bottom: calc(var(--space) * 1.25);
+}
 .summary {
   display: flex;
   justify-content: space-between;
@@ -177,14 +232,29 @@ input[type="password"]:focus-visible, .btn:focus-visible, .link:focus-visible {
   border-left: 3px solid var(--color-primary);
   border-radius: var(--radius);
 }
-.summary-group .summary:last-child { margin-bottom: 0; }
-.summary .muted { color: var(--color-muted); }
+.summary-group .summary:last-child {
+  margin-bottom: 0;
+}
+.summary .muted {
+  color: var(--color-muted);
+}
 
 /* Radio cards: the real input is visually hidden but stays keyboard-focusable. */
-fieldset { margin: 0 0 var(--space); padding: 0; border: 0; }
-legend { padding: 0; }
+fieldset {
+  margin: 0 0 var(--space);
+  padding: 0;
+  border: 0;
+}
+legend {
+  padding: 0;
+}
 
-.option { position: relative; display: block; margin-bottom: 0.5rem; font-weight: 400; }
+.option {
+  position: relative;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+}
 .option input {
   position: absolute;
   opacity: 0;
@@ -201,9 +271,18 @@ legend { padding: 0; }
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
-.option input:hover + .option-body { border-color: var(--color-muted); }
-.option-title { display: block; font-weight: 500; }
-.option-desc { display: block; font-size: 0.9rem; color: var(--color-muted); }
+.option input:hover + .option-body {
+  border-color: var(--color-muted);
+}
+.option-title {
+  display: block;
+  font-weight: 500;
+}
+.option-desc {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
 .option input:checked + .option-body {
   background: var(--color-selected-bg);
   border-color: var(--color-primary);
@@ -223,7 +302,12 @@ legend { padding: 0; }
   border-left: 3px solid var(--color-primary);
   border-radius: var(--radius);
 }
-.actions { display: flex; justify-content: center; gap: calc(var(--space) * 1.5); margin-top: var(--space); }
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--space) * 1.5);
+  margin-top: var(--space);
+}
 
 /* Marks a scaffolding page that is not meant to ship. */
 .temp-banner {
@@ -244,7 +328,9 @@ legend { padding: 0; }
   color: var(--color-primary);
 }
 
-.answers { margin: 0; }
+.answers {
+  margin: 0;
+}
 .answers > div {
   display: flex;
   justify-content: space-between;
@@ -252,12 +338,25 @@ legend { padding: 0; }
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--color-border);
 }
-.answers dt { color: var(--color-muted); }
-.answers dd { margin: 0; font-weight: 500; text-align: right; }
+.answers dt {
+  color: var(--color-muted);
+}
+.answers dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+}
 
-.sent-list { margin: 0; padding-left: 1.25rem; }
-.sent-list li { margin-bottom: 0.75rem; }
-.sent-list pre { margin-top: 0.35rem; }
+.sent-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.sent-list li {
+  margin-bottom: 0.75rem;
+}
+.sent-list pre {
+  margin-top: 0.35rem;
+}
 
 pre {
   margin: 0;
@@ -269,8 +368,87 @@ pre {
   border-radius: var(--radius);
 }
 
+/* Results page */
+/* An error-toned variant of the .note callout. */
+.note-error {
+  color: var(--color-error);
+  background: #fdecea;
+  border-left-color: var(--color-error);
+}
+
+/* "Approximate / local demo" flag above the estimate. */
+.estimate-flag {
+  margin: 0 0 var(--space);
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+/* Headline cost split: three cells, you-pay emphasized. */
+.cost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: calc(var(--space) * 1.25);
+}
+.cost-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.cost-cell-you {
+  background: var(--color-selected-bg);
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+.cost-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.cost-value {
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  color: var(--color-text);
+}
+.cost-cell-you .cost-value {
+  color: var(--color-primary);
+}
+
+/* Plain-language notes from the engine. */
+.reasons {
+  margin: var(--space) 0 0;
+  padding-left: 1.1rem;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+}
+.reasons li {
+  margin-bottom: 0.3rem;
+}
+
+.disclaimer {
+  margin: calc(var(--space) * 1.25) 0 0;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
 @media (max-width: 480px) {
-  .card { padding: var(--space); }
-  .progress { margin: calc(var(--space) * -1) calc(var(--space) * -1) var(--space); }
-  h1 { font-size: 1.4rem; }
+  .card {
+    padding: var(--space);
+  }
+  .progress {
+    margin: calc(var(--space) * -1) calc(var(--space) * -1) var(--space);
+  }
+  h1 {
+    font-size: 1.4rem;
+  }
+  /* Stack the cost cells on narrow screens. */
+  .cost-grid {
+    grid-template-columns: 1fr;
+  }
 }

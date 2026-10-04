@@ -11,12 +11,29 @@ Public surface:
     engine      — coverage/cost estimation + bonus features
     sequencing  — cross-plan-year timing optimizer
     mock_plans  — models + adapter for the fictional Data/plans.json source
+    mock_data   — models + loaders for Data/company.json, person.json, procedure.json
     locations   — validation for the user's saved state + ZIP
 
-``mock_plans`` is pure except for its ``load_mock_plans`` helper, which reads
-the local ``Data/plans.json`` fixture from disk (no network).
+``mock_plans`` / ``mock_data`` are pure except for their ``load_*`` helpers,
+which read the local fixtures in ``Data/`` from disk (no network).
 """
 
-from . import catalog, engine, locations, mock_plans, models, sequencing
+from . import (
+    catalog,
+    engine,
+    locations,
+    mock_data,
+    mock_plans,
+    models,
+    sequencing,
+)
 
-__all__ = ["models", "catalog", "engine", "sequencing", "mock_plans", "locations"]
+__all__ = [
+    "models",
+    "catalog",
+    "engine",
+    "sequencing",
+    "mock_plans",
+    "mock_data",
+    "locations",
+]

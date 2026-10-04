@@ -23,13 +23,8 @@ const ONBOARDING = [
   { key: 'company', page: 'signup.html?q=company' },
 ];
 
-// TEMPORARY until the app is deployed: a demo sign-in that needs neither
-// Firebase nor the backend, so the app runs without the emulators, even opened
-// straight from disk. Any email and password signs in, nothing is checked or
-// sent, and api.js remembers each email's profile in this browser. It only
-// applies locally; a deployed site always uses Firebase. Set to false to test
-// real sign-in against the Firebase emulators (see README.md).
-const DEMO_LOGIN = true;
+// Set to true only for a local UI demo that should bypass Firebase Auth.
+const DEMO_LOGIN = false;
 
 function demoLoginActive() {
   const host = window.location.hostname;
@@ -224,6 +219,8 @@ function authMessage(error, fallback) {
       return 'An account with that email already exists. Sign in instead.';
     case 'auth/weak-password':
       return 'Choose a password with at least 6 characters.';
+    case 'auth/operation-not-allowed':
+      return 'Email and password sign-in isn\'t enabled for this Firebase project.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Wait a moment, then try again.';
     case 'auth/network-request-failed':

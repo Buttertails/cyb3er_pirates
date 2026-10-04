@@ -31,9 +31,18 @@ def test_load_mock_plans_from_fixture():
 
 def test_load_mock_plans_by_id_keys_on_plan_id():
     by_id = mock_plans.load_mock_plans_by_id()
-    assert by_id[0].name == "A"
-    assert by_id[1].name == "B"
-    assert by_id[2].name == "C"
+    # Plan ids are prefixed strings: "C" for company/group plans, "I" for
+    # independent plans. A (group) -> C0, B (independent) -> I1, C (group) -> C2.
+    assert by_id["C0"].name == "A"
+    assert by_id["I1"].name == "B"
+    assert by_id["C2"].name == "C"
+
+
+def test_plan_id_prefix_follows_group_flag():
+    by_name = {p.name: p for p in mock_plans.load_mock_plans()}
+    assert by_name["A"].plan_id == "C0"   # group -> C
+    assert by_name["B"].plan_id == "I1"   # independent -> I
+    assert by_name["C"].plan_id == "C2"   # group -> C
 
 
 # --------------------------------------------------------------------------- #
@@ -41,7 +50,7 @@ def test_load_mock_plans_by_id_keys_on_plan_id():
 # --------------------------------------------------------------------------- #
 
 def test_plan_a_parses_group_and_coverage():
-    plan = mock_plans.load_mock_plans_by_id()[0]  # "A"
+    plan = mock_plans.load_mock_plans_by_id()["C0"]  # "A"
     assert plan.group is True
     assert plan.max_coverage == 7500
     # Adult covers Routine + Basic (preventive + basic).
@@ -55,7 +64,7 @@ def test_plan_a_parses_group_and_coverage():
 
 
 def test_plan_b_unlimited_max_and_real_deductible():
-    plan = mock_plans.load_mock_plans_by_id()[1]  # "B"
+    plan = mock_plans.load_mock_plans_by_id()["I1"]  # "B"
     # maxCoverage -1 -> unlimited (None).
     assert plan.max_coverage is None
     assert plan.group is False
@@ -68,7 +77,7 @@ def test_plan_b_unlimited_max_and_real_deductible():
 
 
 def test_empty_children_block_not_offered():
-    plan = mock_plans.load_mock_plans_by_id()[2]  # "C"
+    plan = mock_plans.load_mock_plans_by_id()["C2"]  # "C"
     assert plan.offers(MemberType.ADULT) is True
     assert plan.offers(MemberType.CHILDREN) is False
 
@@ -78,10 +87,11 @@ def test_empty_children_block_not_offered():
 # --------------------------------------------------------------------------- #
 
 def test_round_trip_preserves_sentinels():
-    plan = mock_plans.load_mock_plans_by_id()[1]  # "B": unlimited max, no kids
+    plan = mock_plans.load_mock_plans_by_id()["I1"]  # "B": unlimited max, no kids
     d = plan.to_dict()
     assert d["maxCoverage"] == -1          # unlimited re-encoded as -1
     assert d["children"]["premium"] == -1  # not-applicable re-encoded as -1
+    assert d["planId"] == "I1"             # prefixed string id round-trips
     # Re-parsing yields an equivalent object.
     again = MockPlan.from_dict(d)
     assert again == plan
@@ -102,7 +112,7 @@ def test_unknown_category_rejected():
 # --------------------------------------------------------------------------- #
 
 def test_adapter_covered_category_uses_standard_rate():
-    plan = mock_plans.load_mock_plans_by_id()[0]  # "A": adult covers Routine+Basic
+    plan = mock_plans.load_mock_plans_by_id()["C0"]  # "A": adult covers Routine+Basic
     ep = plan.to_employer_plan(MemberType.ADULT)
     # Preventive covered at 100% in-network -> cleaning fully covered, $0 owed.
     est = engine.estimate(ep, [], ["cleaning"], as_of=date(2026, 6, 15))
@@ -113,7 +123,7 @@ def test_adapter_covered_category_uses_standard_rate():
 
 
 def test_adapter_uncovered_category_not_paid():
-    plan = mock_plans.load_mock_plans_by_id()[0]  # "A": adult does NOT cover Major
+    plan = mock_plans.load_mock_plans_by_id()["C0"]  # "A": adult does NOT cover Major
     ep = plan.to_employer_plan(MemberType.ADULT)
     est = engine.estimate(
         ep, [], ["root-canal"], as_of=date(2026, 6, 15), enrollment_date="2020-01-01"
@@ -124,7 +134,7 @@ def test_adapter_uncovered_category_not_paid():
 
 
 def test_adapter_children_get_orthodontic_coverage():
-    plan = mock_plans.load_mock_plans_by_id()[0]  # "A": children cover Orthodontia
+    plan = mock_plans.load_mock_plans_by_id()["C0"]  # "A": children cover Orthodontia
     ep = plan.to_employer_plan(MemberType.CHILDREN)
     est = engine.estimate(
         ep, [], ["orthodontics"], as_of=date(2026, 6, 15), enrollment_date="2020-01-01"
@@ -135,7 +145,7 @@ def test_adapter_children_get_orthodontic_coverage():
 
 
 def test_adapter_unlimited_max_does_not_cap():
-    plan = mock_plans.load_mock_plans_by_id()[1]  # "B": unlimited max, $4500 deductible
+    plan = mock_plans.load_mock_plans_by_id()["I1"]  # "B": unlimited max, $4500 deductible
     ep = plan.to_employer_plan(MemberType.ADULT)
     # Major is covered for B's adult; with no annual-max cap the plan pays its
     # full coverage share of the post-deductible amount.
@@ -154,6 +164,6 @@ def test_adapter_unlimited_max_does_not_cap():
 
 
 def test_adapter_rejects_unoffered_member_type():
-    plan = mock_plans.load_mock_plans_by_id()[1]  # "B" has no children coverage
+    plan = mock_plans.load_mock_plans_by_id()["I1"]  # "B" has no children coverage
     with pytest.raises(ValueError):
         plan.to_employer_plan(MemberType.CHILDREN)

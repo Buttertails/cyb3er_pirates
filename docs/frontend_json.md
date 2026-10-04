@@ -382,22 +382,20 @@ their messages again, so the same event can arrive more than once in a session.
 Users sign in on `index.html` with Firebase Authentication, using email and
 password. New users create their account on `signup.html`, as the second of the
 [sign-up questions](#new-user-sign-up). `frontend/js/firebase.js` loads the
-Firebase JS SDK from the gstatic CDN, with no build step:
+Firebase JS SDK from the gstatic CDN, with no build step, and reads the web
+config from `frontend/js/firebaseConfig.json`. The Email/Password provider must
+be enabled in the Firebase console. Local and deployed sites use the same
+Firebase Authentication project; the Auth emulator is not connected to the
+frontend.
 
-- On `localhost` or `127.0.0.1` it uses the Auth emulator
-  (`firebase emulators:start`), so no real accounts or config file are needed.
-- Deployed on Firebase Hosting, it reads the web config from the reserved
-  `/__/firebase/init.json` URL. The Email/Password provider must be enabled in
-  the Firebase console.
+Profile details are normally read from and saved to the API (`GET /api/me`).
+Firebase Authentication and the intake demo do not require the API: if it is
+unavailable, the frontend falls back to browser-local profile and location
+storage. Those locally saved details are limited to that browser and are not
+synced to the account.
 
-**Temporary demo sign-in, until the app is deployed:** while `DEMO_LOGIN` in
-`frontend/js/shared.js` is `true`, local copies of the site skip Firebase and
-the profile routes. That covers `localhost`, `127.0.0.1` and files opened
-directly. Any email and password signs in or creates an account, and each
-email's location, name, company and office are kept in the browser's
-localStorage instead of `users/{uid}`, so they are still asked for only once.
-Nothing is sent to the backend for sign-in or the profile. A deployed site
-ignores the switch.
+For a local UI-only demo, `DEMO_LOGIN` in `frontend/js/shared.js` can be set to
+`true` to bypass Firebase sign-in and profile routes. It is `false` by default.
 
 The browser keeps only the signed-in email in `sessionStorage`, to show who is
 signed in. Firebase keeps its own sign-in state. "Sign out" ends both and discards

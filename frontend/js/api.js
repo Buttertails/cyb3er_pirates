@@ -40,6 +40,15 @@ class SignedOutError extends Error {}
 // The backend rejected the input (422). The message is safe to show the user.
 class RejectedError extends Error {}
 
+// The app API could not be reached or returned an unexpected error.
+class AppServiceError extends Error {
+  constructor(status, options) {
+    super(status ? 'App API request failed with status ' + status : 'App API is unavailable', options);
+    this.name = 'AppServiceError';
+    this.status = status;
+  }
+}
+
 const STEP_EVENTS = {
   location: 'intake.location',
   office: 'intake.office',
@@ -65,18 +74,23 @@ async function apiFetch(path, method, body) {
 
   const headers = { Authorization: 'Bearer ' + token };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, {
-    method: method,
-    headers: headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      method: method,
+      headers: headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
+    });
+  } catch (error) {
+    throw new AppServiceError(null, { cause: error });
+  }
   if (response.status === 401) throw new SignedOutError('Sign-in rejected');
   if (response.status === 422) {
     const data = await response.json().catch(function () { return {}; });
     throw new RejectedError(data.error || 'That was not accepted. Check your answer.');
   }
-  if (!response.ok) throw new Error('Request failed with status ' + response.status);
+  if (!response.ok) throw new AppServiceError(response.status);
   return response.json();
 }
 
@@ -87,20 +101,45 @@ function profileDetailsSent() {
 
 // { uid, email, name, company, office, location: { state, zip } or null }
 async function fetchProfile() {
-  const profile = demoLoginActive() ? demoProfile() : await apiFetch(API_CONFIG.profileEndpoint, 'GET');
-  if (profileDetailsSent()) return profile;
+  let profile;
+  let usingLocalProfile = demoLoginActive();
+  if (usingLocalProfile) {
+    profile = demoProfile();
+  } else {
+    try {
+      profile = await apiFetch(API_CONFIG.profileEndpoint, 'GET');
+    } catch (error) {
+      if (!(error instanceof AppServiceError)) throw error;
+      console.warn('Profile API unavailable; using this browser\'s saved profile.', error);
+      profile = demoProfile();
+      usingLocalProfile = true;
+    }
+  }
+  if (profileDetailsSent() && !usingLocalProfile) return profile;
   return Object.assign({ name: null, company: null, office: null }, profile, localDetails(profile.email));
 }
 
 // Save the user's location so later sign-ins don't ask again. Returns the profile.
-function saveProfileLocation(state, zip) {
-  if (demoLoginActive()) return Promise.resolve(saveDemoLocation(state, zip));
-  return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+async function saveProfileLocation(state, zip) {
+  if (demoLoginActive()) return saveDemoLocation(state, zip);
+  try {
+    return await apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
+  } catch (error) {
+    if (!(error instanceof AppServiceError)) throw error;
+    console.warn('Profile API unavailable; saving location in this browser.', error);
+    return saveDemoLocation(state, zip);
+  }
 }
 
 // Save some of the new-user answers to the profile: any of { name, company, office }.
 function saveProfileDetails(details) {
-  if (profileDetailsSent()) return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details);
+  if (profileDetailsSent()) {
+    return apiFetch(API_CONFIG.profileEndpoint, 'PATCH', details).catch(function (error) {
+      if (!(error instanceof AppServiceError)) throw error;
+      console.warn('Profile API unavailable; saving profile details in this browser.', error);
+      saveLocalDetails(details);
+    });
+  }
   saveLocalDetails(details);
   return Promise.resolve();
 }
@@ -130,9 +169,8 @@ function saveLocalDetails(details) {
   } catch (e) { /* ignore: these are asked for again next time */ }
 }
 
-// TEMPORARY stand-in for the profile routes while the demo sign-in is on
-// (DEMO_LOGIN in shared.js). Each email's location is kept in this browser's
-// localStorage, so it is still asked for only once.
+// Keep locations in this browser for UI demo mode and when the profile API is
+// unavailable. Each email's location is still asked for only once per browser.
 const DEMO_PROFILES_KEY = 'demo_profiles';
 
 function readDemoProfiles() {
@@ -243,6 +281,10 @@ async function submitThenGo(button, work, page) {
     button.disabled = false;
     showSendError(button, e instanceof RejectedError
       ? e.message
+      : e instanceof AppServiceError
+        ? 'Sign-in succeeded, but the app couldn\'t load your profile'
+          + (e.status ? ' (HTTP ' + e.status + ')' : '')
+          + '. Start the Firebase Hosting and Functions backend, then try again.'
       : "We couldn't send that just now. Please try again.");
     return;
   }
@@ -257,4 +299,131 @@ function sendSteps(button, pieces, page) {
       await sendStep(piece.step, piece.parameters, piece.autoSet);
     }
   }, page);
+}
+
+// --------------------------------------------------------------------------- #
+// Coverage estimate (the engine's /api/estimate endpoint)
+// --------------------------------------------------------------------------- #
+//
+// The intake flow collects procedure ids that are friendlier/broader than the
+// engine's catalog (e.g. "deep-cleaning", or emergency symptoms like
+// "broken-tooth"). PROCEDURE_TO_ENGINE maps each intake id to the closest
+// catalog procedure the engine can price. Ids already in the catalog map to
+// themselves.
+const PROCEDURE_TO_ENGINE = {
+  // Already catalog ids.
+  cleaning: 'cleaning',
+  'exam-xrays': 'exam-xrays',
+  filling: 'filling',
+  extraction: 'extraction',
+  'root-canal': 'root-canal',
+  'crown-bridge': 'crown-bridge',
+  implant: 'implant',
+  dentures: 'dentures',
+  orthodontics: 'orthodontics',
+  cosmetic: 'cosmetic',
+  // Broader intake ids mapped to the nearest priced procedure.
+  'deep-cleaning': 'cleaning',
+  other: 'exam-xrays',
+  // Emergency symptoms -> the procedure most likely to address them. These are
+  // best-effort for an estimate, not a diagnosis.
+  'severe-pain': 'exam-xrays',
+  'broken-tooth': 'crown-bridge',
+  swelling: 'extraction',
+  'lost-filling': 'filling',
+  bleeding: 'exam-xrays',
+  'urgent-other': 'exam-xrays',
+};
+
+// The demo plan the estimate runs against until plan selection is part of the
+// intake. "C0" is company plan A (adult); see Data/plans.json.
+const ESTIMATE_DEFAULTS = {
+  planId: 'C0',
+  memberType: 'adult',
+  network: 'in_network',
+};
+
+// Map an intake procedure id to the engine catalog id, or null if we can't.
+function engineProcedureId(intakeProcedureId) {
+  return PROCEDURE_TO_ENGINE[intakeProcedureId] || null;
+}
+
+// Ask the engine what a procedure costs under the demo plan. In local_demo mode
+// nothing leaves the browser and a deterministic placeholder estimate is built
+// locally so the page is still demonstrable offline.
+async function requestEstimate(intakeProcedureId, options) {
+  const opts = options || {};
+  const engineId = engineProcedureId(intakeProcedureId);
+  if (!engineId) {
+    throw new Error('unmapped-procedure');
+  }
+
+  const body = {
+    plan_id: opts.planId || ESTIMATE_DEFAULTS.planId,
+    member_type: opts.memberType || ESTIMATE_DEFAULTS.memberType,
+    network: opts.network || ESTIMATE_DEFAULTS.network,
+    procedures: [engineId],
+  };
+
+  if (API_CONFIG.mode === 'live') {
+    const response = await fetch('/api/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
+    });
+    if (!response.ok) throw new Error('Estimate failed with status ' + response.status);
+    return response.json();
+  }
+
+  return localDemoEstimate(engineId, body);
+}
+
+// A stand-in estimate for local_demo mode: mirrors the engine's response shape
+// (dollars) with rough catalog costs and plan A's adult coverage, so the
+// results page renders without a backend. Clearly approximate.
+function localDemoEstimate(engineId, body) {
+  // Rough in-network allowed amounts (dollars), aligned with the backend catalog.
+  const ALLOWED = {
+    cleaning: 95, 'exam-xrays': 120, filling: 200, extraction: 250,
+    'root-canal': 1000, 'crown-bridge': 1200, implant: 3000, dentures: 1800,
+    orthodontics: 5500, cosmetic: 600,
+  };
+  // Plan A (adult) covers Routine (preventive) + Basic only; everything else 0.
+  const CATEGORY = {
+    cleaning: 'preventive', 'exam-xrays': 'preventive', filling: 'basic',
+    extraction: 'basic', 'root-canal': 'major', 'crown-bridge': 'major',
+    implant: 'major', dentures: 'major', orthodontics: 'orthodontic', cosmetic: 'cosmetic',
+  };
+  const RATE = { preventive: 1.0, basic: 0.8 }; // plan A adult; others uncovered
+  const category = CATEGORY[engineId] || 'basic';
+  const allowed = ALLOWED[engineId] || 0;
+  const rate = RATE[category] || 0;
+  const covered = rate > 0;
+  const planPays = covered ? Math.round(allowed * rate * 100) / 100 : 0;
+  const employeeOwes = Math.round((allowed - planPays) * 100) / 100;
+
+  const line = {
+    procedure_id: engineId,
+    label: engineId,
+    category: category,
+    network: body.network,
+    allowed_amount: allowed,
+    deductible_applied: 0,
+    plan_pays: planPays,
+    employee_owes: employeeOwes,
+    coverage_rate: rate,
+    covered: covered,
+    reasons: covered ? [] : ['This plan does not cover ' + category + ' services.'],
+  };
+  console.info('[local_demo] estimate', body, line);
+  return {
+    lines: [line],
+    annual_maximum: 7500,
+    annual_max_used_before: 0,
+    annual_max_used_after: planPays,
+    annual_max_remaining_after: Math.round((7500 - planPays) * 100) / 100,
+    totals: { plan_pays: planPays, employee_owes: employeeOwes },
+    _local_demo: true,
+  };
 }
