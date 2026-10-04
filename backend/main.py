@@ -412,13 +412,37 @@ def _index():
 def _serve_frontend(filename: str):
     """Serve the static frontend so the whole demo runs from one origin.
 
-    Falls back to a 404 JSON for missing files. API routes are matched first
-    because they live under the /api prefix.
+    API paths are never served from here: they live under the /api prefix and
+    are matched first, and the error handlers below keep any unmatched /api/*
+    request a clean JSON 404 (not an HTML page or a confusing 405).
     """
     target = (_FRONTEND_DIR / filename)
     if _FRONTEND_DIR.exists() and target.is_file():
         return send_from_directory(_FRONTEND_DIR, filename)
     return jsonify({"error": "not found"}), 404
+
+
+def _wants_api_json() -> bool:
+    """True when the current request targets the API surface."""
+    return request.path == "/api" or request.path.startswith("/api/")
+
+
+@app.errorhandler(404)
+def _handle_404(_err):
+    if _wants_api_json():
+        return jsonify({"error": f"No such API route: {request.path}"}), 404
+    return jsonify({"error": "not found"}), 404
+
+
+@app.errorhandler(405)
+def _handle_405(_err):
+    # An unimplemented /api/* route otherwise falls through to the static
+    # catch-all (GET-only), which returns a misleading 405. Report it as a
+    # clean 404 so a missing API route reads as "not implemented", not
+    # "wrong method".
+    if _wants_api_json():
+        return jsonify({"error": f"No such API route: {request.path}"}), 404
+    return jsonify({"error": "method not allowed"}), 405
 
 
 # --------------------------------------------------------------------------- #
