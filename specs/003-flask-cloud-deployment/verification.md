@@ -88,3 +88,19 @@ feature integration gaps are preserved and belong to the proposed chatbot
 expansion, not a successful live chatbot claim. Protected profile rejection and
 real /api/estimate remain verified. Login accounts and database writes remain
 untested. No unrelated Firebase resources were changed.
+
+## Completion and convergence
+
+Delivery merged into main at 2acae91. The merged tree passes all 165 backend
+and 4 frontend configuration tests, and the final live gate passes 17 checks.
+Native task ledger closes Task 4; all five canonical tasks are checked and the
+bridge is complete. The bridge's tasks hash change reflects task completion
+checkboxes; approved requirements and plan remain unchanged.
+
+Convergence assessed the current Dockerfile, source allowlists, requirements,
+Hosting rewrite and recorded cloud delivery against 8 functional requirements,
+4 success criteria, 4 acceptance scenarios, production layout/routing/capacity/
+rollback decisions and all 5 constitution principles within deployment scope.
+No missing, partial, contradictory or unrequested deployment findings remain.
+No convergence tasks were appended. Existing application feature gaps are
+explicitly outside feature 003 and are carried into the proposed chat design.
