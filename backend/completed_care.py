@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
@@ -71,3 +72,12 @@ def report_usage(report):
         employee_paid_cents=report["you_paid_cents"] or 0,
         category=report["category"],
     )
+
+
+def with_confirmed_usage(employee, reports):
+    """Return the employee context with confirmed care added to fixture usage.
+
+    Reports without a known insurer payment do not count against the maximum.
+    """
+    recorded = [record for report in reports if (record := report_usage(report)) is not None]
+    return replace(employee, usage=[*employee.usage, *recorded])

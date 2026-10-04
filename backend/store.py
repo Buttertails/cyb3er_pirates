@@ -12,6 +12,7 @@ Collection layout:
     users/{uid}
     users/{uid}/demo_employees/{employeeId}/procedures/{submissionId}
     users/{uid}/demo_employees/{employeeId}/saved_plans/{recordId}
+    users/{uid}/reminder_deliveries/{campaign}-{key}
 """
 
 from __future__ import annotations
@@ -19,12 +20,15 @@ from __future__ import annotations
 import functools
 import os
 from typing import Any, Optional
+from uuid import uuid4
 
 from firebase_admin import firestore
 from google.cloud import firestore as cloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 from datetime import datetime, timezone
 
-from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile
+from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile, utc_datetime
+import reminders
 
 
 def db():
@@ -137,6 +141,13 @@ def patch_user_profile(uid: str, fields: dict[str, Any]) -> None:
     user_ref(uid).set(fields, merge=True)
 
 
+def record_sign_in(uid: str, email: Optional[str], now: Optional[datetime] = None) -> None:
+    """Record a completed sign-in as a timestamp and start a new inactivity cycle."""
+    patch_user_profile(uid, {"email": email,
+                             "last_sign_in_at": now or datetime.now(timezone.utc),
+                             "inactivity_cycle_id": str(uuid4())})
+
+
 def get_user_profile(uid: str) -> Optional[UserProfile]:
     snap = user_ref(uid).get()
     if not snap.exists:
@@ -233,3 +244,171 @@ def commit_care_batch(uid: str, employee_id: str, reports: list[dict[str, Any]],
                                  seed_paid_by_year, annual_maximum_cents)
 
     return write(client.transaction())
+
+
+# --------------------------------------------------------------------------- #
+# Reminder email deliveries (see reminders.py for the state machine)
+# --------------------------------------------------------------------------- #
+
+def _delivery_ref(client, uid: str, doc_id: str):
+    return client.collection("users").document(uid).collection("reminder_deliveries").document(doc_id)
+
+
+def _read(transaction, ref) -> Optional[dict[str, Any]]:
+    snap = next(iter(transaction.get(ref)))
+    return snap.to_dict() if snap.exists else None
+
+
+def _apply_claim(transaction, client, campaign, candidate, job_id: str, now: datetime) -> str:
+    """Recheck eligibility on fresh data, then claim. All reads precede writes."""
+    user = client.collection("users").document(candidate.uid)
+    delivery_ref = _delivery_ref(client, candidate.uid, candidate.doc_id)
+    data = _read(transaction, user)
+    delivery = _read(transaction, delivery_ref)
+    profile = UserProfile.from_dict({**data, "uid": candidate.uid}) if data is not None else None
+    employee_id = campaign.care_employee_id(profile) if profile is not None else None
+    reports = None
+    if employee_id:
+        procedures = (user.collection("demo_employees").document(employee_id)
+                      .collection("procedures").limit(500))
+        reports = [snap.to_dict() for snap in transaction.get(procedures)]
+    if not campaign.recheck(profile, reports, candidate, now):
+        return "stale"
+    outcome, fields = reminders.decide_claim(delivery, candidate, job_id, now)
+    if fields:
+        transaction.set(delivery_ref, fields, merge=True)
+    return outcome
+
+
+def _apply_delivery_change(transaction, client, candidate, decide) -> Optional[dict[str, Any]]:
+    ref = _delivery_ref(client, candidate.uid, candidate.doc_id)
+    fields = decide(_read(transaction, ref))
+    if fields:
+        transaction.set(ref, fields, merge=True)
+    return fields
+
+
+def _apply_skip(transaction, client, candidate, code: str, now: datetime) -> None:
+    _apply_delivery_change(transaction, client, candidate,
+                           lambda d: reminders.decide_skip(d, code, candidate, now))
+
+
+def _apply_mark_sending(transaction, client, candidate, job_id: str, now: datetime) -> bool:
+    return _apply_delivery_change(transaction, client, candidate,
+                                  lambda d: reminders.decide_sending(d, job_id, now)) is not None
+
+
+def _apply_mark_sent(transaction, client, candidate, provider_message_id: str, now: datetime) -> None:
+    _apply_delivery_change(transaction, client, candidate,
+                           lambda d: reminders.decide_sent(d, provider_message_id, now))
+
+
+def _apply_failure(transaction, client, candidate, error, now: datetime) -> None:
+    _apply_delivery_change(transaction, client, candidate,
+                           lambda d: reminders.decide_failure(d, error, now))
+
+
+class FirestoreReminderRepository:
+    """Reminder data access for ``reminders.ReminderRunner``."""
+
+    def __init__(self, client=None, page_size: int = 100):
+        self.client = client or db()
+        self.page_size = page_size
+
+    def _transact(self, apply, *args):
+        @cloud_firestore.transactional
+        def run(transaction):
+            return apply(transaction, self.client, *args)
+
+        return run(self.client.transaction())
+
+    def _paged(self, query):
+        last = None
+        while True:
+            page = query.limit(self.page_size)
+            if last is not None:
+                page = page.start_after(last)
+            snaps = list(page.stream())
+            for snap in snaps:
+                yield UserProfile.from_dict({**snap.to_dict(), "uid": snap.id})
+            if len(snaps) < self.page_size:
+                return
+            last = snaps[-1]
+
+    def inactive_profiles(self, cutoff: datetime):
+        users = self.client.collection("users")
+        return self._paged(users.where(filter=FieldFilter("last_sign_in_at", "<=", cutoff))
+                           .order_by("last_sign_in_at"))
+
+    def company_profiles(self, companies: list[str]):
+        users = self.client.collection("users")
+        return self._paged(users.where(filter=FieldFilter("company", "in", list(companies)))
+                           .order_by("__name__"))
+
+    def care_reports(self, uid: str, employee_id: str) -> list[dict[str, Any]]:
+        procedures = (self.client.collection("users").document(uid).collection("demo_employees")
+                      .document(employee_id).collection("procedures"))
+        return [snap.to_dict() for snap in procedures.stream()]
+
+    def delivery(self, candidate) -> Optional[dict[str, Any]]:
+        snap = _delivery_ref(self.client, candidate.uid, candidate.doc_id).get()
+        return snap.to_dict() if snap.exists else None
+
+    def record_skip(self, candidate, code: str, now: datetime) -> None:
+        self._transact(_apply_skip, candidate, code, now)
+
+    def claim(self, campaign, candidate, job_id: str, now: datetime) -> str:
+        return self._transact(_apply_claim, campaign, candidate, job_id, now)
+
+    def mark_sending(self, candidate, job_id: str, now: datetime) -> bool:
+        return self._transact(_apply_mark_sending, candidate, job_id, now)
+
+    def mark_sent(self, candidate, provider_message_id: str, now: datetime) -> None:
+        self._transact(_apply_mark_sent, candidate, provider_message_id, now)
+
+    def mark_failure(self, candidate, error, now: datetime) -> None:
+        self._transact(_apply_failure, candidate, error, now)
+
+
+# --------------------------------------------------------------------------- #
+# One-time backfill: legacy ISO-string sign-in times -> timestamps
+# --------------------------------------------------------------------------- #
+
+def _backfill_fields(data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    raw = data.get("last_sign_in_at")
+    parsed = utc_datetime(raw)
+    if parsed is None:
+        return None
+    fields: dict[str, Any] = {}
+    if isinstance(raw, str):
+        fields["last_sign_in_at"] = parsed
+    if not data.get("inactivity_cycle_id"):
+        fields["inactivity_cycle_id"] = str(uuid4())
+    return fields or None
+
+
+def _apply_backfill(transaction, client, uid: str) -> bool:
+    ref = client.collection("users").document(uid)
+    fields = _backfill_fields(_read(transaction, ref) or {})
+    if fields:
+        transaction.set(ref, fields, merge=True)
+    return fields is not None
+
+
+def backfill_sign_ins(apply: bool = False, client=None) -> dict[str, int]:
+    """Count (and with ``apply``, convert) profiles the reminder query can't see."""
+    client = client or db()
+    counts = {"scanned": 0, "needs_update": 0, "updated": 0}
+    for snap in client.collection("users").stream():
+        counts["scanned"] += 1
+        if _backfill_fields(snap.to_dict() or {}) is None:
+            continue
+        counts["needs_update"] += 1
+        if apply:
+            @cloud_firestore.transactional
+            def run(transaction, uid=snap.id):
+                return _apply_backfill(transaction, client, uid)
+
+            if run(client.transaction()):
+                counts["updated"] += 1
+    return counts

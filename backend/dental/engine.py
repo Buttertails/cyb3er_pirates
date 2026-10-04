@@ -66,6 +66,25 @@ def plan_year_window(plan: EmployerPlan, as_of: date) -> tuple[date, date]:
     return start, end
 
 
+def unused_benefits_window(plan: EmployerPlan, as_of: date, lead_months: int = 3) -> tuple[date, date]:
+    """Return (opens_on, resets_on) for the "use your benefits" reminder.
+
+    The window opens ``lead_months`` before the plan year containing ``as_of``
+    ends (Oct 1 for a calendar-year plan with the default lead) and closes when
+    benefits reset. The day of month is clamped for short months.
+    """
+    _start, resets_on = plan_year_window(plan, as_of)
+    month_index = resets_on.year * 12 + (resets_on.month - 1) - lead_months
+    year, month = divmod(month_index, 12)
+    month += 1
+    for day in range(resets_on.day, 27, -1):
+        try:
+            return date(year, month, day), resets_on
+        except ValueError:
+            continue
+    return date(year, month, min(resets_on.day, 28)), resets_on
+
+
 def _months_between(earlier: date, later: date) -> int:
     """Whole months from ``earlier`` to ``later`` (0 if later is before)."""
     if later < earlier:

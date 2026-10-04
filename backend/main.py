@@ -22,6 +22,7 @@ Endpoints (all under /api)
 --------------------------
 Signed-in user (Authorization: Bearer <Firebase ID token>):
     GET  /api/me                                -> {uid, email, location: {state, zip} | null}
+    POST /api/me/sign-in    body: {}            -> records the sign-in time and a new inactivity cycle
     PUT  /api/me/location   body: {state, zip}  -> same shape; saved once, reused on later sign-ins
     POST /api/me/estimate   {employee_id, procedure_id, network?} -> single-procedure estimate
     POST /api/me/sequence   {employee_id, procedures[], network?, urgent[]?} -> cross-plan-year plan
@@ -58,6 +59,9 @@ Engine (deterministic model):
 Convenience:
     POST /api/seed         loads the sample employer/plan/employee/usage
 
+Internal (Cloud Scheduler OIDC identity, see reminder_routes.py):
+    POST /api/internal/reminders/run   {campaigns?, batch_size?, dry_run?} -> counts only
+
 Each engine endpoint resolves its plan from one of three sources (in priority
 order): a ``plan_id`` (+ optional ``member_type``: "adult"/"children") naming a
 fictional plan in ``Data/plans.json``; an inline ``plan`` (+ optional
@@ -69,7 +73,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
@@ -86,6 +90,7 @@ from auth import require_user
 from chat_routes import chat, _estimate as chat_estimate, _network as chat_network, _with_reports
 from chat_profiles import iso_date, load_profiles
 from completed_care import parse_report
+from reminder_routes import reminders_bp
 from dental import catalog, dentists, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
@@ -267,7 +272,8 @@ def _me_json(profile: Optional[UserProfile]) -> dict[str, Any]:
             "name": profile.name if profile else None,
             "company": profile.company if profile else None,
             "office": profile.office if profile else None,
-            "last_sign_in_at": profile.last_sign_in_at if profile else None}
+            "last_sign_in_at": (profile.last_sign_in_at.isoformat()
+                                if profile and profile.last_sign_in_at else None)}
 
 
 @api_bp.get("/me")
@@ -296,8 +302,7 @@ def post_my_sign_in():
     body = request.get_json(silent=True)
     if body != {}:
         return jsonify({"error": "Send an empty object."}), 422
-    store.patch_user_profile(g.uid, {"email": g.email,
-                                     "last_sign_in_at": datetime.now(timezone.utc).isoformat()})
+    store.record_sign_in(g.uid, g.email)
     return jsonify(_me_json(store.get_user_profile(g.uid)))
 
 
@@ -726,6 +731,7 @@ def post_seed():
 # --------------------------------------------------------------------------- #
 
 app.register_blueprint(api_bp, url_prefix="/api")
+app.register_blueprint(reminders_bp, url_prefix="/api")
 
 
 @app.get("/")

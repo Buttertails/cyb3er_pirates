@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hmac
-from dataclasses import replace
 from functools import wraps
 
 from flask import Blueprint, current_app, g, jsonify, request
@@ -11,7 +10,7 @@ from flask import Blueprint, current_app, g, jsonify, request
 from auth import require_user
 from chat_context import ChatConfig, SessionSigner
 from chat_profiles import iso_date, load_profiles
-from completed_care import report_usage
+from completed_care import with_confirmed_usage
 from dental import catalog, dentists, engine
 from dental.models import Network
 import dialogflow_client
@@ -73,9 +72,7 @@ def _employee(profiles, employee_id):
 def _with_reports(uid, employee):
     if not isinstance(uid, str) or not uid:
         raise ChatProblem("invalid_context", "This conversation needs a new signed-in session. Restart chat.", 409)
-    reports = store.list_care_reports(uid, employee.employee_id)
-    recorded = [record for report in reports if (record := report_usage(report)) is not None]
-    return replace(employee, usage=[*employee.usage, *recorded])
+    return with_confirmed_usage(employee, store.list_care_reports(uid, employee.employee_id))
 
 
 def _object(value, message="Send a JSON object."):

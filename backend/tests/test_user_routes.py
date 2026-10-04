@@ -11,6 +11,9 @@ Run from the backend/ directory:
 
 from __future__ import annotations
 
+from datetime import datetime
+from uuid import UUID
+
 import pytest
 
 pytest.importorskip("firebase_admin")
@@ -162,6 +165,42 @@ def test_sign_in_updates_marker_without_erasing_profile(client):
     assert response.status_code == 200
     assert response.get_json()["last_sign_in_at"]
     assert response.get_json()["name"] == "Pat"
+
+
+def test_sign_in_stores_a_timestamp_and_starts_a_new_inactivity_cycle(client, saved):
+    first = client.post("/api/me/sign-in", headers=bearer("pat-token"), json={})
+    profile = saved["user-pat"]
+    assert isinstance(profile.last_sign_in_at, datetime)
+    assert profile.last_sign_in_at.tzinfo is not None
+    first_cycle = profile.inactivity_cycle_id
+    assert str(UUID(first_cycle)) == first_cycle
+    assert first.get_json()["last_sign_in_at"] == profile.last_sign_in_at.isoformat()
+    assert "inactivity_cycle_id" not in first.get_json()
+
+    client.post("/api/me/sign-in", headers=bearer("pat-token"), json={})
+    assert saved["user-pat"].inactivity_cycle_id != first_cycle
+
+
+@pytest.mark.parametrize("body", [None, {"event_id": "x"}, []])
+def test_sign_in_requires_an_empty_object(client, saved, body):
+    response = client.post("/api/me/sign-in", headers=bearer("pat-token"), json=body)
+    assert response.status_code == 422
+    assert saved == {}
+
+
+@pytest.mark.parametrize("stored,expected", [
+    ("2026-10-04T04:10:20.123456+00:00", "2026-10-04T04:10:20.123456+00:00"),
+    ("2026-07-06T12:00:00Z", "2026-07-06T12:00:00+00:00"),
+    ("2026-07-06T08:00:00-04:00", "2026-07-06T12:00:00+00:00"),
+    ("2026-07-06T12:00:00", None),
+    ("not a date", None),
+    (12345, None),
+])
+def test_legacy_or_invalid_sign_in_values_are_read_safely(client, saved, stored, expected):
+    saved["user-pat"] = main.UserProfile.from_dict({"uid": "user-pat", "last_sign_in_at": stored})
+    response = client.get("/api/me", headers=bearer("pat-token"))
+    assert response.status_code == 200
+    assert response.get_json()["last_sign_in_at"] == expected
 
 
 def test_completed_care_is_scoped_and_retry_does_not_double_count(client, monkeypatch):

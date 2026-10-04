@@ -44,3 +44,16 @@ def test_invalid_report_rejected(change):
     body.update(change)
     with pytest.raises(ValueError):
         parse_report(body, employee, today=date(2026, 10, 3))
+
+
+def test_confirmed_usage_adds_only_known_insurer_payments():
+    from completed_care import with_confirmed_usage
+    employee = load_profiles().employee("demo-a-pat")
+    known = {"submission_id": "care-201", "employee_id": "demo-a-pat", "procedure": "filling",
+             "category": "general", "date": "2026-09-01", "cost_cents": 20000,
+             "you_paid_cents": 4000, "insurance_paid_cents": 16000}
+    unknown = {**known, "submission_id": "care-202", "insurance_paid_cents": None}
+    merged = with_confirmed_usage(employee, [known, unknown])
+    assert [u.id for u in merged.usage[len(employee.usage):]] == ["confirmed-care-201"]
+    assert len(merged.usage) == len(employee.usage) + 1
+    assert employee.usage is not merged.usage

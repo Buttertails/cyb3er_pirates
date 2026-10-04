@@ -51,6 +51,8 @@ from .models import (
 
 # JSON uses -1 as a "not applicable / unlimited / none" sentinel.
 SENTINEL = -1
+# Annual maximum used for plans whose maxCoverage is the unlimited sentinel.
+UNLIMITED_ANNUAL_MAX_CENTS = dollars(10_000_000)
 
 # plans.json category labels -> engine Category. "Orthodontia" is the JSON
 # spelling of the engine's "orthodontic" bucket.
@@ -260,7 +262,7 @@ class MockPlan:
 
         # Unlimited max -> a cap large enough never to bind.
         if self.max_coverage is None:
-            annual_max_cents = dollars(10_000_000)
+            annual_max_cents = UNLIMITED_ANNUAL_MAX_CENTS
         else:
             annual_max_cents = dollars(self.max_coverage)
 

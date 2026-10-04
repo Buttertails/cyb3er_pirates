@@ -5,3 +5,4 @@ google-cloud-dialogflow-cx==2.7.0
 flask-cors==4.0.1
 waitress==3.0.0
 pypdf==6.19.0
+google-auth>=2.35.0,<3

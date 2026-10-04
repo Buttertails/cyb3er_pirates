@@ -24,6 +24,7 @@ convert at the boundaries (input parsing / display).
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
 
@@ -331,11 +332,30 @@ class UsageRecord:
 # Signed-in user
 # --------------------------------------------------------------------------- #
 
+def utc_datetime(value: Any) -> Optional[datetime]:
+    """Read a stored instant as an aware UTC datetime.
+
+    Accepts a Firestore timestamp (an aware ``datetime`` subclass), an aware
+    ``datetime``, or a legacy ISO-8601 string. Naive or unreadable values become
+    ``None`` rather than guessing a timezone.
+    """
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        return None
+    return value.astimezone(timezone.utc)
+
+
 @dataclass
 class UserProfile:
     """What the backend remembers about a signed-in user, keyed by Firebase uid.
 
     The location is asked for once, then reused on later sign-ins.
+    ``last_sign_in_at`` is stored as a Firestore timestamp; every recorded
+    sign-in also starts a new ``inactivity_cycle_id`` used by reminder emails.
     """
 
     uid: str
@@ -345,7 +365,8 @@ class UserProfile:
     name: Optional[str] = None
     company: Optional[str] = None
     office: Optional[str] = None
-    last_sign_in_at: Optional[str] = None
+    last_sign_in_at: Optional[datetime] = None
+    inactivity_cycle_id: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -360,5 +381,6 @@ class UserProfile:
             name=data.get("name"),
             company=data.get("company"),
             office=data.get("office"),
-            last_sign_in_at=data.get("last_sign_in_at"),
+            last_sign_in_at=utc_datetime(data.get("last_sign_in_at")),
+            inactivity_cycle_id=data.get("inactivity_cycle_id"),
         )

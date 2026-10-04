@@ -262,3 +262,31 @@ def test_sequence_keeps_urgent_this_year():
     # The urgent root canal must be scheduled this year.
     root = next(s for s in result["schedule"] if s["procedure_id"] == "root-canal")
     assert root["when"] == "this_year"
+
+
+# --------------------------------------------------------------------------- #
+# Unused-benefits reminder window
+# --------------------------------------------------------------------------- #
+
+def _plan_starting(month, day):
+    from dental.models import EmployerPlan
+    return EmployerPlan(id="p", employer_id="e", name="P",
+                        plan_year_start_month=month, plan_year_start_day=day)
+
+
+@pytest.mark.parametrize("start,as_of,lead,expected", [
+    ((1, 1), date(2026, 10, 4), 3, (date(2026, 10, 1), date(2027, 1, 1))),
+    ((1, 1), date(2026, 2, 1), 3, (date(2026, 10, 1), date(2027, 1, 1))),
+    ((1, 1), date(2026, 12, 31), 2, (date(2026, 11, 1), date(2027, 1, 1))),
+    ((7, 1), date(2026, 3, 15), 3, (date(2026, 4, 1), date(2026, 7, 1))),
+    ((5, 31), date(2026, 6, 1), 3, (date(2027, 2, 28), date(2027, 5, 31))),
+])
+def test_unused_benefits_window(start, as_of, lead, expected):
+    assert engine.unused_benefits_window(_plan_starting(*start), as_of, lead) == expected
+
+
+def test_unlimited_annual_maximum_has_a_named_sentinel():
+    from dental import mock_plans
+    plans = mock_plans.load_mock_plans_by_id()
+    unlimited = plans["I1"].to_employer_plan(mock_plans.MemberType.ADULT)
+    assert unlimited.annual_maximum_cents == mock_plans.UNLIMITED_ANNUAL_MAX_CENTS
