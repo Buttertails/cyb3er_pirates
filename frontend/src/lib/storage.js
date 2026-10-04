@@ -8,42 +8,42 @@ import {
 export const ROUTES = {
   signIn: '/index.html',
   signup: '/signup.html',
-  location: '/location.html',
-  office: '/office.html',
-  category: '/category.html',
-  procedure: '/procedure.html',
-  timing: '/timing.html',
-  confirm: '/confirm.html',
-  results: '/results.html',
-  procedures: '/procedures.html',
-  locationCheck: '/location-check.html',
+  chat: '/chat',
   profile: '/profile.html',
   summary: '/summary.html',
 };
 
-export const FLOW = [
-  { key: 'user', page: ROUTES.signIn },
-  { key: 'location', page: ROUTES.location },
-  { key: 'office', page: ROUTES.office },
-  { key: 'category', page: ROUTES.category },
-  { key: 'procedure', page: ROUTES.procedure },
-  { key: 'timing', page: ROUTES.timing },
+// The one-question-per-page intake URLs, now answered in the chat. App.jsx
+// redirects them so old links and bookmarks still land somewhere useful.
+export const LEGACY_CHAT_PATHS = [
+  '/location.html', '/office.html', '/category.html', '/procedure.html', '/timing.html',
+  '/confirm.html', '/results.html', '/procedures.html', '/location-check.html',
 ];
 
+export const FLOW = [
+  { key: 'user', page: ROUTES.signIn },
+  { key: 'location', page: ROUTES.chat },
+  { key: 'office', page: ROUTES.chat },
+  { key: 'category', page: ROUTES.chat },
+  { key: 'procedure', page: ROUTES.chat },
+  { key: 'timing', page: ROUTES.chat },
+];
+
+// Sign-up pages come first, then the chat asks for location and office.
 export const ONBOARDING = [
   { key: 'email', page: `${ROUTES.signup}?q=email` },
   { key: 'password', page: `${ROUTES.signup}?q=password` },
   { key: 'name', page: `${ROUTES.signup}?q=name` },
-  { key: 'location', page: ROUTES.location },
-  { key: 'office', page: ROUTES.office },
   { key: 'company', page: `${ROUTES.signup}?q=company` },
+  { key: 'location', page: ROUTES.chat },
+  { key: 'office', page: ROUTES.chat },
 ];
 
 export const UPDATE = [
-  { key: 'procedures', page: ROUTES.procedures },
-  { key: 'location-check', page: ROUTES.locationCheck },
-  { key: 'location', page: ROUTES.location },
-  { key: 'office', page: ROUTES.office },
+  { key: 'procedures', page: ROUTES.chat },
+  { key: 'location-check', page: ROUTES.chat },
+  { key: 'location', page: ROUTES.chat },
+  { key: 'office', page: ROUTES.chat },
 ];
 
 export const STALE_SIGN_IN_DAYS = 90;
@@ -96,12 +96,14 @@ export function updateSteps() {
   return UPDATE.filter((step) => step.key !== 'location' && step.key !== 'office');
 }
 
+// Returns a fresh /chat URL each time so an open chat restarts on the update questions.
 export function startUpdate(reason, returnTo) {
-  ['still_here', 'procedures_saved', 'procedures_draft'].forEach((key) => saveStep(key, null));
+  ['still_here', 'procedures_saved', 'procedures_draft', 'work_entry', 'chat_node']
+    .forEach((key) => saveStep(key, null));
   saveStep('updating', true);
   saveStep('update_reason', reason);
   saveStep('update_return', returnTo);
-  return UPDATE[0].page;
+  return `${UPDATE[0].page}?update=${Date.now()}`;
 }
 
 export function signInIsStale(lastSignInAt) {
@@ -195,8 +197,7 @@ export function nextPage(key) {
   const steps = activeSteps();
   const next = steps[steps.findIndex((step) => step.key === key) + 1];
   if (next) return next.page;
-  if (inOnboarding()) return ROUTES.category;
-  if (inUpdate()) return readStep('update_return') || ROUTES.office;
+  if (inOnboarding() || inUpdate()) return ROUTES.chat;
   return null;
 }
 
@@ -237,11 +238,4 @@ export function describeProcedure(entry) {
   if (entry.you_paid != null) money.push(`you paid ${dollars(entry.you_paid)}`);
   if (entry.insurance_paid != null) money.push(`insurance paid ${dollars(entry.insurance_paid)}`);
   return [procedureLabel(entry.procedure), when, money.join(', ')].filter(Boolean).join(' · ');
-}
-
-export function yesNoOptions(yesLabel, yesDescription, noLabel, noDescription) {
-  return [
-    { id: 'yes', label: yesLabel, description: yesDescription },
-    { id: 'no', label: noLabel, description: noDescription },
-  ];
 }

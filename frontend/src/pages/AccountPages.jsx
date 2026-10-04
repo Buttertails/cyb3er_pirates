@@ -22,11 +22,9 @@ import {
   answeredSteps,
   clearSession,
   firstMissing,
-  formatLocation,
   inOnboarding,
   isLastStep,
   nextPage,
-  officeLabel,
   ONBOARDING,
   readStep,
   ROUTES,
@@ -86,10 +84,10 @@ export function SignInPage() {
         navigate(unanswered.page);
       } else if (signInIsStale(profile.last_sign_in_at)) {
         saveStep('previous_sign_in', profile.last_sign_in_at);
-        navigate(startUpdate('stale', ROUTES.office));
+        navigate(startUpdate('stale', ROUTES.chat));
       } else {
         await recordSignIn();
-        navigate(ROUTES.office);
+        navigate(ROUTES.chat);
       }
     } catch (error) {
       setBusy(false);
@@ -197,8 +195,6 @@ export function SignupPage() {
   const summary = [
     { key: 'email', label: 'Email', value: earlier.includes('email') && !saved.user ? saved.email : '', to: `${ROUTES.signup}?q=email` },
     { key: 'name', label: 'Name', value: earlier.includes('name') ? saved.name : '', to: `${ROUTES.signup}?q=name` },
-    { key: 'location', label: 'Location', value: earlier.includes('location') ? formatLocation(saved.location) : '', to: ROUTES.location },
-    { key: 'office', label: 'Office', value: earlier.includes('office') ? officeLabel(saved.office) : '', to: ROUTES.office },
   ];
 
   function saveAnswer(value) {

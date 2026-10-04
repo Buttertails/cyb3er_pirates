@@ -4,10 +4,8 @@ import { signOut } from './lib/auth.js';
 import { SignedOutError, submitErrorMessage } from './lib/api.js';
 import {
   firstMissing,
-  formatLocation,
   inOnboarding,
   inUpdate,
-  officeLabel,
   readStep,
   requiredFlow,
   ROUTES,
@@ -131,26 +129,6 @@ export function SummaryRow({ label, value, to, onLink, linkLabel = 'Change' }) {
   );
 }
 
-export function IntakeSummary({ saved, rows }) {
-  const values = {
-    location: formatLocation(saved.location),
-    office: saved.office ? officeLabel(saved.office) : '',
-    ...rows.reduce((result, row) => ({ ...result, [row.key]: row.value }), {}),
-  };
-  return (
-    <div className="summary-group">
-      {rows.map((row) => (
-        <SummaryRow
-          key={row.key}
-          label={row.label}
-          value={values[row.key]}
-          to={row.to}
-        />
-      ))}
-    </div>
-  );
-}
-
 export function AnswerList({ rows }) {
   return (
     <dl className="answers">
@@ -158,6 +136,55 @@ export function AnswerList({ rows }) {
         <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
       ))}
     </dl>
+  );
+}
+
+function money(value) {
+  return (Number(value) || 0).toLocaleString('en-US', {
+    style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+}
+
+export function EstimateCard({ estimate }) {
+  const line = estimate?.lines?.[0];
+  if (!line) return null;
+  const totals = estimate.totals || {};
+  const breakdown = [
+    ['Procedure cost', money(line.allowed_amount)],
+    ['Coverage', line.covered
+      ? `${Math.round((line.coverage_rate || 0) * 100)}% of allowed cost`
+      : 'Not covered by this plan'],
+    ...(line.deductible_applied ? [['Deductible applied', money(line.deductible_applied)]] : []),
+    ...(typeof estimate.annual_max_remaining_after === 'number'
+      ? [['Annual maximum left after this', money(estimate.annual_max_remaining_after)]] : []),
+  ];
+  return (
+    <div className="estimate">
+      {estimate._local_demo && (
+        <p className="estimate-flag">Local demo estimate — approximate figures, nothing left your browser.</p>
+      )}
+      <div className="cost-grid">
+        <div className="cost-cell">
+          <span className="cost-label">Procedure cost</span>
+          <span className="cost-value">{money(line.allowed_amount)}</span>
+        </div>
+        <div className="cost-cell cost-cell-plan">
+          <span className="cost-label">Your plan pays</span>
+          <span className="cost-value">{money(totals.plan_pays ?? line.plan_pays)}</span>
+        </div>
+        <div className="cost-cell cost-cell-you">
+          <span className="cost-label">You pay</span>
+          <span className="cost-value">{money(totals.employee_owes ?? line.employee_owes)}</span>
+        </div>
+      </div>
+      <AnswerList rows={breakdown} />
+      {line.reasons?.length > 0 && (
+        <ul className="reasons">{line.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+      )}
+      <p className="disclaimer">
+        This is an approximate estimate using fictional plan data, not a claims decision or clinical advice.
+      </p>
+    </div>
   );
 }
 

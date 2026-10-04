@@ -36,17 +36,18 @@ describe('flow storage', () => {
     expect(activeSteps().map((step) => step.key)).toEqual([
       'location', 'office', 'category', 'procedure', 'timing',
     ]);
-    expect(nextPage('procedure')).toBe(ROUTES.timing);
+    expect(nextPage('procedure')).toBe(ROUTES.chat);
     expect(stepPosition('category')).toEqual({ current: 3, total: 5 });
   });
 
-  it('uses onboarding and update routes without changing URL compatibility', () => {
+  it('runs sign-up pages first, then hands location and office to the chat', () => {
     saveStep('onboarding', true);
     expect(activeSteps()).toEqual(ONBOARDING);
-    expect(nextPage('name')).toBe(ROUTES.location);
+    expect(nextPage('name')).toBe(`${ROUTES.signup}?q=company`);
+    expect(nextPage('company')).toBe(ROUTES.chat);
 
     clearSession();
-    expect(startUpdate('manual', ROUTES.profile)).toBe(ROUTES.procedures);
+    expect(startUpdate('manual', ROUTES.profile)).toMatch(/^\/chat\?update=\d+$/);
     expect(activeSteps().map((step) => step.key)).toEqual(['procedures', 'location-check']);
     expect(readStep('update_return')).toBe(ROUTES.profile);
   });

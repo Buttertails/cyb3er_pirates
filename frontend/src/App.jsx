@@ -6,17 +6,11 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { Header } from './components.jsx';
-import {
-  CategoryPage,
-  LocationPage,
-  OfficePage,
-  ProcedurePage,
-  TimingPage,
-} from './pages/IntakePages.jsx';
 import { SignInPage, SignupPage } from './pages/AccountPages.jsx';
-import { ConfirmPage, ResultsPage, SummaryPage } from './pages/ResultsPages.jsx';
-import { LocationCheckPage, ProceduresPage, ProfilePage } from './pages/ProfilePages.jsx';
-import { ROUTES } from './lib/storage.js';
+import { ChatPage } from './pages/ChatPage.jsx';
+import { SummaryPage } from './pages/ResultsPages.jsx';
+import { ProfilePage } from './pages/ProfilePages.jsx';
+import { LEGACY_CHAT_PATHS, ROUTES } from './lib/storage.js';
 
 const EXIT_DURATION = 160;
 
@@ -49,16 +43,12 @@ function AnimatedRoutes() {
       <Routes location={displayedLocation}>
         <Route path="/" element={<SignInPage />} />
         <Route path={ROUTES.signIn} element={<SignInPage />} />
-        <Route path={ROUTES.signup} element={<SignupPage />} />
-        <Route path={ROUTES.location} element={<LocationPage />} />
-        <Route path={ROUTES.office} element={<OfficePage />} />
-        <Route path={ROUTES.category} element={<CategoryPage />} />
-        <Route path={ROUTES.procedure} element={<ProcedurePage />} />
-        <Route path={ROUTES.timing} element={<TimingPage />} />
-        <Route path={ROUTES.confirm} element={<ConfirmPage />} />
-        <Route path={ROUTES.results} element={<ResultsPage />} />
-        <Route path={ROUTES.procedures} element={<ProceduresPage />} />
-        <Route path={ROUTES.locationCheck} element={<LocationCheckPage />} />
+        <Route path={ROUTES.signup} element={<SignupPage key={displayedLocation.search} />} />
+        {/* Keyed by the query so "Update info" restarts an open chat. */}
+        <Route path={ROUTES.chat} element={<ChatPage key={displayedLocation.search} />} />
+        {LEGACY_CHAT_PATHS.map((path) => (
+          <Route key={path} path={path} element={<Navigate to={ROUTES.chat} replace />} />
+        ))}
         <Route path={ROUTES.profile} element={<ProfilePage />} />
         <Route path={ROUTES.summary} element={<SummaryPage />} />
         <Route path="*" element={<Navigate to={ROUTES.signIn} replace />} />
