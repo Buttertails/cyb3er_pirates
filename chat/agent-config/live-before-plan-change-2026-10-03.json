@@ -1,0 +1,81 @@
+{
+  "agent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65",
+  "flow": {
+    "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000",
+    "transitionRoutes": [
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/00000000-0000-0000-0000-000000000000",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "Hi! How are you doing?",
+                  "Hello! How can I help you?",
+                  "Good day! What can I do for you today?",
+                  "Greetings! How can I assist?"
+                ]
+              }
+            }
+          ]
+        },
+        "name": "8815f00a-3f72-49c6-996c-20338852a6e4"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/c8ccc54d-8c83-425d-bbc1-40c98569bf2c",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "I can estimate a planned procedure, review benefits already used, or compare dentist networks. You can change a procedure or network choice after an estimate."
+                ]
+              }
+            }
+          ]
+        },
+        "name": "d027a854-0b01-4cf7-9ecd-49c7ed41c638"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/43188a49-9a8f-4df5-ade8-10bcb790c3a8",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "A deductible is the amount you pay before some coverage applies. An annual maximum limits what the plan pays in a plan year. In-network and out-of-network dentist costs can differ. I can explain your specific estimate after you choose a procedure."
+                ]
+              }
+            }
+          ]
+        },
+        "name": "488c0c6a-8dc9-4d04-ad08-2e044337287c"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/a7d950a4-b87c-430d-a207-40a6609b5e0c",
+        "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+        "name": "fced472e-9570-4bb9-ad03-8ed7682009c4"
+      },
+      {
+        "condition": "true",
+        "triggerFulfillment": {},
+        "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+        "name": "1d8cae26-ba2a-4fbd-8b63-9561d61baec6"
+      }
+    ]
+  },
+  "intent_names": [
+    "Default Welcome Intent",
+    "Default Negative Intent",
+    "network.change",
+    "benefits.terms",
+    "benefits.review",
+    "network.unsure",
+    "procedure.change",
+    "network.compare",
+    "menu.return",
+    "conversation.help",
+    "estimate.start",
+    "procedure.direct"
+  ]
+}

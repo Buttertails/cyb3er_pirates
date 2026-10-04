@@ -113,3 +113,26 @@ unreviewed. This paragraph records the state before the cloud changes below.
 - `python -m unittest discover -s tools/dialogflow/tests -p 'test_*.py'`
   passed (8 tests) before the page update. T008 remains open for the other
   navigation paths, fuller no-match handling and restore tooling.
+
+## Plan-change interruption increment — 2026-10-03
+
+- Fresh scoped pre-change snapshot:
+  `chat/agent-config/live-before-plan-change-2026-10-03.json`. Added
+  `plan.change.question` with 12 training phrases and one flow-level route.
+  The response explains that this demo contains one current employer plan,
+  directs enrollment questions to HR, and lets the employee continue the
+  active conversation. Live readback confirmed six routes, including all five
+  routes in the snapshot. Firebase resources and the Flask service were not
+  changed in this increment.
+- The first Hosting `/api/chat` test immediately after applying the intent
+  fell back to Menu. A retry after Dialogflow training reached the new answer.
+  A second live conversation asked a plan-switch question at Menu and another
+  while the Procedure page was active. The latter stayed on Procedure,
+  repeated its question, then completed `filling` → `in network` → Estimate
+  for Demo Company A (Pat): $160.00 plan / $40.00 employee. Recorded usage
+  was not changed. `python -m unittest discover -s tools/dialogflow/tests
+  -p 'test_*.py'` passed (10 tests).
+- T008 remains open for broader navigation, fallback handling and restore
+  tooling. Rollback is scoped to removing the added flow route and intent
+  after comparing the live flow with the saved snapshot; do not replace
+  unrelated changes or group resources.
