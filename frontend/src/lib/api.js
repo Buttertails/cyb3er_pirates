@@ -317,3 +317,38 @@ export async function requestSequence(intakeProcedureIds, options = {}) {
   const result = await apiFetch('/api/me/sequence', 'POST', body);
   return result.sequence;
 }
+
+// --- Saved estimates and sequence plans (kept on the user's profile) --------
+
+function newRecordId() {
+  return window.crypto?.randomUUID?.() || `saved-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// Persist a snapshot of an estimate or sequence result. `kind` is 'estimate'
+// or 'sequence'; `result` is the computed object the chat already rendered.
+// Returns the stored record (with id + saved_at).
+export async function saveSavedPlan({ employeeId, kind, result, label, id }) {
+  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  const body = {
+    employee_id: employeeId,
+    id: id || newRecordId(),
+    kind,
+    result,
+    ...(label ? { label } : {}),
+  };
+  const response = await apiFetch('/api/me/saved', 'POST', body);
+  return response.saved;
+}
+
+export async function fetchSavedPlans(employeeId) {
+  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  const response = await apiFetch(`/api/me/saved?employee_id=${encodeURIComponent(employeeId)}`, 'GET');
+  return response.saved || [];
+}
+
+export async function deleteSavedPlan(id, employeeId) {
+  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
+  const response = await apiFetch(
+    `/api/me/saved/${encodeURIComponent(id)}?employee_id=${encodeURIComponent(employeeId)}`, 'DELETE');
+  return response.deleted;
+}

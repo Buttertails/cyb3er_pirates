@@ -10,6 +10,8 @@ Collection layout:
     employers/{employerId}/employees/{employeeId}
     employers/{employerId}/employees/{employeeId}/usage/{usageId}
     users/{uid}
+    users/{uid}/demo_employees/{employeeId}/procedures/{submissionId}
+    users/{uid}/demo_employees/{employeeId}/saved_plans/{recordId}
 """
 
 from __future__ import annotations
@@ -148,6 +150,36 @@ def care_collection(uid: str, employee_id: str):
 
 def list_care_reports(uid: str, employee_id: str) -> list[dict[str, Any]]:
     return [snap.to_dict() for snap in care_collection(uid, employee_id).stream()]
+
+
+# --------------------------------------------------------------------------- #
+# Saved estimates / sequence plans (snapshots the user chose to keep)
+# --------------------------------------------------------------------------- #
+
+def saved_plans_collection(uid: str, employee_id: str):
+    return user_ref(uid).collection("demo_employees").document(employee_id).collection("saved_plans")
+
+
+def save_plan_record(uid: str, employee_id: str, record: dict[str, Any]) -> dict[str, Any]:
+    """Persist one saved estimate/sequence snapshot and return it.
+
+    ``record`` must carry an ``id`` and ``kind`` ("estimate" or "sequence"); a
+    server timestamp is stamped on write. Writing the same id again overwrites
+    (idempotent, so a retried save doesn't duplicate).
+    """
+    saved = {**record, "saved_at": datetime.now(timezone.utc).isoformat()}
+    saved_plans_collection(uid, employee_id).document(record["id"]).set(saved)
+    return saved
+
+
+def list_plan_records(uid: str, employee_id: str) -> list[dict[str, Any]]:
+    """All saved snapshots for this employee, newest first."""
+    records = [snap.to_dict() for snap in saved_plans_collection(uid, employee_id).stream()]
+    return sorted(records, key=lambda r: r.get("saved_at", ""), reverse=True)
+
+
+def delete_plan_record(uid: str, employee_id: str, record_id: str) -> None:
+    saved_plans_collection(uid, employee_id).document(record_id).delete()
 
 
 class CareConflict(Exception):

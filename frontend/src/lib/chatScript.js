@@ -17,6 +17,7 @@ import {
   saveProcedures,
   saveProfileDetails,
   saveProfileLocation,
+  saveSavedPlan,
   sendStep,
   sendSteps,
 } from './api.js';
@@ -674,6 +675,7 @@ export const STEPS = {
 
   estimate: {
     choices: () => [
+      chip('save', 'Save this estimate', ['save', 'keep', 'remember', 'bookmark']),
       chip('plan-year', 'Plan care across the year', ['plan', 'sequence', 'schedule', 'maximize', 'multiple', 'several']),
       chip('another', 'Estimate another procedure', ['another', 'different procedure', 'something else']),
       chip('change', 'Change something', ['change', 'edit']),
@@ -682,18 +684,20 @@ export const STEPS = {
       RESTART_CHIP,
     ],
     suggestions() {
-      return featured(this.choices(), ['plan-year', 'another', 'change']);
+      return featured(this.choices(), ['save', 'plan-year', 'another']);
     },
     async ask() {
       const saved = answeredSteps();
       try {
         const estimate = await requestEstimate(saved.procedure, { employeeId: readStep('demo_employee_id') });
         if (!estimate.lines?.[0]) throw new Error('empty-estimate');
+        saveStep('last_estimate', estimate);
         return [
           { kind: 'estimate', data: estimate, text: 'Here’s what to expect, based on your plan and the care you picked.' },
-          { text: 'What would you like to do next?' },
+          { text: 'Want to save this, or do something else?' },
         ];
       } catch (cause) {
+        saveStep('last_estimate', null);
         return [{
           text: cause?.message === 'unmapped-procedure'
             ? 'I can’t estimate that selection yet. Try a different procedure.'
@@ -702,12 +706,21 @@ export const STEPS = {
         }];
       }
     },
-    answer(input) {
+    async answer(input) {
       const choice = pick(input, this.choices());
       if (!choice) return { error: NOT_SURE };
       if (choice.id === 'restart') return { restart: true };
       if (choice.id === 'retry') return { next: 'estimate' };
       if (choice.id === 'sent') return { navigate: ROUTES.summary };
+      if (choice.id === 'save') {
+        const estimate = readStep('last_estimate');
+        if (!estimate) return { error: 'There’s no estimate to save right now.' };
+        await saveSavedPlan({
+          employeeId: readStep('demo_employee_id'), kind: 'estimate', result: estimate,
+          label: estimate.lines?.[0]?.label,
+        });
+        return { next: 'estimate-saved' };
+      }
       if (choice.id === 'plan-year') {
         // Seed the plan with the procedure they just estimated.
         const started = readStep('procedure') ? [readStep('procedure')] : [];
@@ -719,6 +732,32 @@ export const STEPS = {
         return { next: 'category' };
       }
       return { next: 'change' };
+    },
+  },
+
+  'estimate-saved': {
+    choices: () => [
+      chip('profile', 'View it on my profile', ['profile', 'view', 'saved']),
+      chip('plan-year', 'Plan care across the year', ['plan', 'sequence']),
+      chip('another', 'Estimate another procedure', ['another', 'different']),
+      RESTART_CHIP,
+    ],
+    suggestions() {
+      return featured(this.choices(), ['profile', 'another', 'plan-year']);
+    },
+    ask: () => [{ text: 'Saved. You can find it on your profile anytime. What’s next?' }],
+    answer(input) {
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: NOT_SURE };
+      if (choice.id === 'restart') return { restart: true };
+      if (choice.id === 'profile') return { navigate: ROUTES.profile };
+      if (choice.id === 'plan-year') {
+        const started = readStep('procedure') ? [readStep('procedure')] : [];
+        saveStep('sequence_picks', started);
+        return { next: 'plan-add' };
+      }
+      ['category', 'procedure', 'timing'].forEach((key) => saveStep(key, null));
+      return { next: 'category' };
     },
   },
 
@@ -772,12 +811,13 @@ export const STEPS = {
 
   'plan-review': {
     choices: () => [
+      chip('save', 'Save this plan', ['save', 'keep', 'remember', 'bookmark']),
       chip('another', 'Plan different procedures', ['another', 'different', 'redo']),
       chip('care', 'Back to care options', ['care', 'estimate', 'back']),
       RESTART_CHIP,
     ],
     suggestions() {
-      return featured(this.choices(), ['another', 'care', 'restart']);
+      return featured(this.choices(), ['save', 'another', 'care']);
     },
     async ask() {
       const picks = readStep('sequence_picks') || [];
@@ -786,11 +826,13 @@ export const STEPS = {
       }
       try {
         const sequence = await requestSequence(picks, { employeeId: readStep('demo_employee_id') });
+        saveStep('last_sequence', sequence);
         return [
           { kind: 'sequence', data: sequence, text: 'Here’s how to time this care to get the most from your plan.' },
-          { text: 'What would you like to do next?' },
+          { text: 'Want to save this plan, or do something else?' },
         ];
       } catch (cause) {
+        saveStep('last_sequence', null);
         return [{
           text: cause?.message === 'unmapped-procedure'
             ? 'I can’t plan one of those selections yet. Try different procedures.'
@@ -799,10 +841,44 @@ export const STEPS = {
         }];
       }
     },
+    async answer(input) {
+      const choice = pick(input, this.choices());
+      if (!choice) return { error: NOT_SURE };
+      if (choice.id === 'restart') return { restart: true };
+      if (choice.id === 'save') {
+        const sequence = readStep('last_sequence');
+        if (!sequence) return { error: 'There’s no plan to save right now.' };
+        const picks = readStep('sequence_picks') || [];
+        await saveSavedPlan({
+          employeeId: readStep('demo_employee_id'), kind: 'sequence', result: sequence,
+          label: picks.map((id) => labelFor(SEQUENCE_PROCEDURES, id)).join(', '),
+        });
+        return { next: 'plan-saved' };
+      }
+      if (choice.id === 'another') {
+        saveStep('sequence_picks', []);
+        return { next: 'plan-add' };
+      }
+      return { next: 'estimate' };
+    },
+  },
+
+  'plan-saved': {
+    choices: () => [
+      chip('profile', 'View it on my profile', ['profile', 'view', 'saved']),
+      chip('another', 'Plan different procedures', ['another', 'different']),
+      chip('care', 'Back to care options', ['care', 'estimate', 'back']),
+      RESTART_CHIP,
+    ],
+    suggestions() {
+      return featured(this.choices(), ['profile', 'another', 'care']);
+    },
+    ask: () => [{ text: 'Saved. Your plan is on your profile whenever you need it. What’s next?' }],
     answer(input) {
       const choice = pick(input, this.choices());
       if (!choice) return { error: NOT_SURE };
       if (choice.id === 'restart') return { restart: true };
+      if (choice.id === 'profile') return { navigate: ROUTES.profile };
       if (choice.id === 'another') {
         saveStep('sequence_picks', []);
         return { next: 'plan-add' };
