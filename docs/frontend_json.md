@@ -385,6 +385,8 @@ their messages again, so the same event can arrive more than once in a session.
 - [ ] Merge, not overwrite, when saving `users/{uid}`, so the location and the new fields don't erase each other
 - [ ] `last_sign_in_at` in the `GET /api/me` response, and `POST /api/me/sign-in` to record it
 - [ ] `GET` and `POST /api/me/procedures`, stored in `users/{uid}/procedures`, with the validation above
+- [ ] `GET /api/me/appointments`, and a way to create appointments (none exists yet)
+- [ ] A plan on the user's profile, for the profile page's plan section (a placeholder today)
 
 ## Authentication
 
@@ -490,6 +492,24 @@ it's `false`, procedures and the last sign-in are kept per email in the
 browser's localStorage (`profile_details`). To try the 90-day branch there, set
 that email's `last_sign_in_at` to an older date.
 
+## Profile page
+
+`profile.html`, reached from "Profile" in the header of every signed-in page,
+shows what we hold for the user. It is read-only; changes go through
+[updating info](#updating-info), which "Update recent visits" starts and which
+returns to the profile when it ends.
+
+| Section | Source |
+| --- | --- |
+| Name, email, company, location, dental office | Saved at sign-up or sign-in (`GET /api/me`) |
+| Plan | **Placeholder.** The profile holds no plan yet, so the page shows plan A from `Data/plans.json` (`DEMO_PLAN` in `frontend/js/options.js`). |
+| Appointments, split into upcoming and past | `GET /api/me/appointments` (**new**, below) |
+| Recent dental work, newest first | `GET /api/me/procedures` |
+
+While `profileDetailsLive` is `false` (see [updating info](#updating-info)),
+appointments are read from the browser's localStorage. If none are stored there,
+two sample ones are shown, with a note saying so.
+
 ## Profile and location
 
 The backend remembers each user's location in Firestore at `users/{uid}`, so it
@@ -564,6 +584,34 @@ sends one field at a time, as each question is answered.
 - On success it returns the same shape as `GET /api/me`.
 - Last write wins, as with the location.
 
+### `GET /api/me/appointments` (proposed)
+
+The user's dental appointments, in any order. The page splits them into upcoming
+and past by `starts_at`.
+
+```json
+{
+  "appointments": [
+    {
+      "id": "a-3c19",
+      "starts_at": "2026-10-17T13:30:00Z",
+      "office_name": "Placeholder Smiles",
+      "reason": "Routine cleaning"
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | string | Stable and unique. |
+| `starts_at` | string | ISO 8601 time, shown in the user's local time zone. |
+| `office_name` | string | Shown as-is. |
+| `reason` | string | Optional. Shown as-is. |
+
+Nothing creates appointments yet, so this route is read-only for now. An empty
+list is fine and shows "No appointments yet."
+
 ### `POST /api/me/sign-in` (proposed)
 
 Records that the user signed in now, as `last_sign_in_at`. The body is `{}`.
@@ -630,7 +678,8 @@ dental work since then.
 
 `users/{uid}` holds `email`, `state` and `zip` today. The proposal adds `name`,
 `company`, `office` and `last_sign_in_at`, plus a `users/{uid}/procedures/{id}`
-subcollection with one document per recorded procedure. Only the backend writes
+subcollection with one document per recorded procedure and a
+`users/{uid}/appointments/{id}` subcollection for appointments. Only the backend writes
 these; `firestore.rules` blocks clients.
 
 **Watch out:** `store.save_user_profile` writes the whole document with `.set()`,
