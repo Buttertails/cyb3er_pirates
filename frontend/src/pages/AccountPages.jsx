@@ -11,7 +11,8 @@ import {
   useDocumentTitle,
   useSubmitTask,
 } from '../components.jsx';
-import { authMessage, demoLoginActive, signIn, signUp } from '../lib/auth.js';
+import { authMessage, currentAuthUser, demoLoginActive, signIn, signUp } from '../lib/auth.js';
+import { signInRouteDecision } from '../lib/accountNavigation.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import {
   fetchProfile,
@@ -46,6 +47,20 @@ export function SignInPage() {
   const [submitError, setSubmitError] = useState('');
   const root = useRef(null);
   const scopeRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    currentAuthUser().then(async (user) => {
+      if (!active) return;
+      const decision = signInRouteDecision(user?.email, readStep('user'));
+      if (decision === 'clear') clearSession();
+      if (decision === 'resume') navigate(ROUTES.chat, { replace: true });
+      if (decision === 'hydrate') await continueWithUser(user);
+    }).catch(() => {
+      if (active) clearSession();
+    });
+    return () => { active = false; };
+  }, [navigate]);
 
   // Slide in animation on load
   useEffect(() => {
@@ -89,6 +104,14 @@ export function SignInPage() {
     }
 
     try {
+      await continueWithUser(user);
+    } catch (error) {
+      setBusy(false);
+      setSubmitError("Sign-in succeeded, but the app couldn't load your profile. Start the backend, then try again.");
+    }
+  }
+
+  async function continueWithUser(user) {
       clearSession();
       saveStep('user', user.email);
       const profile = await fetchProfile();
@@ -114,10 +137,6 @@ export function SignInPage() {
         await recordSignIn();
         navigate(ROUTES.chat);
       }
-    } catch (error) {
-      setBusy(false);
-      setSubmitError("Sign-in succeeded, but the app couldn't load your profile. Start the backend, then try again.");
-    }
   }
 
   return (

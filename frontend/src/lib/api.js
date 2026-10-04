@@ -200,6 +200,31 @@ export async function sendLiveChat(employeeId, sessionId, message) {
   return apiFetch('/api/chat', 'POST', body);
 }
 
+export async function uploadProcedurePdf(file, employeeId, sessionId) {
+  if (!file || file.size > 5 * 1024 * 1024) throw new RejectedError('Choose a PDF smaller than 5 MB.');
+  const token = await idToken();
+  if (!token) throw new SignedOutError('Not signed in');
+  const body = new FormData();
+  body.append('file', file);
+  body.append('employee_id', employeeId);
+  if (sessionId) body.append('session_id', sessionId);
+  let response;
+  try {
+    response = await fetch('/api/chat/document', {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body,
+      signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
+    });
+  } catch (error) {
+    throw new AppServiceError(null, { cause: error });
+  }
+  if (response.status === 401) throw new SignedOutError('Sign-in rejected');
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new RejectedError(data.error?.message || 'That PDF could not be read.');
+  }
+  return response.json();
+}
+
 export async function finishFlow() {
   if (inUpdate()) await recordSignIn();
   [

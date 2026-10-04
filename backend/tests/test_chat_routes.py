@@ -1,6 +1,7 @@
 """Real Flask/calculator behavior; no cloud or database calls."""
 
 from copy import deepcopy
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,39 @@ def webhook_body(employee="demo-a-pat", **parameters):
 
 def webhook(client, body):
     return client.post("/api/dialogflow/webhook", json=body, headers=AUTH)
+
+
+def test_document_upload_requires_signed_in_user(client):
+    response = client.post("/api/chat/document", data={
+        "employee_id": "demo-a-pat", "file": (BytesIO(b"%PDF-1.4"), "care.pdf")})
+    assert response.status_code == 401
+
+
+def test_document_upload_preserves_session_and_asks_for_procedure_confirmation(client, monkeypatch):
+    from tests.test_pdf_intake import pdf_with_text
+    from chat_context import SessionSigner
+    import dialogflow_client
+
+    original = SessionSigner(KEY).create('demo-a-pat', 'backend-chat-demo-v1', uid='test-firebase-token')
+    seen = []
+
+    def detect(config, session_id, context, text, *, event=None):
+        seen.append((context, event))
+        return {'queryResult': {'currentPage': {'displayName': 'Procedure'},
+                                'responseMessages': [{'text': {'text': ['Which procedure?']}}]}}
+
+    monkeypatch.setattr(dialogflow_client, 'detect_intent', detect)
+    response = client.post('/api/chat/document', data={
+        'employee_id': 'demo-a-pat', 'session_id': original,
+        'file': (BytesIO(pdf_with_text('Plan recommends braces')), 'care.pdf')},
+        headers=USER_AUTH)
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['session_id'] == original
+    assert body['document']['candidates'][0]['value'] == 'orthodontics'
+    assert body['estimate'] is None
+    assert 'confirm' in body['messages'][0].lower()
+    assert seen == [(original, 'document.uploaded')]
 
 
 def test_webhook_returns_real_estimate_and_read_only_benefits(client):

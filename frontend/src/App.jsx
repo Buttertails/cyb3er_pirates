@@ -5,16 +5,17 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { Header, LightPurpleBackground, OrangeBackground, PurpleBackground } from './components.jsx';
+import { Header, LightPurpleBackground, OrangeBackground, PurpleBackground, useSessionUser } from './components.jsx';
 import { SignInPage, SignupPage } from './pages/AccountPages.jsx';
-import { ChatPage } from './pages/ChatPage.jsx';
+import { ChatPage, GuidedChatPage } from './pages/ChatPage.jsx';
 import { SummaryPage } from './pages/ResultsPages.jsx';
 import { ProfilePage } from './pages/ProfilePages.jsx';
 import { LEGACY_CHAT_PATHS, ROUTES } from './lib/storage.js';
+import { chatSessionForUser } from './lib/liveChatState.js';
 
 const EXIT_DURATION = 160;
 
-function AnimatedRoutes() {
+function AnimatedRoutes({ liveChatSession, setLiveChatSession }) {
   const location = useLocation();
   const [displayedLocation, setDisplayedLocation] = useState(location);
   const [phase, setPhase] = useState('enter');
@@ -45,7 +46,8 @@ function AnimatedRoutes() {
         <Route path={ROUTES.signIn} element={<SignInPage />} />
         <Route path={ROUTES.signup} element={<SignupPage key={displayedLocation.search} />} />
         {/* Keyed by the query so "Update info" restarts an open chat. */}
-        <Route path={ROUTES.chat} element={<ChatPage key={displayedLocation.search} />} />
+        <Route path={ROUTES.chat} element={<ChatPage key={displayedLocation.search} liveChatSession={liveChatSession} setLiveChatSession={setLiveChatSession} />} />
+        <Route path={ROUTES.history} element={<GuidedChatPage key={displayedLocation.search} />} />
         {LEGACY_CHAT_PATHS.map((path) => (
           <Route key={path} path={path} element={<Navigate to={ROUTES.chat} replace />} />
         ))}
@@ -58,13 +60,20 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
+  const user = useSessionUser();
+  const [liveChatSession, setLiveChatSession] = useState(() => chatSessionForUser(null, user));
+
+  useEffect(() => {
+    setLiveChatSession((current) => chatSessionForUser(current, user));
+  }, [user]);
+
   return (
     <>
       <LightPurpleBackground />
       <OrangeBackground />
       <PurpleBackground />
       <Header />
-      <AnimatedRoutes />
+      <AnimatedRoutes liveChatSession={chatSessionForUser(liveChatSession, user)} setLiveChatSession={setLiveChatSession} />
     </>
   );
 }

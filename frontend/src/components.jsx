@@ -38,7 +38,8 @@ export function Header() {
   const user = useSessionUser();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const showNav = Boolean(user) && !inOnboarding() && !inUpdate();
+  const showNav = Boolean(user) && !inOnboarding();
+  const showAccount = Boolean(user) && pathname !== ROUTES.signIn && pathname !== '/';
 
   async function handleSignOut() {
     await signOut();
@@ -57,7 +58,7 @@ export function Header() {
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-name">Lincoln Financial</span>
         </Link>
-        {user && (
+        {showAccount && (
           <nav className="topbar-nav" aria-label="Account">
             {showNav && (
               <>
