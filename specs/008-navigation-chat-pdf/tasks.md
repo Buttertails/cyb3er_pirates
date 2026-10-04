@@ -17,10 +17,10 @@
 
 ## Phase 4: User Story 2 — Procedure PDF intake (P1)
 
-- [ ] T005 [US2] Implement in-memory PDF validation, at-most-5-MB and at-most-20-page limits, bounded page streams, text extraction, and catalog candidate matching in backend/pdf_intake.py with red-green cases in backend/tests/test_pdf_intake.py.
-- [ ] T006 [US2] Implement authenticated multipart POST /api/chat/document using the existing employee/session verifier and standard response shape in backend/chat_routes.py, with red-green contract tests in backend/tests/test_chat_routes.py.
-- [ ] T007 [US2] Add a document-uploaded CX event and confirmation/clarification routes through tools/dialogflow/ and backend/dialogflow_client.py; verify one, many, and zero candidate paths in tools/dialogflow/tests/ and backend/tests/test_chat_routes.py.
-- [ ] T008 [US2] Add the PDF picker, immediate upload and chat handoff, document preview, and retryable errors in frontend/src/pages/LiveBenefitsChat.jsx and frontend/src/lib/api.js; verify in frontend/src/pages/LiveBenefitsChat.test.jsx and frontend/src/lib/api.test.js.
+- [x] T005 [US2] Implement in-memory PDF validation, at-most-5-MB and at-most-20-page limits, bounded page streams, text extraction, and catalog candidate matching in backend/pdf_intake.py with red-green cases in backend/tests/test_pdf_intake.py.
+- [x] T006 [US2] Implement authenticated multipart POST /api/chat/document using the existing employee/session verifier and standard response shape in backend/chat_routes.py, with red-green contract tests in backend/tests/test_chat_routes.py.
+- [x] T007 [US2] Add a document-uploaded CX event and confirmation/clarification routes through tools/dialogflow/ and backend/dialogflow_client.py; verify one, many, and zero candidate paths in tools/dialogflow/tests/ and backend/tests/test_chat_routes.py.
+- [x] T008 [US2] Add the PDF picker, immediate upload and chat handoff, document preview, and retryable errors in frontend/src/pages/LiveBenefitsChat.jsx and frontend/src/lib/api.js; verify in frontend/src/pages/LiveBenefitsChat.test.jsx and frontend/src/lib/api.test.js.
 
 ## Phase 5: User Story 3 — Follow-up conversation (P2)
 
