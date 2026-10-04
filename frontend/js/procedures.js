@@ -159,7 +159,7 @@
   function renderAdded() {
     addedList.replaceChildren();
     draft.entries.forEach(function (entry, i) {
-      const row = summaryRow(describeEntry(entry));
+      const row = summaryRow(describeProcedure(entry));
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'link-btn';
@@ -185,49 +185,7 @@
     }
     if (recorded.length === 0) return;
     const list = document.getElementById('on-file-list');
-    recorded.forEach(function (entry) { list.appendChild(summaryRow(describeEntry(entry))); });
+    recorded.forEach(function (entry) { list.appendChild(summaryRow(describeProcedure(entry))); });
     document.getElementById('on-file').hidden = false;
-  }
-
-  // A .summary row with one line of text.
-  function summaryRow(text) {
-    const row = document.createElement('p');
-    row.className = 'summary';
-    const span = document.createElement('span');
-    span.textContent = text;
-    row.appendChild(span);
-    return row;
-  }
-
-  function procedureLabel(id) {
-    for (const category of HISTORY_CATEGORIES) {
-      const match = category.procedures.find(function (p) { return p.id === id; });
-      if (match) return match.label;
-    }
-    return id;
-  }
-
-  // "Filling · Aug 2026 · $200.00 total, you paid $40.00"
-  function describeEntry(entry) {
-    const [year, month] = entry.date.split('-').map(Number);
-    const when = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const money = [];
-    if (entry.cost !== null && entry.cost !== undefined) money.push(dollars(entry.cost) + ' total');
-    if (entry.you_paid !== null && entry.you_paid !== undefined) money.push('you paid ' + dollars(entry.you_paid));
-    if (entry.insurance_paid !== null && entry.insurance_paid !== undefined) {
-      money.push('insurance paid ' + dollars(entry.insurance_paid));
-    }
-    return [procedureLabel(entry.procedure), when].concat(money.length ? [money.join(', ')] : []).join(' · ');
-  }
-
-  function dollars(value) {
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-  }
-
-  // "June 5, 2026" from an ISO time, or '' when there isn't one.
-  function formatDay(iso) {
-    const time = Date.parse(iso || '');
-    if (Number.isNaN(time)) return '';
-    return new Date(time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   }
 })();

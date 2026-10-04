@@ -286,6 +286,62 @@ function authMessage(error, fallback) {
   }
 }
 
+// A .summary row with one line of text, for lists built in script.
+function summaryRow(text) {
+  const row = document.createElement('p');
+  row.className = 'summary';
+  const span = document.createElement('span');
+  span.textContent = text;
+  row.appendChild(span);
+  return row;
+}
+
+// Fill a <dl class="answers"> with [label, value] rows.
+function renderAnswerRows(list, rows) {
+  rows.forEach(function (row) {
+    const wrapper = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = row[0];
+    const value = document.createElement('dd');
+    value.textContent = row[1];
+    wrapper.append(term, value);
+    list.appendChild(wrapper);
+  });
+}
+
+function dollars(value) {
+  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+// "June 5, 2026" from an ISO time, or '' when there isn't one.
+function formatDay(iso) {
+  const time = Date.parse(iso || '');
+  if (Number.isNaN(time)) return '';
+  return new Date(time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// A recorded procedure's label, looked up in the checkup and general lists.
+function procedureLabel(id) {
+  for (const category of HISTORY_CATEGORIES) {
+    const match = category.procedures.find(function (p) { return p.id === id; });
+    if (match) return match.label;
+  }
+  return id;
+}
+
+// "Filling · Aug 2026 · $200.00 total, you paid $40.00" for a recorded procedure.
+function describeProcedure(entry) {
+  const [year, month] = entry.date.split('-').map(Number);
+  const when = new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const money = [];
+  if (entry.cost !== null && entry.cost !== undefined) money.push(dollars(entry.cost) + ' total');
+  if (entry.you_paid !== null && entry.you_paid !== undefined) money.push('you paid ' + dollars(entry.you_paid));
+  if (entry.insurance_paid !== null && entry.insurance_paid !== undefined) {
+    money.push('insurance paid ' + dollars(entry.insurance_paid));
+  }
+  return [procedureLabel(entry.procedure), when].concat(money.length ? [money.join(', ')] : []).join(' \u00b7 ');
+}
+
 // Fill a summary row, hiding the whole row when there is nothing to show.
 function renderSummary(id, text) {
   const target = document.getElementById(id);
@@ -377,9 +433,15 @@ function renderAccount() {
 
   wrapper.append(name, ' \u00b7 ');
 
-  // Update recent procedures and location at any time, then come back here.
   // Not offered in the middle of sign-up or of an update.
   if (!inOnboarding() && !inUpdate()) {
+    const profile = document.createElement('a');
+    profile.className = 'link';
+    profile.href = 'profile.html';
+    profile.textContent = 'Profile';
+    wrapper.append(profile, ' \u00b7 ');
+
+    // Update recent procedures and location at any time, then come back here.
     const update = document.createElement('a');
     update.className = 'link';
     update.href = UPDATE[0].page;

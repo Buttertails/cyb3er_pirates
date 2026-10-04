@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your profile | Lincoln Financial</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <p class="brand-name">Lincoln Financial</p>
+  </header>
+
+  <!-- Read-only view of what we have for the signed-in user. Changes are made
+       through the update-info flow (see UPDATE in js/shared.js). -->
+  <main class="card">
+    <p class="step">Profile</p>
+    <h1>Your profile</h1>
+
+    <dl class="answers" id="about"></dl>
+
+    <h2 class="subhead">Your plan</h2>
+    <dl class="answers" id="plan"></dl>
+    <p class="note" id="plan-note">
+      Placeholder: your actual plan isn't connected to your profile yet.
+    </p>
+
+    <h2 class="subhead">Appointments</h2>
+    <p class="note" id="sample-note" hidden>
+      Sample appointments: scheduling isn't connected yet.
+    </p>
+    <p class="lead" id="appointments-empty" hidden>No appointments yet.</p>
+    <div id="upcoming" hidden>
+      <p class="step">Upcoming</p>
+      <div class="summary-group" id="upcoming-list"></div>
+    </div>
+    <div id="past" hidden>
+      <p class="step">Past</p>
+      <div class="summary-group" id="past-list"></div>
+    </div>
+
+    <h2 class="subhead">Recent dental work</h2>
+    <p class="lead" id="procedures-empty" hidden>Nothing recorded yet.</p>
+    <div class="summary-group" id="procedures-list"></div>
+
+    <button type="button" class="btn" id="update">Update recent visits</button>
+
+    <p class="actions"><a class="link" href="office.html">Find a dental office</a></p>
+  </main>
+
+  <script src="js/options.js"></script>
+  <script src="js/shared.js"></script>
+  <script src="js/api.js"></script>
+  <script type="module" src="js/firebase.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

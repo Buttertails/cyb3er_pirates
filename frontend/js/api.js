@@ -177,6 +177,29 @@ function saveProcedures(entries) {
   });
 }
 
+// The user's dental appointments: { appointments: [{ id, starts_at, office_name,
+// reason }], sample }. `sample` is true for the placeholders shown while the
+// route isn't live and none are stored in this browser.
+async function fetchAppointments() {
+  const result = await proposedRoute('GET', '/appointments', undefined, function () {
+    const stored = localDetails(readStep('user')).appointments;
+    return { appointments: stored || sampleAppointments(), sample: !stored };
+  });
+  return { appointments: result.appointments || [], sample: !!result.sample };
+}
+
+// SAMPLE_APPOINTMENTS dated from today, at the user's chosen office.
+function sampleAppointments() {
+  const office = readStep('office');
+  const officeName = office ? officeLabel(office) : 'Your dental office';
+  return SAMPLE_APPOINTMENTS.map(function (a, i) {
+    const when = new Date();
+    when.setDate(when.getDate() + a.daysFromNow);
+    when.setHours(a.hour, a.minute, 0, 0);
+    return { id: 'sample-' + i, starts_at: when.toISOString(), office_name: officeName, reason: a.reason };
+  });
+}
+
 // Record that the user signed in now. The next sign-in compares against it for
 // the 90-day update check (profile.last_sign_in_at).
 function recordSignIn() {

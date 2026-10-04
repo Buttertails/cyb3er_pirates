@@ -138,6 +138,23 @@ const HISTORY_CATEGORIES = CATEGORIES.filter(function (c) {
   return c.id === 'checkup' || c.id === 'general';
 });
 
+// Profile page: placeholder plan details. The profile doesn't hold a plan yet
+// (the coverage estimate also runs against a demo plan, see ESTIMATE_DEFAULTS in
+// api.js), so this mirrors plan A in Data/plans.json, adult coverage.
+const DEMO_PLAN = {
+  name: 'Plan A (company plan)',
+  covered: ['Routine', 'Basic'],
+  maxCoverage: 7500,
+  deductible: null, // none
+};
+
+// Profile page, local demo only: sample appointments shown until the backend
+// has a route for them. Each is placed relative to today at the user's office.
+const SAMPLE_APPOINTMENTS = [
+  { daysFromNow: 14, hour: 9, minute: 30, reason: 'Routine cleaning' },
+  { daysFromNow: -120, hour: 14, minute: 0, reason: 'Exam and X-rays' },
+];
+
 // Step 5: when the user needs it done. Emergency work skips this and is recorded as ASAP.
 const TIMEFRAMES = [
   { id: 'asap', label: 'As soon as possible', description: "I'm in pain or it's urgent" },
