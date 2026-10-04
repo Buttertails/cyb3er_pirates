@@ -59,7 +59,7 @@ describe('flow storage', () => {
     expect(nextPage('company')).toBe(ROUTES.chat);
 
     clearSession();
-    expect(startUpdate('manual', ROUTES.profile)).toMatch(/^\/chat\?update=\d+$/);
+    expect(startUpdate('manual', ROUTES.profile)).toMatch(/^\/history\?update=\d+$/);
     expect(activeSteps().map((step) => step.key)).toEqual(['procedures', 'location-check']);
     expect(readStep('update_return')).toBe(ROUTES.profile);
   });

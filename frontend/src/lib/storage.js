@@ -9,6 +9,7 @@ export const ROUTES = {
   signIn: '/index.html',
   signup: '/signup.html',
   chat: '/chat',
+  history: '/history',
   profile: '/profile.html',
   summary: '/summary.html',
 };
@@ -40,10 +41,10 @@ export const ONBOARDING = [
 ];
 
 export const UPDATE = [
-  { key: 'procedures', page: ROUTES.chat },
-  { key: 'location-check', page: ROUTES.chat },
-  { key: 'location', page: ROUTES.chat },
-  { key: 'office', page: ROUTES.chat },
+  { key: 'procedures', page: ROUTES.history },
+  { key: 'location-check', page: ROUTES.history },
+  { key: 'location', page: ROUTES.history },
+  { key: 'office', page: ROUTES.history },
 ];
 
 export const STALE_SIGN_IN_DAYS = 90;

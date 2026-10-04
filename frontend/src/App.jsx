@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom';
 import { Header, LightPurpleBackground, OrangeBackground, PurpleBackground, useSessionUser } from './components.jsx';
 import { SignInPage, SignupPage } from './pages/AccountPages.jsx';
-import { ChatPage } from './pages/ChatPage.jsx';
+import { ChatPage, GuidedChatPage } from './pages/ChatPage.jsx';
 import { SummaryPage } from './pages/ResultsPages.jsx';
 import { ProfilePage } from './pages/ProfilePages.jsx';
 import { LEGACY_CHAT_PATHS, ROUTES } from './lib/storage.js';
@@ -47,6 +47,7 @@ function AnimatedRoutes({ liveChatSession, setLiveChatSession }) {
         <Route path={ROUTES.signup} element={<SignupPage key={displayedLocation.search} />} />
         {/* Keyed by the query so "Update info" restarts an open chat. */}
         <Route path={ROUTES.chat} element={<ChatPage key={displayedLocation.search} liveChatSession={liveChatSession} setLiveChatSession={setLiveChatSession} />} />
+        <Route path={ROUTES.history} element={<GuidedChatPage key={displayedLocation.search} />} />
         {LEGACY_CHAT_PATHS.map((path) => (
           <Route key={path} path={path} element={<Navigate to={ROUTES.chat} replace />} />
         ))}

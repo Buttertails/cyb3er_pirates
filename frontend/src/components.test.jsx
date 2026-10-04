@@ -37,12 +37,12 @@ describe('sample dentist result cards', () => {
 });
 
 describe('site navigation', () => {
-  it('provides an Assistant route from Account', () => {
+  it('keeps account navigation without a duplicate Assistant link', () => {
     const storage = { user: JSON.stringify('pat@example.com') };
     globalThis.sessionStorage = { getItem: (key) => storage[key] ?? null };
     const html = renderToStaticMarkup(<MemoryRouter initialEntries={['/profile.html']}><Header /></MemoryRouter>);
     expect(html).toContain('href="/chat"');
-    expect(html).toContain('Assistant');
+    expect(html).not.toContain('>Assistant<');
     expect(html).toContain('aria-current="page"');
   });
 });

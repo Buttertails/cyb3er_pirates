@@ -32,7 +32,7 @@ function buttonsFor(step) {
   return { choices: step?.suggestions?.() || step?.choices?.() || [], details: Boolean(step?.details) };
 }
 
-function GuidedChatPage() {
+export function GuidedChatPage() {
   useDocumentTitle('Dental assistant');
   const { blocked } = useFlowGuard([]);
   const navigate = useNavigate();
@@ -230,6 +230,6 @@ function GuidedChatPage() {
 }
 
 export function ChatPage({ liveChatSession, setLiveChatSession }) {
-  if (inOnboarding() || inUpdate()) return <GuidedChatPage />;
+  if (inOnboarding()) return <GuidedChatPage />;
   return <LiveBenefitsChat chatSession={liveChatSession} setChatSession={setLiveChatSession} />;
 }

@@ -62,13 +62,6 @@ export function Header() {
               <>
                 <Link
                   className="topbar-item"
-                  to={ROUTES.chat}
-                  aria-current={pathname === ROUTES.chat ? 'page' : undefined}
-                >
-                  Assistant
-                </Link>
-                <Link
-                  className="topbar-item"
                   to={ROUTES.profile}
                   aria-current={pathname === ROUTES.profile ? 'page' : undefined}
                 >
