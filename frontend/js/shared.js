@@ -338,6 +338,8 @@ function describeProcedure(entry) {
   if (entry.you_paid !== null && entry.you_paid !== undefined) money.push('you paid ' + dollars(entry.you_paid));
   if (entry.insurance_paid !== null && entry.insurance_paid !== undefined) {
     money.push('insurance paid ' + dollars(entry.insurance_paid));
+  } else {
+    money.push('insurance payment unknown; remaining benefits unchanged');
   }
   return [procedureLabel(entry.procedure), when].concat(money.length ? [money.join(', ')] : []).join(' \u00b7 ');
 }

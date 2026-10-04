@@ -1,5 +1,5 @@
-// Sends each answered step to the backend as its own small JSON message, so a
-// Dialogflow flow can take the answers one at a time instead of one big payload.
+// Keeps the old intake wizard's step events in browser session storage.
+// Profile and confirmed-care requests use authenticated cloud API routes.
 // Loaded after shared.js on every page that collects an answer.
 //
 // A message looks like this. session_id is left out until the backend hands one
@@ -16,26 +16,19 @@
 // contracts/api.md defines POST /api/chat as taking one of `text` or `event`, but
 // doesn't define these step events, so reconcile them with the Dialogflow flow.
 //
-// Every backend call carries the signed-in user's Firebase ID token (see
-// firebase.js). The profile routes (/api/me) are always live; the mode below only
-// covers the intake.* messages.
+// Every cloud API call carries the signed-in user's Firebase ID token.
 
 const API_CONFIG = {
-  // 'local_demo': nothing leaves the browser; messages are logged and acknowledged locally.
+  // 'browser_intake': wizard steps stay in browser session storage.
   // 'live': POST each message to `endpoint` on the same origin.
   // The intake messages go to POST /api/chat, which the backend does not
-  // implement yet, so keep this on 'local_demo'. Profile routes (/api/me) and
-  // the estimate (/api/estimate) are live regardless of this flag.
-  mode: 'local_demo',
+  // implement yet. Profile, care and estimate routes are live regardless.
+  mode: 'browser_intake',
   endpoint: '/api/chat',
   profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
-  // TEMPORARY: the backend doesn't have the proposed profile routes yet (see
-  // docs/frontend_json.md): PATCH /api/me for name, company and office,
-  // GET and POST /api/me/procedures, and POST /api/me/sign-in. While this is
-  // false that data is kept per email in this browser. Set it to true once the
-  // routes exist.
-  profileDetailsLive: false,
+  // Authenticated profile and confirmed-care routes are deployed with Flask.
+  profileDetailsLive: true,
 };
 
 // The backend says nobody is signed in (401), or Firebase has no user.
@@ -90,7 +83,7 @@ async function apiFetch(path, method, body) {
     throw new AppServiceError(null, { cause: error });
   }
   if (response.status === 401) throw new SignedOutError('Sign-in rejected');
-  if (response.status === 422) {
+  if (response.status === 422 || response.status === 409) {
     const data = await response.json().catch(function () { return {}; });
     throw new RejectedError(data.error || 'That was not accepted. Check your answer.');
   }
@@ -110,14 +103,7 @@ async function fetchProfile() {
   if (usingLocalProfile) {
     profile = demoProfile();
   } else {
-    try {
-      profile = await apiFetch(API_CONFIG.profileEndpoint, 'GET');
-    } catch (error) {
-      if (!(error instanceof AppServiceError)) throw error;
-      console.warn('Profile API unavailable; using this browser\'s saved profile.', error);
-      profile = demoProfile();
-      usingLocalProfile = true;
-    }
+    profile = await apiFetch(API_CONFIG.profileEndpoint, 'GET');
   }
   if (profileDetailsSent() && !usingLocalProfile) return profile;
   return Object.assign({ name: null, company: null, office: null }, profile, localDetails(profile.email));
@@ -126,26 +112,14 @@ async function fetchProfile() {
 // Save the user's location so later sign-ins don't ask again. Returns the profile.
 async function saveProfileLocation(state, zip) {
   if (demoLoginActive()) return saveDemoLocation(state, zip);
-  try {
-    return await apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
-  } catch (error) {
-    if (!(error instanceof AppServiceError)) throw error;
-    console.warn('Profile API unavailable; saving location in this browser.', error);
-    return saveDemoLocation(state, zip);
-  }
+  return apiFetch(API_CONFIG.profileEndpoint + '/location', 'PUT', { state: state, zip: zip });
 }
 
-// Call one of the proposed profile routes once profileDetailsLive is on. Until
-// then, or when the app API can't be reached, `fallback` uses this browser's
-// storage instead and its result is returned.
+// Call a profile route. The local branch exists only for the explicit demo-login
+// development mode; the production app propagates cloud errors.
 async function proposedRoute(method, path, body, fallback) {
   if (profileDetailsSent()) {
-    try {
-      return await apiFetch(API_CONFIG.profileEndpoint + path, method, body);
-    } catch (error) {
-      if (!(error instanceof AppServiceError)) throw error;
-      console.warn('Profile API unavailable; using this browser instead.', error);
-    }
+    return apiFetch(API_CONFIG.profileEndpoint + path, method, body);
   }
   return fallback();
 }
@@ -157,8 +131,9 @@ function saveProfileDetails(details) {
 
 // The procedures the user has recorded: [{ id, procedure, category, date,
 // cost, you_paid, insurance_paid, recorded_at }].
-async function fetchProcedures() {
-  const result = await proposedRoute('GET', '/procedures', undefined, function () {
+async function fetchProcedures(employeeId) {
+  const path = '/procedures?employee_id=' + encodeURIComponent(employeeId);
+  const result = await proposedRoute('GET', path, undefined, function () {
     return { procedures: localDetails(readStep('user')).procedures || [] };
   });
   return result.procedures || [];
@@ -166,8 +141,9 @@ async function fetchProcedures() {
 
 // Record recent procedures: [{ procedure, category, date, cost, you_paid,
 // insurance_paid }]. An empty list records that there's nothing new.
-function saveProcedures(entries) {
-  return proposedRoute('POST', '/procedures', { procedures: entries }, function () {
+function saveProcedures(entries, employeeId) {
+  if (!entries.length) return Promise.resolve({ procedures: [] });
+  return proposedRoute('POST', '/procedures', { employee_id: employeeId, procedures: entries }, function () {
     const now = new Date().toISOString();
     const recorded = entries.map(function (entry, i) {
       return Object.assign({ id: Date.now() + '-' + i, recorded_at: now }, entry);
@@ -181,10 +157,8 @@ function saveProcedures(entries) {
 // reason }], sample }. `sample` is true for the placeholders shown while the
 // route isn't live and none are stored in this browser.
 async function fetchAppointments() {
-  const result = await proposedRoute('GET', '/appointments', undefined, function () {
-    const stored = localDetails(readStep('user')).appointments;
-    return { appointments: stored || sampleAppointments(), sample: !stored };
-  });
+  const stored = localDetails(readStep('user')).appointments;
+  const result = { appointments: stored || sampleAppointments(), sample: !stored };
   return { appointments: result.appointments || [], sample: !!result.sample };
 }
 
@@ -278,7 +252,7 @@ function acknowledgeLocally(message) {
   const id = window.crypto && crypto.randomUUID
     ? crypto.randomUUID()
     : String(Date.now()) + Math.random().toString(16).slice(2);
-  console.info('[local_demo] ' + message.event.name, message);
+  console.info('[browser_intake] ' + message.event.name, message);
   const response = { session_id: message.session_id || id };
   if (message.event.name === STEP_EVENTS.location) {
     response.offices = placeholderOffices(message.event.parameters);
@@ -355,9 +329,9 @@ async function submitThenGo(button, work, page) {
     showSendError(button, e instanceof RejectedError
       ? e.message
       : e instanceof AppServiceError
-        ? 'Sign-in succeeded, but the app couldn\'t load your profile'
+        ? 'The cloud service could not save or load this information'
           + (e.status ? ' (HTTP ' + e.status + ')' : '')
-          + '. Start the Firebase Hosting and Functions backend, then try again.'
+          + '. Please try again when the cloud service is available.'
       : "We couldn't send that just now. Please try again.");
     return;
   }
@@ -372,131 +346,4 @@ function sendSteps(button, pieces, page) {
       await sendStep(piece.step, piece.parameters, piece.autoSet);
     }
   }, page);
-}
-
-// --------------------------------------------------------------------------- #
-// Coverage estimate (the engine's /api/estimate endpoint)
-// --------------------------------------------------------------------------- #
-//
-// The intake flow collects procedure ids that are friendlier/broader than the
-// engine's catalog (e.g. "deep-cleaning", or emergency symptoms like
-// "broken-tooth"). PROCEDURE_TO_ENGINE maps each intake id to the closest
-// catalog procedure the engine can price. Ids already in the catalog map to
-// themselves.
-const PROCEDURE_TO_ENGINE = {
-  // Already catalog ids.
-  cleaning: 'cleaning',
-  'exam-xrays': 'exam-xrays',
-  filling: 'filling',
-  extraction: 'extraction',
-  'root-canal': 'root-canal',
-  'crown-bridge': 'crown-bridge',
-  implant: 'implant',
-  dentures: 'dentures',
-  orthodontics: 'orthodontics',
-  cosmetic: 'cosmetic',
-  // Broader intake ids mapped to the nearest priced procedure.
-  'deep-cleaning': 'cleaning',
-  other: 'exam-xrays',
-  // Emergency symptoms -> the procedure most likely to address them. These are
-  // best-effort for an estimate, not a diagnosis.
-  'severe-pain': 'exam-xrays',
-  'broken-tooth': 'crown-bridge',
-  swelling: 'extraction',
-  'lost-filling': 'filling',
-  bleeding: 'exam-xrays',
-  'urgent-other': 'exam-xrays',
-};
-
-// The demo plan the estimate runs against until plan selection is part of the
-// intake. "C0" is company plan A (adult); see Data/plans.json.
-const ESTIMATE_DEFAULTS = {
-  planId: 'C0',
-  memberType: 'adult',
-  network: 'in_network',
-};
-
-// Map an intake procedure id to the engine catalog id, or null if we can't.
-function engineProcedureId(intakeProcedureId) {
-  return PROCEDURE_TO_ENGINE[intakeProcedureId] || null;
-}
-
-// Ask the engine what a procedure costs under the demo plan. In local_demo mode
-// nothing leaves the browser and a deterministic placeholder estimate is built
-// locally so the page is still demonstrable offline.
-async function requestEstimate(intakeProcedureId, options) {
-  const opts = options || {};
-  const engineId = engineProcedureId(intakeProcedureId);
-  if (!engineId) {
-    throw new Error('unmapped-procedure');
-  }
-
-  const body = {
-    plan_id: opts.planId || ESTIMATE_DEFAULTS.planId,
-    member_type: opts.memberType || ESTIMATE_DEFAULTS.memberType,
-    network: opts.network || ESTIMATE_DEFAULTS.network,
-    procedures: [engineId],
-  };
-
-  if (API_CONFIG.mode === 'live') {
-    const response = await fetch('/api/estimate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(API_CONFIG.timeoutMs),
-    });
-    if (!response.ok) throw new Error('Estimate failed with status ' + response.status);
-    return response.json();
-  }
-
-  return localDemoEstimate(engineId, body);
-}
-
-// A stand-in estimate for local_demo mode: mirrors the engine's response shape
-// (dollars) with rough catalog costs and plan A's adult coverage, so the
-// results page renders without a backend. Clearly approximate.
-function localDemoEstimate(engineId, body) {
-  // Rough in-network allowed amounts (dollars), aligned with the backend catalog.
-  const ALLOWED = {
-    cleaning: 95, 'exam-xrays': 120, filling: 200, extraction: 250,
-    'root-canal': 1000, 'crown-bridge': 1200, implant: 3000, dentures: 1800,
-    orthodontics: 5500, cosmetic: 600,
-  };
-  // Plan A (adult) covers Routine (preventive) + Basic only; everything else 0.
-  const CATEGORY = {
-    cleaning: 'preventive', 'exam-xrays': 'preventive', filling: 'basic',
-    extraction: 'basic', 'root-canal': 'major', 'crown-bridge': 'major',
-    implant: 'major', dentures: 'major', orthodontics: 'orthodontic', cosmetic: 'cosmetic',
-  };
-  const RATE = { preventive: 1.0, basic: 0.8 }; // plan A adult; others uncovered
-  const category = CATEGORY[engineId] || 'basic';
-  const allowed = ALLOWED[engineId] || 0;
-  const rate = RATE[category] || 0;
-  const covered = rate > 0;
-  const planPays = covered ? Math.round(allowed * rate * 100) / 100 : 0;
-  const employeeOwes = Math.round((allowed - planPays) * 100) / 100;
-
-  const line = {
-    procedure_id: engineId,
-    label: engineId,
-    category: category,
-    network: body.network,
-    allowed_amount: allowed,
-    deductible_applied: 0,
-    plan_pays: planPays,
-    employee_owes: employeeOwes,
-    coverage_rate: rate,
-    covered: covered,
-    reasons: covered ? [] : ['This plan does not cover ' + category + ' services.'],
-  };
-  console.info('[local_demo] estimate', body, line);
-  return {
-    lines: [line],
-    annual_maximum: 7500,
-    annual_max_used_before: 0,
-    annual_max_used_after: planPays,
-    annual_max_remaining_after: Math.round((7500 - planPays) * 100) / 100,
-    totals: { plan_pays: planPays, employee_owes: employeeOwes },
-    _local_demo: true,
-  };
 }

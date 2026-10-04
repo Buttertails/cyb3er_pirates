@@ -60,6 +60,7 @@ class SessionClaims:
     session_id: str
     issued_at: int
     expires_at: int
+    uid: str | None = None
 
 
 class SessionSigner:
@@ -68,16 +69,20 @@ class SessionSigner:
             raise ValueError("A signing key of at least 32 characters is required.")
         self._key = key.encode()
 
-    def create(self, employee_id: str, fixture_set_id: str, *, now: int | None = None) -> str:
+    def create(self, employee_id: str, fixture_set_id: str, *, uid: str | None = None,
+               now: int | None = None) -> str:
         now = int(time.time()) if now is None else now
-        body = {"v": 1, "employee_id": employee_id, "fixture_set_id": fixture_set_id,
+        body = {"v": 2 if uid else 1, "employee_id": employee_id, "fixture_set_id": fixture_set_id,
                 "session_id": uuid.uuid4().hex, "issued_at": now, "expires_at": now + SESSION_SECONDS}
+        if uid:
+            body["uid"] = uid
         encoded = base64.urlsafe_b64encode(json.dumps(body, separators=(",", ":")).encode()).decode().rstrip("=")
         signature = hmac.new(self._key, encoded.encode(), hashlib.sha256).hexdigest()
         return f"{encoded}.{signature}"
 
     def verify(self, token: object, *, employee_id: str | None = None,
-               fixture_set_id: str | None = None, now: int | None = None) -> SessionClaims:
+               fixture_set_id: str | None = None, uid: str | None = None,
+               now: int | None = None) -> SessionClaims:
         try:
             if not isinstance(token, str) or len(token) > 2048:
                 raise ValueError
@@ -89,9 +94,9 @@ class SessionSigner:
                 raise ValueError
             raw = base64.b64decode(encoded + "=" * (-len(encoded) % 4), altchars=b"-_", validate=True)
             body = json.loads(raw)
-            if body["v"] != 1:
+            if body["v"] not in (1, 2):
                 raise ValueError
-            claims = SessionClaims(**{key: body[key] for key in SessionClaims.__dataclass_fields__})
+            claims = SessionClaims(**{key: body.get(key) for key in SessionClaims.__dataclass_fields__})
             now = int(time.time()) if now is None else now
             if (type(claims.issued_at) is not int or type(claims.expires_at) is not int
                     or claims.issued_at > now or now >= claims.expires_at
@@ -100,6 +105,8 @@ class SessionSigner:
                     or not re.fullmatch(r"[0-9a-f]{32}", claims.session_id)
                     or not isinstance(claims.employee_id, str) or not claims.employee_id
                     or not isinstance(claims.fixture_set_id, str) or not claims.fixture_set_id
+                    or (body["v"] == 2 and (not isinstance(claims.uid, str) or not claims.uid))
+                    or (uid is not None and claims.uid != uid)
                     or (employee_id is not None and claims.employee_id != employee_id)
                     or (fixture_set_id is not None and claims.fixture_set_id != fixture_set_id)):
                 raise ValueError

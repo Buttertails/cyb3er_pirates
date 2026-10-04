@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import hmac
+from dataclasses import replace
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 
+from auth import require_user
 from chat_context import ChatConfig, SessionSigner
 from chat_profiles import iso_date, load_profiles
+from completed_care import report_usage
 from dental import catalog, engine
 from dental.models import Network
 import dialogflow_client
+import store
 
 chat = Blueprint("chat", __name__)
 
@@ -61,6 +65,14 @@ def _employee(profiles, employee_id):
         return profiles.employee(employee_id)
     except KeyError as exc:
         raise ChatProblem("unknown_employee", "Select a supported fictional employee.", 404) from exc
+
+
+def _with_reports(uid, employee):
+    if not isinstance(uid, str) or not uid:
+        raise ChatProblem("invalid_context", "This conversation needs a new signed-in session. Restart chat.", 409)
+    reports = store.list_care_reports(uid, employee.employee_id)
+    recorded = [record for report in reports if (record := report_usage(report)) is not None]
+    return replace(employee, usage=[*employee.usage, *recorded])
 
 
 def _object(value, message="Send a JSON object."):
@@ -129,11 +141,13 @@ def dialogflow_webhook():
     try:
         claims = SessionSigner(config.signing_key).verify(
             parameters.get("backend_context"), fixture_set_id=profiles.fixture_set_id)
+        if not claims.uid:
+            raise ValueError("Old session")
         if info.get("session") != config.session_path(claims.session_id):
             raise ValueError("Session mismatch.")
     except ValueError as exc:
         raise ChatProblem("invalid_context", "Invalid or expired session. Start a new conversation.", 409) from exc
-    employee = _employee(profiles, claims.employee_id)
+    employee = _with_reports(claims.uid, _employee(profiles, claims.employee_id))
     if fulfillment["tag"] == "benefits.summary":
         benefits = employee.benefits(config.reference_date)
         return _fulfillment(employee, config,
@@ -170,6 +184,7 @@ def _dialogflow_error():
 
 @chat.post("/chat")
 @_safe_route
+@require_user
 def post_chat():
     body = _object(request.get_json(silent=True))
     if set(body) - {"employee_id", "session_id", "text", "event"}:
@@ -193,12 +208,13 @@ def post_chat():
         raise ChatProblem("invalid_input", "session_id must be a string.", 422)
     config = _config()
     profiles = _profiles(config)
-    employee = _employee(profiles, employee_id)
+    employee = _with_reports(g.uid, _employee(profiles, employee_id))
     signer = SessionSigner(config.signing_key)
     if token is None or body.get("event") == "restart":
-        token = signer.create(employee_id, profiles.fixture_set_id)
+        token = signer.create(employee_id, profiles.fixture_set_id, uid=g.uid)
     try:
-        claims = signer.verify(token, employee_id=employee_id, fixture_set_id=profiles.fixture_set_id)
+        claims = signer.verify(token, employee_id=employee_id,
+                               fixture_set_id=profiles.fixture_set_id, uid=g.uid)
     except ValueError as exc:
         raise ChatProblem("invalid_context", "Invalid or expired session. Start a new conversation.", 409) from exc
     try:

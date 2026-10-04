@@ -20,6 +20,7 @@ from typing import Any, Optional
 
 from firebase_admin import firestore
 from google.cloud import firestore as cloud_firestore
+from google.api_core.exceptions import AlreadyExists
 
 from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile
 
@@ -126,7 +127,7 @@ def user_ref(uid: str):
 
 
 def save_user_profile(profile: UserProfile) -> None:
-    user_ref(profile.uid).set(profile.to_dict())
+    user_ref(profile.uid).set(profile.to_dict(), merge=True)
 
 
 def get_user_profile(uid: str) -> Optional[UserProfile]:
@@ -134,3 +135,24 @@ def get_user_profile(uid: str) -> Optional[UserProfile]:
     if not snap.exists:
         return None
     return UserProfile.from_dict({"uid": snap.id, **snap.to_dict()})
+
+
+def care_collection(uid: str, employee_id: str):
+    return user_ref(uid).collection("demo_employees").document(employee_id).collection("procedures")
+
+
+def list_care_reports(uid: str, employee_id: str) -> list[dict[str, Any]]:
+    return [snap.to_dict() for snap in care_collection(uid, employee_id).stream()]
+
+
+def create_care_report(uid: str, employee_id: str, report: dict[str, Any]) -> dict[str, Any]:
+    ref = care_collection(uid, employee_id).document(report["submission_id"])
+    try:
+        ref.create(report)
+        return report
+    except AlreadyExists:
+        prior = ref.get().to_dict()
+        if prior is None or any(prior.get(key) != value for key, value in report.items()
+                                if key != "recorded_at"):
+            raise ValueError("A different care report already uses this submission ID.") from None
+        return prior

@@ -14,6 +14,12 @@
   const addFieldset = document.getElementById('add-procedure');
   const addedList = document.getElementById('added-list');
   const select = document.getElementById('procedure');
+  const demoEmployee = document.getElementById('demo-employee');
+  demoEmployee.value = readStep('demo_employee_id') || '';
+  demoEmployee.addEventListener('change', function () {
+    saveStep('demo_employee_id', demoEmployee.value || null);
+    renderOnFile();
+  });
   const fields = {
     procedure: { input: select, error: document.getElementById('procedure-error') },
     date: { input: document.getElementById('date'), error: document.getElementById('date-error') },
@@ -90,8 +96,17 @@
       }
     }
     const entries = draft.hadWork === 'yes' ? draft.entries : [];
+    if (entries.length && !demoEmployee.value) {
+      showSendError(button, 'Select the fictional employee whose benefits to update.');
+      demoEmployee.focus();
+      return;
+    }
+    entries.forEach(function (entry) {
+      if (!entry.submission_id) entry.submission_id = crypto.randomUUID();
+    });
+    saveDraft();
     submitThenGo(button, async function () {
-      await saveProcedures(entries);
+      await saveProcedures(entries, demoEmployee.value);
       saveStep('procedures_saved', true);
       saveStep('procedures_draft', null);
     }, nextPage('procedures'));
@@ -147,7 +162,9 @@
     const category = HISTORY_CATEGORIES.find(function (c) {
       return c.procedures.some(function (p) { return p.id === procedure; });
     });
-    draft.entries.push(Object.assign({ procedure: procedure, category: category.id, date: date }, amounts));
+    draft.entries.push(Object.assign({
+      submission_id: crypto.randomUUID(), procedure: procedure, category: category.id, date: date,
+    }, amounts));
     saveDraft();
     Object.keys(fields).forEach(function (key) { fields[key].input.value = ''; });
     showSendError(button, '');
@@ -177,14 +194,18 @@
   }
 
   async function renderOnFile() {
+    const list = document.getElementById('on-file-list');
+    list.replaceChildren();
+    document.getElementById('on-file').hidden = true;
+    if (!demoEmployee.value) return;
     let recorded;
     try {
-      recorded = await fetchProcedures();
+      recorded = await fetchProcedures(demoEmployee.value);
     } catch (e) {
-      return; // Nice to have; the page works without it.
+      showSendError(button, 'Could not load cloud care history. Please retry.');
+      return;
     }
     if (recorded.length === 0) return;
-    const list = document.getElementById('on-file-list');
     recorded.forEach(function (entry) { list.appendChild(summaryRow(describeProcedure(entry))); });
     document.getElementById('on-file').hidden = false;
   }

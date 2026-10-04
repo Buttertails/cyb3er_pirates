@@ -342,6 +342,10 @@ class UserProfile:
     email: Optional[str] = None
     state: Optional[str] = None         # 2-letter code, see dental/locations.py
     zip: Optional[str] = None
+    name: Optional[str] = None
+    company: Optional[str] = None
+    office: Optional[str] = None
+    last_sign_in_at: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -353,4 +357,8 @@ class UserProfile:
             email=data.get("email"),
             state=data.get("state"),
             zip=data.get("zip"),
+            name=data.get("name"),
+            company=data.get("company"),
+            office=data.get("office"),
+            last_sign_in_at=data.get("last_sign_in_at"),
         )

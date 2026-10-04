@@ -1,6 +1,6 @@
 # Cloud profile and completed-care persistence
 
-**Status:** Proposed for user approval, 2026-10-03.
+**Status:** Approved by user, 2026-10-03.
 
 ## Verified problem
 

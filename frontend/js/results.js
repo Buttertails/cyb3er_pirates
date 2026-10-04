@@ -115,12 +115,8 @@
     renderReasons(line);
 
     const flag = document.getElementById('estimate-flag');
-    if (estimate._local_demo) {
-      flag.textContent = 'Local demo estimate — approximate figures, nothing left your browser.';
-      flag.hidden = false;
-    } else {
-      flag.hidden = true;
-    }
+    flag.textContent = 'Connected estimate using fictional Demo Plan A and demo prices. This does not record completed care.';
+    flag.hidden = false;
 
     showOnly('result');
   }

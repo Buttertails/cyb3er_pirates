@@ -33,6 +33,16 @@
     </div>
 
     <form id="procedures-form" novalidate>
+      <div class="field">
+        <label for="demo-employee">Fictional employee whose benefits to update</label>
+        <select id="demo-employee" name="demo_employee">
+          <option value="">Select a fictional employee</option>
+          <option value="demo-a-pat">Pat — Demo Company A</option>
+          <option value="demo-a-sam">Sam — Demo Company A</option>
+          <option value="demo-c-lee">Lee — Demo Company C</option>
+        </select>
+        <p class="note">These are fictional demo records. Select the same employee in chat to see the updated balance.</p>
+      </div>
       <fieldset>
         <legend id="had-work-legend"></legend>
         <div id="had-work-options"></div>

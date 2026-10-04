@@ -62,7 +62,7 @@ first two need no Firestore, which is handy for the frontend demo and tests.
 from __future__ import annotations
 
 import os
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -77,6 +77,8 @@ except ImportError:  # pragma: no cover - CORS is optional for same-origin use
 
 from auth import require_user
 from chat_routes import chat
+from chat_profiles import load_profiles
+from completed_care import parse_report, report_usage
 from dental import catalog, engine, locations, mock_plans, sequencing
 from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
@@ -197,13 +199,48 @@ def _me_json(profile: Optional[UserProfile]) -> dict[str, Any]:
     location = None
     if profile is not None and profile.state:
         location = {"state": profile.state, "zip": profile.zip}
-    return {"uid": g.uid, "email": g.email, "location": location}
+    return {"uid": g.uid, "email": g.email, "location": location,
+            "name": profile.name if profile else None,
+            "company": profile.company if profile else None,
+            "office": profile.office if profile else None,
+            "last_sign_in_at": profile.last_sign_in_at if profile else None}
 
 
 @api_bp.get("/me")
 @require_user
 def read_me():
     return jsonify(_me_json(store.get_user_profile(g.uid)))
+
+
+@api_bp.patch("/me")
+@require_user
+def patch_me():
+    body = request.get_json(silent=True)
+    allowed = {"name", "company", "office"}
+    if not isinstance(body, dict) or not body or set(body) - allowed:
+        return jsonify({"error": "Provide only name, company or office."}), 422
+    for key, value in body.items():
+        if not isinstance(value, str) or not value.strip() or len(value.strip()) > 120:
+            return jsonify({"error": f"Provide a valid {key}."}), 422
+    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
+    profile.email = g.email
+    for key, value in body.items():
+        setattr(profile, key, value.strip())
+    store.save_user_profile(profile)
+    return jsonify(_me_json(profile))
+
+
+@api_bp.post("/me/sign-in")
+@require_user
+def post_my_sign_in():
+    body = request.get_json(silent=True)
+    if body != {}:
+        return jsonify({"error": "Send an empty object."}), 422
+    profile = store.get_user_profile(g.uid) or UserProfile(uid=g.uid)
+    profile.email = g.email
+    profile.last_sign_in_at = datetime.now(timezone.utc).isoformat()
+    store.save_user_profile(profile)
+    return jsonify(_me_json(profile))
 
 
 @api_bp.put("/me/location")
@@ -221,6 +258,80 @@ def put_my_location():
     profile.zip = zip_code
     store.save_user_profile(profile)
     return jsonify(_me_json(profile))
+
+
+def _care_employee(employee_id):
+    if not isinstance(employee_id, str):
+        raise ValueError("Select a fictional employee.")
+    try:
+        return load_profiles().employee(employee_id)
+    except KeyError:
+        raise ValueError("Select a supported fictional employee.") from None
+
+
+def _care_json(report):
+    return {**report,
+            "cost": None if report["cost_cents"] is None else report["cost_cents"] / 100,
+            "you_paid": None if report["you_paid_cents"] is None else report["you_paid_cents"] / 100,
+            "insurance_paid": None if report["insurance_paid_cents"] is None else report["insurance_paid_cents"] / 100,
+            "insurance_payment_known": report["insurance_paid_cents"] is not None}
+
+
+@api_bp.get("/me/procedures")
+@require_user
+def get_my_procedures():
+    try:
+        employee = _care_employee(request.args.get("employee_id"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    reports = store.list_care_reports(g.uid, employee.employee_id)
+    return jsonify({"procedures": [_care_json(r) for r in sorted(reports, key=lambda r: r["date"], reverse=True)]})
+
+
+@api_bp.post("/me/procedures")
+@require_user
+def post_my_procedures():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or set(body) != {"employee_id", "procedures"} or not isinstance(body["procedures"], list):
+        return jsonify({"error": "Provide an employee and a list of completed procedures."}), 422
+    try:
+        employee = _care_employee(body["employee_id"])
+        parsed = [parse_report(item, employee) for item in body["procedures"]]
+        if len(parsed) > 20 or len({r["submission_id"] for r in parsed}) != len(parsed):
+            raise ValueError("Submit at most 20 distinct reports.")
+        existing = store.list_care_reports(g.uid, employee.employee_id)
+        by_id = {r["submission_id"]: r for r in existing}
+        for report in parsed:
+            prior = by_id.get(report["submission_id"])
+            if prior and any(prior.get(key) != value for key, value in report.items()):
+                return jsonify({"error": "A different report already uses this submission ID."}), 409
+        from dental import engine
+        for report in parsed:
+            if report["submission_id"] in by_id:
+                continue
+            usage = report_usage(report)
+            if usage is None:
+                continue
+            period = engine.plan_year_window(employee.plan, date.fromisoformat(report["date"]))
+            seed_paid = sum(item.plan_pays_cents for item in employee.usage
+                            if engine.plan_year_window(employee.plan, date.fromisoformat(item.date)) == period)
+            stored_paid = sum((item.get("insurance_paid_cents") or 0) for item in existing
+                              if engine.plan_year_window(employee.plan, date.fromisoformat(item["date"])) == period)
+            pending_paid = sum((item.get("insurance_paid_cents") or 0) for item in parsed
+                               if item["submission_id"] not in by_id
+                               and engine.plan_year_window(employee.plan, date.fromisoformat(item["date"])) == period)
+            if seed_paid + stored_paid + pending_paid > employee.plan.annual_maximum_cents:
+                raise ValueError("Known insurer payments exceed this fictional plan's annual allowance.")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    created = []
+    for report in parsed:
+        report["recorded_at"] = datetime.now(timezone.utc).isoformat()
+        try:
+            created.append(store.create_care_report(g.uid, employee.employee_id, report))
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 409
+    return jsonify({"procedures": [_care_json(r) for r in created]})
 
 
 # --------------------------------------------------------------------------- #

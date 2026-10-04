@@ -6,11 +6,14 @@ from pathlib import Path
 import pytest
 import main
 import store
+import firebase_admin.auth
 from chat_context import ChatConfig, SessionSigner
 
 KEY = "test-only-signing-key-32-characters-long"
 WEBHOOK_TOKEN = "test-only-webhook-token-32-characters-long"
 AUTH = {"Authorization": f"Bearer {WEBHOOK_TOKEN}"}
+USER_AUTH = {"Authorization": "Bearer test-firebase-token"}
+OTHER_AUTH = {"Authorization": "Bearer other-firebase-token"}
 
 
 @pytest.fixture
@@ -22,6 +25,11 @@ def client(monkeypatch):
     }.items():
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("CHAT_FIXTURE_PATH", raising=False)
+    monkeypatch.setattr(firebase_admin.auth, "verify_id_token",
+                        lambda token, *args, **kwargs: {"uid": token, "email": "demo@example.com"}
+                        if token in ("test-firebase-token", "other-firebase-token") else (_ for _ in ()).throw(
+                            firebase_admin.auth.InvalidIdTokenError("bad token")))
+    monkeypatch.setattr(store, "list_care_reports", lambda uid, employee_id: [])
     def forbidden_write(*args, **kwargs):
         pytest.fail("Chat must not write to Firestore.")
     for name in ("save_employer", "save_plan", "save_employee", "save_usage", "save_user_profile"):
@@ -32,7 +40,7 @@ def client(monkeypatch):
 
 def webhook_body(employee="demo-a-pat", **parameters):
     signer = SessionSigner(KEY)
-    token = signer.create(employee, "backend-chat-demo-v1")
+    token = signer.create(employee, "backend-chat-demo-v1", uid="test-firebase-token")
     claims = signer.verify(token)
     return {
         "fulfillmentInfo": {"tag": "benefits.estimate"},
@@ -175,7 +183,30 @@ def turn(client, text=None, *, employee="demo-a-pat", session=None, event=None):
     if text is not None: body["text"] = text
     if session is not None: body["session_id"] = session
     if event is not None: body["event"] = event
-    return client.post("/api/chat", json=body)
+    return client.post("/api/chat", json=body, headers=USER_AUTH)
+
+
+def test_confirmed_care_changes_only_owners_chat_balance(client, fake_agent, monkeypatch):
+    report = {"submission_id": "care-123", "employee_id": "demo-a-pat",
+              "procedure": "filling", "category": "general", "date": "2026-09-01",
+              "cost_cents": 20000, "you_paid_cents": 4000, "insurance_paid_cents": 16000}
+    monkeypatch.setattr(store, "list_care_reports",
+                        lambda uid, eid: [report] if (uid, eid) == ("test-firebase-token", "demo-a-pat") else [])
+    result = turn(client, event="start").get_json()
+    assert result["benefits"]["used"] == 410
+    assert result["benefits"]["remaining"] == 7090
+    other = turn(client, event="start", employee="demo-c-lee").get_json()
+    assert other["benefits"]["used"] == 500
+    separate_account = client.post("/api/chat", json={"employee_id": "demo-a-pat", "event": "start"},
+                                   headers=OTHER_AUTH).get_json()
+    assert separate_account["benefits"]["used"] == 250
+    reused = client.post("/api/chat", json={"employee_id": "demo-a-pat",
+                                            "session_id": result["session_id"], "text": "hello"},
+                         headers=OTHER_AUTH)
+    assert reused.status_code == 409
+    webhook_result = webhook(client, webhook_body()).get_json()["payload"]
+    assert webhook_result["benefits"]["used"] == 410
+    assert webhook_result["estimate"]["annual_max_used_before"] == 410
 
 
 def test_complete_chat_and_changed_network_use_real_calculator(client, fake_agent):
@@ -241,7 +272,11 @@ def test_invalid_chat_request_rejected_before_external_call(client, monkeypatch,
     import dialogflow_client
     def forbidden(*args): pytest.fail("Invalid requests must not call Dialogflow.")
     monkeypatch.setattr(dialogflow_client, "detect_intent", forbidden)
-    assert client.post("/api/chat", json=body).status_code == 422
+    assert client.post("/api/chat", json=body, headers=USER_AUTH).status_code == 422
+
+
+def test_chat_requires_firebase_sign_in(client):
+    assert client.post("/api/chat", json={"employee_id": "demo-a-pat", "event": "start"}).status_code == 401
 
 
 def test_unknown_employee_is_not_guessed(client, fake_agent):

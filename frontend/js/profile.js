@@ -6,6 +6,12 @@
   if (!saved) return;
 
   const NOT_PROVIDED = 'Not provided';
+  const historyEmployee = document.getElementById('history-employee');
+  historyEmployee.value = readStep('demo_employee_id') || '';
+  historyEmployee.addEventListener('change', function () {
+    saveStep('demo_employee_id', historyEmployee.value || null);
+    renderProcedures();
+  });
 
   renderAnswerRows(document.getElementById('about'), [
     ['Name', saved.name || NOT_PROVIDED],
@@ -63,13 +69,20 @@
   }
 
   async function renderProcedures() {
+    const list = document.getElementById('procedures-list');
+    const error = document.getElementById('procedures-error');
+    list.replaceChildren();
+    error.hidden = true;
+    document.getElementById('procedures-empty').hidden = true;
+    if (!historyEmployee.value) return;
     let procedures;
     try {
-      procedures = await fetchProcedures();
+      procedures = await fetchProcedures(historyEmployee.value);
     } catch (e) {
+      error.textContent = 'Could not load cloud care history. Please try again.';
+      error.hidden = false;
       return;
     }
-    const list = document.getElementById('procedures-list');
     // Newest first, by the month each was done.
     procedures.slice().sort(function (a, b) { return b.date.localeCompare(a.date); })
       .forEach(function (entry) { list.appendChild(summaryRow(describeProcedure(entry))); });

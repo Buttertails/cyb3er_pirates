@@ -84,6 +84,10 @@ def test_new_user_has_no_location(client):
         "uid": "user-pat",
         "email": "pat@example.com",
         "location": None,
+        "name": None,
+        "company": None,
+        "office": None,
+        "last_sign_in_at": None,
     }
 
 
@@ -111,6 +115,76 @@ def test_each_user_has_their_own_location(client):
 
     got = client.get("/api/me", headers=bearer("sam-token"))
     assert got.get_json()["location"] is None
+
+
+def test_profile_fields_survive_location_update_and_are_account_scoped(client):
+    saved = client.patch("/api/me", headers=bearer("pat-token"),
+                         json={"name": "Pat", "company": "Acme", "office": "Main"})
+    assert saved.status_code == 200
+    changed = client.put("/api/me/location", headers=bearer("pat-token"),
+                         json={"state": "TX", "zip": "78701"})
+    assert changed.status_code == 200
+    profile = client.get("/api/me", headers=bearer("pat-token")).get_json()
+    assert (profile["name"], profile["company"], profile["office"]) == ("Pat", "Acme", "Main")
+    assert profile["location"] == {"state": "TX", "zip": "78701"}
+    other = client.get("/api/me", headers=bearer("sam-token")).get_json()
+    assert other["name"] is None
+
+
+def test_profile_rejects_unapproved_fields(client):
+    response = client.patch("/api/me", headers=bearer("pat-token"),
+                            json={"uid": "someone-else", "name": "Pat"})
+    assert response.status_code == 422
+
+
+def test_sign_in_updates_marker_without_erasing_profile(client):
+    client.patch("/api/me", headers=bearer("pat-token"), json={"name": "Pat"})
+    response = client.post("/api/me/sign-in", headers=bearer("pat-token"), json={})
+    assert response.status_code == 200
+    assert response.get_json()["last_sign_in_at"]
+    assert response.get_json()["name"] == "Pat"
+
+
+def test_completed_care_is_scoped_and_retry_does_not_double_count(client, monkeypatch):
+    reports = {}
+    monkeypatch.setattr(store, "list_care_reports",
+                        lambda uid, eid: list(reports.get((uid, eid), {}).values()))
+    def create(uid, eid, report):
+        records = reports.setdefault((uid, eid), {})
+        prior = records.get(report["submission_id"])
+        if prior is not None and any(prior[k] != v for k, v in report.items() if k != "recorded_at"):
+            raise ValueError("conflict")
+        records.setdefault(report["submission_id"], report)
+        return records[report["submission_id"]]
+    monkeypatch.setattr(store, "create_care_report", create)
+    body = {"employee_id": "demo-a-pat", "procedures": [{
+        "submission_id": "care-123", "procedure": "filling", "category": "general",
+        "date": "2026-09", "cost": 200, "you_paid": 40, "insurance_paid": 160
+    }]}
+    first = client.post("/api/me/procedures", headers=bearer("pat-token"), json=body)
+    assert first.status_code == 200
+    second = client.post("/api/me/procedures", headers=bearer("pat-token"), json=body)
+    assert second.status_code == 200
+    assert len(reports[("user-pat", "demo-a-pat")]) == 1
+    own = client.get("/api/me/procedures?employee_id=demo-a-pat",
+                     headers=bearer("pat-token")).get_json()
+    other = client.get("/api/me/procedures?employee_id=demo-a-pat",
+                       headers=bearer("sam-token")).get_json()
+    assert len(own["procedures"]) == 1
+    assert other["procedures"] == []
+
+
+def test_completed_care_rejects_payment_above_remaining_allowance(client, monkeypatch):
+    monkeypatch.setattr(store, "list_care_reports", lambda uid, eid: [])
+    monkeypatch.setattr(store, "create_care_report",
+                        lambda *args: pytest.fail("Invalid report must not be written."))
+    response = client.post("/api/me/procedures", headers=bearer("pat-token"), json={
+        "employee_id": "demo-a-sam", "procedures": [{
+            "submission_id": "care-126", "procedure": "filling", "category": "general",
+            "date": "2026-09", "cost": 200, "you_paid": 0, "insurance_paid": 200,
+        }],
+    })
+    assert response.status_code == 422
 
 
 @pytest.mark.parametrize("body", [

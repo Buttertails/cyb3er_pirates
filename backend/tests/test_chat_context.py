@@ -19,6 +19,13 @@ def test_reference_survives_a_different_backend_instance():
     assert claims.expires_at == 1900
 
 
+def test_reference_binds_verified_account_and_rejects_old_context():
+    token = signer().create("pat", "fixtures-v1", uid="account-a", now=100)
+    assert signer().verify(token, uid="account-a", now=101).uid == "account-a"
+    with pytest.raises(ValueError):
+        signer().verify(token, uid="account-b", now=101)
+
+
 def test_reference_expires_at_exact_boundary():
     token = signer().create("pat", "v1", now=100)
     assert signer().verify(token, now=1899)

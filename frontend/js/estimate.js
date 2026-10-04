@@ -1,8 +1,7 @@
 // Coverage estimate — talks to the backend engine's POST /api/estimate.
 //
-// Kept in its own file (not api.js) so it survives rewrites of the intake/auth
-// layer. Loaded after api.js on results.html; it reuses API_CONFIG for the
-// mode flag and request timeout, but the estimate endpoint needs no sign-in
+// Loaded after api.js on results.html; it reuses API_CONFIG for the request
+// timeout, but the estimate endpoint needs no sign-in
 // (it runs purely from a plan id + procedures), so it uses a plain fetch.
 //
 // results.js calls requestEstimate(intakeProcedureId, options) and renders the
@@ -56,11 +55,8 @@ function engineProcedureId(intakeProcedureId) {
 
 // Ask the engine what a procedure costs under the demo plan.
 //
-// In 'live' mode (API_CONFIG.mode) this POSTs to the backend server. In
-// 'local_demo' mode nothing leaves the browser and a deterministic placeholder
-// estimate is built locally so the page is demonstrable offline. If the live
-// call fails to reach the server, it falls back to the local estimate flagged
-// as approximate rather than erroring out.
+// Always POST to the backend. An unavailable backend is shown as an error by
+// the results page so a local approximation cannot look like a cloud result.
 async function requestEstimate(intakeProcedureId, options) {
   const opts = options || {};
   const engineId = engineProcedureId(intakeProcedureId);
@@ -75,79 +71,17 @@ async function requestEstimate(intakeProcedureId, options) {
     procedures: [engineId],
   };
 
-  const mode = (typeof API_CONFIG !== 'undefined' && API_CONFIG.mode) || 'local_demo';
-  if (mode !== 'live') {
-    return localDemoEstimate(engineId, body);
-  }
-
   const timeoutMs = (typeof API_CONFIG !== 'undefined' && API_CONFIG.timeoutMs) || 18000;
-  let response;
-  try {
-    response = await fetch(ESTIMATE_DEFAULTS.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-  } catch (networkError) {
-    // Server unreachable (offline, not running): fall back to the local demo so
-    // the page still shows something, clearly flagged as approximate.
-    console.warn('[estimate] live request failed, using local demo', networkError);
-    return localDemoEstimate(engineId, body);
-  }
+  const response = await fetch(ESTIMATE_DEFAULTS.endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
 
   if (!response.ok) {
     const data = await response.json().catch(function () { return {}; });
     throw new Error(data.error || 'Estimate failed with status ' + response.status);
   }
   return response.json();
-}
-
-// A stand-in estimate for local_demo (or offline) use: mirrors the engine's
-// response shape (dollars) with rough catalog costs and plan A's adult coverage,
-// so the results page renders without a backend. Clearly approximate.
-function localDemoEstimate(engineId, body) {
-  // Rough in-network allowed amounts (dollars), aligned with the backend catalog.
-  const ALLOWED = {
-    cleaning: 95, 'exam-xrays': 120, filling: 200, extraction: 250,
-    'root-canal': 1000, 'crown-bridge': 1200, implant: 3000, dentures: 1800,
-    orthodontics: 5500, cosmetic: 600,
-  };
-  // Plan A (adult) covers Routine (preventive) + Basic only; everything else 0.
-  const CATEGORY = {
-    cleaning: 'preventive', 'exam-xrays': 'preventive', filling: 'basic',
-    extraction: 'basic', 'root-canal': 'major', 'crown-bridge': 'major',
-    implant: 'major', dentures: 'major', orthodontics: 'orthodontic', cosmetic: 'cosmetic',
-  };
-  const RATE = { preventive: 1.0, basic: 0.8 }; // plan A adult; others uncovered
-  const category = CATEGORY[engineId] || 'basic';
-  const allowed = ALLOWED[engineId] || 0;
-  const rate = RATE[category] || 0;
-  const covered = rate > 0;
-  const planPays = covered ? Math.round(allowed * rate * 100) / 100 : 0;
-  const employeeOwes = Math.round((allowed - planPays) * 100) / 100;
-
-  const line = {
-    procedure_id: engineId,
-    label: engineId,
-    category: category,
-    network: body.network,
-    allowed_amount: allowed,
-    deductible_applied: 0,
-    plan_pays: planPays,
-    employee_owes: employeeOwes,
-    coverage_rate: rate,
-    covered: covered,
-    reasons: covered ? [] : ['This plan does not cover ' + category + ' services.'],
-  };
-  console.info('[local_demo] estimate', body, line);
-  return {
-    lines: [line],
-    annual_maximum: 7500,
-    annual_max_used_before: 0,
-    annual_max_used_after: planPays,
-    annual_max_remaining_after: Math.round((7500 - planPays) * 100) / 100,
-    totals: { plan_pays: planPays, employee_owes: employeeOwes },
-    _local_demo: true,
-  };
 }

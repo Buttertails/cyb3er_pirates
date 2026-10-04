@@ -43,8 +43,8 @@
   const modeNote = document.getElementById('sent-mode');
   if (sent.length === 0) {
     modeNote.textContent = 'No messages were recorded for this session.';
-  } else if (sent[0].mode === 'local_demo') {
-    modeNote.textContent = 'Local demo: nothing left this browser. Each message was logged and acknowledged locally.';
+  } else if (sent[0].mode === 'browser_intake') {
+    modeNote.textContent = 'Wizard selections stay in this browser session. Profile saves and estimates use the cloud service.';
   } else {
     modeNote.textContent = 'Each message was sent to the backend in this order.';
   }
