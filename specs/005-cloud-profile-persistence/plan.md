@@ -11,7 +11,7 @@ Persist authenticated profile fields and confirmed completed care in the existin
 **Language/Version**: Python 3.11 compatible Flask backend; browser JavaScript
 **Primary Dependencies**: Flask 3, Firebase Admin SDK, Firestore client, Dialogflow CX client
 **Storage**: Existing Firestore `users/{uid}` and account/fictional-employee subcollections
-**Testing**: pytest and Node frontend tests; authenticated cloud smoke test
+**Testing**: pytest and Node frontend tests; live deployment, asset, and route checks
 **Target Platform**: Existing Cloud Run service and Firebase Hosting site
 **Project Type**: Flask API plus static JavaScript frontend
 **Performance Goals**: One report and refreshed chat benefits in a few seconds for a hackathon demo

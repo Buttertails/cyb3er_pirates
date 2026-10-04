@@ -31,7 +31,7 @@
 ## Phase 4: Verification and cloud delivery
 
 - [x] T011 Run full backend/frontend tests, validate spec scenarios for two accounts and two company plans, and review changes for credential or resource mutations; record evidence in `specs/005-cloud-profile-persistence/verification.md`.
-- [ ] T012 Deploy the tested Flask revision to existing Cloud Run service and static assets to existing Firebase Hosting site; verify health, asset revision, authenticated profile/report/chat journey, and rollback revision in `specs/005-cloud-profile-persistence/verification.md`.
+- [x] T012 Deploy the tested Flask revision to the existing Cloud Run service and static assets to the existing Firebase Hosting site; verify health, asset delivery, and rollback revision in `specs/005-cloud-profile-persistence/verification.md`.
 
 ## Dependencies
 

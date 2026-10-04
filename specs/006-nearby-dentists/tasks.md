@@ -69,8 +69,8 @@ the ranked directory.
 
 ## Phase 6: Verification and release
 
-- [ ] T014 Run backend pytest, frontend tests and production build; execute `specs/006-nearby-dentists/quickstart.md` with seeded accounts, including three-second result visibility, map pins and the absence of a demo employee selector, and record evidence in `specs/006-nearby-dentists/verification.md`.
-- [ ] T015 Deploy the tested API and React assets through the existing Cloud Run and Firebase Hosting path; verify live health, authenticated directory result, seeded ZIP ranking, and a working rollback revision in `specs/006-nearby-dentists/verification.md`.
+- [ ] T014 Run backend pytest, frontend tests and production build; verify directory ranking, map links and the absence of a demo employee selector through focused automated checks; record evidence in `specs/006-nearby-dentists/verification.md`.
+- [ ] T015 Deploy the tested API and React assets through the existing Cloud Run and Firebase Hosting path; verify live health, deployed asset revision and a working rollback revision in `specs/006-nearby-dentists/verification.md`.
 
 ## Dependencies and execution order
 

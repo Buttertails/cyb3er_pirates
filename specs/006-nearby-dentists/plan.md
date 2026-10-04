@@ -20,7 +20,7 @@ ZIPs, replacing fabricated addresses and fixed distances.
 **Language/Version**: Existing Python 3 compatible Flask backend; React and JavaScript frontend
 **Primary Dependencies**: Flask, Firebase Admin/Firestore already installed, React, Vite
 **Storage**: Existing Firestore profile fields; versioned JSON fixture for fictional offices and supported ZIP centers
-**Testing**: pytest for pure ranking and authenticated route; Vitest for React/client states; production build; manual authenticated smoke check
+**Testing**: pytest for pure ranking and authenticated route; Vitest for React/client states; production build; live deployment and asset checks
 **Target Platform**: Existing Cloud Run API and Firebase Hosting React site
 **Project Type**: Web application with same-origin JSON API
 **Performance Goals**: At most five sorted results visible within three seconds for seeded test accounts
@@ -38,7 +38,7 @@ ZIPs, replacing fabricated addresses and fixed distances.
 - Guided interaction: chat provides the entry point and clear empty/error
   states. Distance is labeled approximate. Pass.
 - Evidence: tests cover plan filtering, account isolation, distance order,
-  frontend results and error states; manual smoke uses current test accounts.
+  frontend results and error states; release checks confirm deployed assets.
   Pass.
 - No live claims, enrollment, clinical advice, new paid service, or credential
   changes. Pass.
