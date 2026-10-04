@@ -1,11 +1,25 @@
-"""Cloud Functions entry point for the Dental Benefits Optimizer API.
+"""Standalone Flask server for the Dental Benefits Optimizer API.
 
-A single HTTPS function ``api`` exposes a small REST surface via Flask. The
-Firebase Hosting rewrite (/api/** -> api) means the frontend calls, e.g.,
-``/api/estimate``.
+Runs as a normal web server (not a Cloud Function). All API routes live under
+the ``/api`` prefix via a Blueprint, so the frontend calls e.g.
+``/api/estimate`` directly. The server can also serve the static ``frontend/``
+so the whole demo runs from one origin (no CORS needed); CORS is enabled anyway
+so a separately served frontend works too.
 
-Endpoints
----------
+Run (dev):
+    python main.py                       # http://127.0.0.1:8080
+    # or choose a port:  PORT=5000 python main.py
+
+Run (production WSGI, Windows-friendly):
+    waitress-serve --listen=0.0.0.0:8080 main:app
+
+Firestore / Auth credentials come from the environment (see store.py / auth.py):
+    * Local: start the Firebase emulators and export FIRESTORE_EMULATOR_HOST +
+      FIREBASE_AUTH_EMULATOR_HOST (and GOOGLE_CLOUD_PROJECT).
+    * Deployed: Application Default Credentials (a service account).
+
+Endpoints (all under /api)
+--------------------------
 Signed-in user (Authorization: Bearer <Firebase ID token>):
     GET  /api/me                                -> {uid, email, location: {state, zip} | null}
     PUT  /api/me/location   body: {state, zip}  -> same shape; saved once, reused on later sign-ins
@@ -39,20 +53,23 @@ order): a ``plan_id`` (+ optional ``member_type``: "adult"/"children") naming a
 fictional plan in ``Data/plans.json``; an inline ``plan`` (+ optional
 ``usage``); or ``employer_id`` + ``employee_id`` looked up from Firestore. The
 first two need no Firestore, which is handy for the frontend demo and tests.
-
-Routes are registered without the ``/api`` prefix. A Hosting rewrite passes the
-full path (``/api/me``) to the function while a direct call sees ``/me``, so
-``api`` strips the prefix before dispatching.
 """
 
 from __future__ import annotations
 
+import os
 from datetime import date
+from pathlib import Path
 from typing import Any, Optional
 
+import firebase_admin
 from firebase_admin import initialize_app
-from firebase_functions import https_fn, options
-from flask import Flask, g, jsonify, request
+from flask import Blueprint, Flask, g, jsonify, request, send_from_directory
+
+try:
+    from flask_cors import CORS
+except ImportError:  # pragma: no cover - CORS is optional for same-origin use
+    CORS = None
 
 from auth import require_user
 from dental import catalog, engine, locations, mock_plans, sequencing
@@ -60,9 +77,34 @@ from dental.mock_plans import MemberType
 from dental.models import Employee, Employer, EmployerPlan, Network, UsageRecord, UserProfile
 import store
 
-initialize_app()
+
+def _init_firebase() -> None:
+    """Initialize the Admin SDK once, tolerant of local runs without creds.
+
+    ``initialize_app()`` normally discovers Application Default Credentials.
+    Under the emulators that isn't needed, but the call can still fail if no
+    creds are present; swallow that so the server boots for routes that don't
+    touch Firestore/Auth (health, catalog, mock-plans, estimate by plan_id).
+    """
+    if firebase_admin._apps:  # already initialized
+        return
+    try:
+        initialize_app()
+    except Exception:  # noqa: BLE001 - best effort; Firestore/Auth routes will surface errors
+        pass
+
+
+_init_firebase()
+
+# Where the static frontend lives (repo_root/frontend), served at "/".
+_FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
 app = Flask(__name__)
+if CORS is not None:
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# All API routes hang off this blueprint, mounted at /api.
+api_bp = Blueprint("api", __name__)
 
 
 # --------------------------------------------------------------------------- #
@@ -152,13 +194,13 @@ def _me_json(profile: Optional[UserProfile]) -> dict[str, Any]:
     return {"uid": g.uid, "email": g.email, "location": location}
 
 
-@app.get("/me")
+@api_bp.get("/me")
 @require_user
 def read_me():
     return jsonify(_me_json(store.get_user_profile(g.uid)))
 
 
-@app.put("/me/location")
+@api_bp.put("/me/location")
 @require_user
 def put_my_location():
     body = request.get_json(silent=True) or {}
@@ -179,19 +221,19 @@ def put_my_location():
 # Reference data
 # --------------------------------------------------------------------------- #
 
-@app.get("/health")
+@api_bp.get("/health")
 def health():
     return jsonify({"status": "ok"})
 
 
-@app.get("/catalog")
+@api_bp.get("/catalog")
 def get_catalog():
     return jsonify(
         {"procedures": [e.to_dict() for e in catalog.PROCEDURE_CATALOG.values()]}
     )
 
 
-@app.get("/mock-plans")
+@api_bp.get("/mock-plans")
 def get_mock_plans():
     """List the fictional company plans from Data/plans.json.
 
@@ -209,7 +251,7 @@ def get_mock_plans():
 # Generic CRUD
 # --------------------------------------------------------------------------- #
 
-@app.post("/employers")
+@api_bp.post("/employers")
 def create_employer():
     body = request.get_json(force=True)
     employer = Employer.from_dict(body)
@@ -217,7 +259,7 @@ def create_employer():
     return jsonify(employer.to_dict()), 201
 
 
-@app.get("/employers/<eid>")
+@api_bp.get("/employers/<eid>")
 def read_employer(eid: str):
     employer = store.get_employer(eid)
     if employer is None:
@@ -225,7 +267,7 @@ def read_employer(eid: str):
     return jsonify(employer.to_dict())
 
 
-@app.post("/employers/<eid>/plans")
+@api_bp.post("/employers/<eid>/plans")
 def create_plan(eid: str):
     body = request.get_json(force=True)
     body["employer_id"] = eid
@@ -234,7 +276,7 @@ def create_plan(eid: str):
     return jsonify(plan.to_dict()), 201
 
 
-@app.get("/employers/<eid>/plans/<pid>")
+@api_bp.get("/employers/<eid>/plans/<pid>")
 def read_plan(eid: str, pid: str):
     plan = store.get_plan(eid, pid)
     if plan is None:
@@ -242,7 +284,7 @@ def read_plan(eid: str, pid: str):
     return jsonify(plan.to_dict())
 
 
-@app.post("/employers/<eid>/employees")
+@api_bp.post("/employers/<eid>/employees")
 def create_employee(eid: str):
     body = request.get_json(force=True)
     body["employer_id"] = eid
@@ -251,7 +293,7 @@ def create_employee(eid: str):
     return jsonify(employee.to_dict()), 201
 
 
-@app.get("/employers/<eid>/employees/<empid>")
+@api_bp.get("/employers/<eid>/employees/<empid>")
 def read_employee(eid: str, empid: str):
     employee = store.get_employee(eid, empid)
     if employee is None:
@@ -259,7 +301,7 @@ def read_employee(eid: str, empid: str):
     return jsonify(employee.to_dict())
 
 
-@app.post("/employers/<eid>/employees/<empid>/usage")
+@api_bp.post("/employers/<eid>/employees/<empid>/usage")
 def create_usage(eid: str, empid: str):
     body = request.get_json(force=True)
     record = UsageRecord.from_dict(body)
@@ -267,7 +309,7 @@ def create_usage(eid: str, empid: str):
     return jsonify(record.to_dict()), 201
 
 
-@app.get("/employers/<eid>/employees/<empid>/usage")
+@api_bp.get("/employers/<eid>/employees/<empid>/usage")
 def read_usage(eid: str, empid: str):
     records = store.list_usage(eid, empid)
     return jsonify({"usage": [r.to_dict() for r in records]})
@@ -277,7 +319,7 @@ def read_usage(eid: str, empid: str):
 # Engine endpoints
 # --------------------------------------------------------------------------- #
 
-@app.post("/estimate")
+@api_bp.post("/estimate")
 def post_estimate():
     body = request.get_json(force=True)
     try:
@@ -293,7 +335,7 @@ def post_estimate():
     return jsonify(result.to_dict())
 
 
-@app.post("/compare")
+@api_bp.post("/compare")
 def post_compare():
     body = request.get_json(force=True)
     try:
@@ -308,7 +350,7 @@ def post_compare():
     return jsonify(result)
 
 
-@app.post("/reminders")
+@api_bp.post("/reminders")
 def post_reminders():
     body = request.get_json(force=True)
     try:
@@ -321,7 +363,7 @@ def post_reminders():
     return jsonify(result)
 
 
-@app.post("/sequence")
+@api_bp.post("/sequence")
 def post_sequence():
     body = request.get_json(force=True)
     try:
@@ -342,7 +384,7 @@ def post_sequence():
 # Convenience: seed sample data
 # --------------------------------------------------------------------------- #
 
-@app.post("/seed")
+@api_bp.post("/seed")
 def post_seed():
     store.save_employer(catalog.SAMPLE_EMPLOYER)
     store.save_plan(catalog.sample_plan())
@@ -355,16 +397,37 @@ def post_seed():
 
 
 # --------------------------------------------------------------------------- #
-# Cloud Functions export
+# Wire up the app: mount the API under /api, serve the static frontend at /
 # --------------------------------------------------------------------------- #
 
-@https_fn.on_request(
-    cors=options.CorsOptions(cors_origins="*", cors_methods=["GET", "POST", "PUT", "OPTIONS"])
-)
-def api(req: https_fn.Request) -> https_fn.Response:
-    """Dispatch all /api/** requests to the Flask app."""
-    path = req.environ.get("PATH_INFO", "")
-    if path == "/api" or path.startswith("/api/"):
-        req.environ["PATH_INFO"] = path[len("/api"):] or "/"
-    with app.request_context(req.environ):
-        return app.full_dispatch_request()
+app.register_blueprint(api_bp, url_prefix="/api")
+
+
+@app.get("/")
+def _index():
+    return _serve_frontend("index.html")
+
+
+@app.get("/<path:filename>")
+def _serve_frontend(filename: str):
+    """Serve the static frontend so the whole demo runs from one origin.
+
+    Falls back to a 404 JSON for missing files. API routes are matched first
+    because they live under the /api prefix.
+    """
+    target = (_FRONTEND_DIR / filename)
+    if _FRONTEND_DIR.exists() and target.is_file():
+        return send_from_directory(_FRONTEND_DIR, filename)
+    return jsonify({"error": "not found"}), 404
+
+
+# --------------------------------------------------------------------------- #
+# Dev server entry point. For production use a WSGI server, e.g.:
+#   waitress-serve --listen=0.0.0.0:8080 main:app
+# --------------------------------------------------------------------------- #
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8080"))
+    host = os.environ.get("HOST", "127.0.0.1")
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true", "yes")
+    app.run(host=host, port=port, debug=debug)

@@ -1,8 +1,9 @@
-"""Tests for the signed-in user routes (GET /me, PUT /me/location).
+"""Tests for the signed-in user routes (GET /api/me, PUT /api/me/location).
 
-These import main.py, so they need the Cloud Functions dependencies from
-requirements.txt; without them the module is skipped. Firebase is never
-contacted: token verification and the Firestore store are replaced with fakes.
+These import main.py (the standalone Flask server), so they need firebase-admin
+and flask from requirements.txt; without them the module is skipped. Firebase is
+never contacted: token verification and the Firestore store are replaced with
+fakes.
 
 Run from the backend/ directory:
     python -m pytest
@@ -12,10 +13,9 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("firebase_functions")
+pytest.importorskip("firebase_admin")
 
 import firebase_admin.auth  # noqa: E402
-import flask  # noqa: E402
 
 import main  # noqa: E402
 import store  # noqa: E402
@@ -62,13 +62,13 @@ def client(saved):
     bearer("not-a-real-token"),
 ])
 def test_me_requires_a_valid_token(client, headers):
-    response = client.get("/me", headers=headers)
+    response = client.get("/api/me", headers=headers)
     assert response.status_code == 401
     assert "error" in response.get_json()
 
 
 def test_put_location_requires_a_valid_token(client, saved):
-    response = client.put("/me/location", json={"state": "TX", "zip": "78701"})
+    response = client.put("/api/me/location", json={"state": "TX", "zip": "78701"})
     assert response.status_code == 401
     assert saved == {}
 
@@ -78,7 +78,7 @@ def test_put_location_requires_a_valid_token(client, saved):
 # --------------------------------------------------------------------------- #
 
 def test_new_user_has_no_location(client):
-    response = client.get("/me", headers=bearer("pat-token"))
+    response = client.get("/api/me", headers=bearer("pat-token"))
     assert response.status_code == 200
     assert response.get_json() == {
         "uid": "user-pat",
@@ -88,28 +88,28 @@ def test_new_user_has_no_location(client):
 
 
 def test_saved_location_is_returned_afterwards(client, saved):
-    put = client.put("/me/location", headers=bearer("pat-token"),
+    put = client.put("/api/me/location", headers=bearer("pat-token"),
                      json={"state": "TX", "zip": "78701"})
     assert put.status_code == 200
     assert put.get_json()["location"] == {"state": "TX", "zip": "78701"}
     assert saved["user-pat"].email == "pat@example.com"
 
-    got = client.get("/me", headers=bearer("pat-token"))
+    got = client.get("/api/me", headers=bearer("pat-token"))
     assert got.get_json()["location"] == {"state": "TX", "zip": "78701"}
 
 
 def test_saving_again_overwrites_the_location(client):
-    client.put("/me/location", headers=bearer("pat-token"), json={"state": "TX", "zip": "78701"})
-    client.put("/me/location", headers=bearer("pat-token"), json={"state": "PA", "zip": None})
+    client.put("/api/me/location", headers=bearer("pat-token"), json={"state": "TX", "zip": "78701"})
+    client.put("/api/me/location", headers=bearer("pat-token"), json={"state": "PA", "zip": None})
 
-    got = client.get("/me", headers=bearer("pat-token"))
+    got = client.get("/api/me", headers=bearer("pat-token"))
     assert got.get_json()["location"] == {"state": "PA", "zip": None}
 
 
 def test_each_user_has_their_own_location(client):
-    client.put("/me/location", headers=bearer("pat-token"), json={"state": "TX", "zip": "78701"})
+    client.put("/api/me/location", headers=bearer("pat-token"), json={"state": "TX", "zip": "78701"})
 
-    got = client.get("/me", headers=bearer("sam-token"))
+    got = client.get("/api/me", headers=bearer("sam-token"))
     assert got.get_json()["location"] is None
 
 
@@ -121,39 +121,29 @@ def test_each_user_has_their_own_location(client):
     {},
 ])
 def test_invalid_location_is_rejected_and_not_saved(client, saved, body):
-    response = client.put("/me/location", headers=bearer("pat-token"), json=body)
+    response = client.put("/api/me/location", headers=bearer("pat-token"), json=body)
     assert response.status_code == 422
     assert response.get_json()["error"]
     assert saved == {}
 
 
 def test_non_json_body_is_rejected(client, saved):
-    response = client.put("/me/location", headers=bearer("pat-token"), data="state=TX")
+    response = client.put("/api/me/location", headers=bearer("pat-token"), data="state=TX")
     assert response.status_code == 422
     assert saved == {}
 
 
 # --------------------------------------------------------------------------- #
-# Hosting passes the /api prefix through to the function
+# The server serves API routes under /api and the static frontend elsewhere
 # --------------------------------------------------------------------------- #
 
-def call_function(path, headers=None):
-    """Call the exported `api` Cloud Function the way the Functions runtime does.
-
-    The runtime calls it inside a Flask request context, which its CORS wrapper needs.
-    """
-    with main.app.test_request_context(path, method="GET", headers=headers):
-        return main.api(flask.request)
-
-
-@pytest.mark.parametrize("path", ["/api/health", "/health"])
-def test_function_serves_paths_with_and_without_api_prefix(path):
-    response = call_function(path)
+def test_health_is_served_under_api_prefix(client):
+    response = client.get("/api/health")
     assert response.status_code == 200
     assert response.get_json() == {"status": "ok"}
 
 
-def test_function_routes_api_me_through_auth(saved):
-    response = call_function("/api/me", headers=bearer("pat-token"))
+def test_api_me_routes_through_auth(client, saved):
+    response = client.get("/api/me", headers=bearer("pat-token"))
     assert response.status_code == 200
     assert response.get_json()["uid"] == "user-pat"

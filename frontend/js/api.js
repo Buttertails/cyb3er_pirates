@@ -23,7 +23,7 @@
 const API_CONFIG = {
   // 'local_demo': nothing leaves the browser; messages are logged and acknowledged locally.
   // 'live': POST each message to `endpoint` on the same origin.
-  mode: 'local_demo',
+  mode: 'live',
   endpoint: '/api/chat',
   profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
