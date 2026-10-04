@@ -1,5 +1,7 @@
 firebaseConfig.json
 node_modules
+__pycache__/
+*.pyc
 # Firebase emulator logs
 *-debug.log
 

@@ -1,5 +1,24 @@
 ### Verify Firebase Authentication
 
+### Planned features
+
+- **Provider finder:** Let an employee find fictional dental offices by location,
+  plan network, procedure or specialty, and appointment availability. Keep
+  directory entries clearly labeled as demo data until a verified provider
+  directory is available.
+- **Proposed-care paperwork upload:** Accept a dentist's treatment plan or cost
+  estimate, extract supported procedure descriptions or codes, and ask the
+  employee to confirm or correct them before calculating coverage. Unsupported
+  or unclear items must stay unpriced until clarified.
+- **Completed-care paperwork upload:** Accept a claim or explanation of benefits,
+  show the extracted completed services and amounts for employee review, then
+  offer an explicit action to record confirmed usage. Uploading a document alone
+  must never change recorded benefits usage.
+
+These are product backlog ideas beyond the active personalized-chatbot feature.
+The upload workflows and provider directory need separate design and data
+contracts before implementation.
+
 To serve the login and sign-up pages, use a static server (the config file must
 be served over HTTP; don't open the HTML file directly):
 
