@@ -188,6 +188,80 @@ export function EstimateCard({ estimate }) {
   );
 }
 
+export function SequenceCard({ sequence }) {
+  if (!sequence || !Array.isArray(sequence.schedule)) return null;
+  const thisYear = sequence.schedule.filter((item) => item.when === 'this_year');
+  const nextYear = sequence.schedule.filter((item) => item.when === 'next_year');
+  const savings = Number(sequence.estimated_savings) || 0;
+
+  function Group({ title, note, items }) {
+    if (items.length === 0) return null;
+    return (
+      <div className="sequence-group">
+        <p className="step">{title}</p>
+        {note && <p className="sequence-note">{note}</p>}
+        <div className="summary-group">
+          {items.map((item) => (
+            <p className="summary" key={item.procedure_id + item.when}>
+              <span>
+                <strong>{item.label}</strong>
+                {' — '}plan pays {money(item.plan_pays)}, you pay {money(item.employee_owes)}
+                {item.reasons?.length > 0 && (
+                  <span className="muted"> · {item.reasons.join(' ')}</span>
+                )}
+              </span>
+            </p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="estimate sequence">
+      {savings > 0 ? (
+        <div className="cost-grid">
+          <div className="cost-cell">
+            <span className="cost-label">All in one year</span>
+            <span className="cost-value">{money(sequence.estimated_cost_all_now)}</span>
+          </div>
+          <div className="cost-cell cost-cell-plan">
+            <span className="cost-label">Recommended plan</span>
+            <span className="cost-value">{money(sequence.estimated_cost_recommended)}</span>
+          </div>
+          <div className="cost-cell cost-cell-you">
+            <span className="cost-label">You save</span>
+            <span className="cost-value">{money(savings)}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="cost-grid">
+          <div className="cost-cell cost-cell-you">
+            <span className="cost-label">Estimated out of pocket</span>
+            <span className="cost-value">{money(sequence.estimated_cost_recommended)}</span>
+          </div>
+        </div>
+      )}
+
+      {sequence.summary && <p className="sequence-summary">{sequence.summary}</p>}
+
+      <Group title="Do this plan year" items={thisYear} />
+      <Group
+        title="Schedule after the reset"
+        note={sequence.next_plan_year_start
+          ? `Your plan year resets on ${sequence.next_plan_year_start}, giving a fresh ${money(sequence.annual_maximum)} maximum.`
+          : ''}
+        items={nextYear}
+      />
+
+      <p className="disclaimer">
+        Timing suggestions are financial only, using fictional plan data — not clinical advice.
+        Only you and your dentist can decide when care is safe to delay.
+      </p>
+    </div>
+  );
+}
+
 export function FormError({ message }) {
   return message ? <p className="error" role="alert">{message}</p> : null;
 }
