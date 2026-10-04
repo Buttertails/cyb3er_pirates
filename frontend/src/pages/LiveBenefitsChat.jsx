@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
-import { sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
+import { DentistResults, EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
+import { fetchNearbyDentists, sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { readStep, ROUTES, saveStep } from '../lib/storage.js';
