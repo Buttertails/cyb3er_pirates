@@ -28,6 +28,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from datetime import datetime, timezone
 
 from dental.models import Employee, Employer, EmployerPlan, UsageRecord, UserProfile, utc_datetime
+from company_employees import COMPANY_EMPLOYEES
 import reminders
 
 
@@ -195,20 +196,17 @@ def list_plan_records(uid: str, employee_id: str) -> list[dict[str, Any]]:
 def list_all_plan_records(uid: str) -> list[dict[str, Any]]:
     """Every saved snapshot for the user, across all demo-employee buckets.
 
-    Uses a collection-group query keyed by the ``uid`` stamped on each record,
-    so a plan saved under one employee still shows even if the profile now
-    resolves to a different employee. De-duplicates by record id (newest wins).
+    Query stamped records and also check the known demo-employee buckets so
+    older records without a uid remain visible. De-duplicate by id.
     """
+    rows = []
     try:
         query = db().collection_group("saved_plans").where("uid", "==", uid)
-        rows = [snap.to_dict() for snap in query.stream()]
+        rows.extend(snap.to_dict() for snap in query.stream())
     except Exception:
-        # Fall back to scanning each demo-employee bucket if the index/field
-        # isn't available (e.g. older records without a uid field).
-        rows = []
-        for emp in user_ref(uid).collection("demo_employees").stream():
-            rows.extend(snap.to_dict()
-                        for snap in emp.reference.collection("saved_plans").stream())
+        pass  # Known demo buckets below still work without a collection-group index.
+    for employee_id in set(COMPANY_EMPLOYEES.values()):
+        rows.extend(list_plan_records(uid, employee_id))
     by_id: dict[str, dict[str, Any]] = {}
     for row in rows:
         existing = by_id.get(row.get("id"))
@@ -223,14 +221,8 @@ def delete_plan_record(uid: str, employee_id: Optional[str], record_id: str) -> 
     if employee_id:
         saved_plans_collection(uid, employee_id).document(record_id).delete()
         return
-    try:
-        query = (db().collection_group("saved_plans")
-                 .where("uid", "==", uid).where("id", "==", record_id))
-        for snap in query.stream():
-            snap.reference.delete()
-    except Exception:
-        for emp in user_ref(uid).collection("demo_employees").stream():
-            emp.reference.collection("saved_plans").document(record_id).delete()
+    for employee in set(COMPANY_EMPLOYEES.values()):
+        saved_plans_collection(uid, employee).document(record_id).delete()
 
 
 class CareConflict(Exception):
