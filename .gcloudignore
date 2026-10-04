@@ -1,0 +1,32 @@
+# Allow only production application files into the build context.
+**
+!Dockerfile
+!.dockerignore
+!.gcloudignore
+!backend/
+!backend/*.py
+!backend/requirements.txt
+!backend/dental/
+!backend/dental/*.py
+!backend/fixtures/
+!backend/fixtures/demo.json
+!Data/
+!Data/*.json
+!frontend/
+!frontend/**
+
+# Exclude local configuration, credentials, and test/tool artifacts.
+**/.env*
+**/firebaseConfig.json
+**/*credentials*.json
+**/*service-account*.json
+**/__pycache__/**
+**/node_modules/**
+**/tests/**
+**/venv/**
+**/.git/**
+**/.*
+
+# Preserve the build context exclusion files themselves.
+!.dockerignore
+!.gcloudignore

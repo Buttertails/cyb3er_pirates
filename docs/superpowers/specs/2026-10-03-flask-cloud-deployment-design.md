@@ -1,6 +1,6 @@
 # Standalone Flask cloud deployment
 
-Status: Proposed for user review. Source: explicit request to update cloud to
+Status: Approved by the user with “okay so fix the cloud deployment”. Source: explicit request to update cloud to
 match the team's standalone Flask direction after pulling origin/main 4a3a427.
 
 ## Goal
