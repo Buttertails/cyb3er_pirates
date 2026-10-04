@@ -78,8 +78,8 @@ export function Header() {
   );
 }
 
-export function Card({ children, className = '' }) {
-  return <main className={`card ${className}`.trim()}>{children}</main>;
+export function Card({ children, className = '', ref }) {
+  return <main ref={ref} className={`card ${className}`.trim()}>{children}</main>;
 }
 
 export function Progress({ step, complete = false }) {
