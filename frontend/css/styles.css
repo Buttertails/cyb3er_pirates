@@ -73,6 +73,20 @@ body {
   to { opacity: 0; }
 }
 
+.light-purple-bg, .orange-bg, .purple-bg {
+  position: fixed;
+  top: -13%;
+  left: 0;
+  width: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.topbar, .route-stage {
+  position: relative;
+  z-index: 1;
+}
+
 /* Text wordmark standing in for the real logo lockup. */
 .brand-mark {
   width: 24px;
@@ -662,6 +676,7 @@ body:has(.chat) {
 }
 /* Lincoln stands on his own in the log, without the gray bubble behind him. */
 .bubble-loader {
+  align-self: center;
   padding: 0.25rem 0;
   background: transparent;
 }

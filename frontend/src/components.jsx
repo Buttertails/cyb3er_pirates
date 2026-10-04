@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from './lib/auth.js';
 import { SignedOutError, submitErrorMessage } from './lib/api.js';
@@ -12,6 +12,10 @@ import {
   startUpdate,
   stepPosition,
 } from './lib/storage.js';
+import { animate } from 'animejs';
+import purpleWave from '../res/purple-wave.svg';
+import orangeWave from '../res/orange-wave.svg';
+import lightPurpleWave from '../res/light-purple-wave.svg';
 
 export function useDocumentTitle(title) {
   useEffect(() => {
@@ -399,4 +403,37 @@ export function useSubmitTask() {
   }
 
   return { busy, error, setError, run };
+}
+
+// Components for background wave animations
+export function PurpleBackground() {
+  const bgRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (location.pathname === ROUTES.chat) {
+      animate(bgRef.current, {
+        translateY: 1000,
+        duration: 1200,
+        easing: 'easeOutCubic'
+      });
+    } else {
+      animate(bgRef.current, {
+        translateX: 0,
+        translateY: 0,
+        duration: 1000,
+        easing: 'easeOutCubic'
+      });
+    }
+  }, [location.pathname]);
+  return <img ref={bgRef} className="purple-bg" src={purpleWave} alt="" aria-hidden="true" />;
+}
+
+export function OrangeBackground() {
+  return <img className="orange-bg" src={orangeWave} alt="" aria-hidden="true" />;
+}
+
+export function LightPurpleBackground() {
+  return <img className="light-purple-bg" src={lightPurpleWave} alt="" aria-hidden="true" />;
 }

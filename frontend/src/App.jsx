@@ -5,7 +5,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { Header } from './components.jsx';
+import { Header, LightPurpleBackground, OrangeBackground, PurpleBackground } from './components.jsx';
 import { SignInPage, SignupPage } from './pages/AccountPages.jsx';
 import { ChatPage } from './pages/ChatPage.jsx';
 import { SummaryPage } from './pages/ResultsPages.jsx';
@@ -60,6 +60,9 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <>
+      <LightPurpleBackground />
+      <OrangeBackground />
+      <PurpleBackground />
       <Header />
       <AnimatedRoutes />
     </>
