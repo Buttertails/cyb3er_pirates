@@ -18,6 +18,7 @@ import { animate } from 'animejs';
 import purpleWave from '../res/purple-wave.svg';
 import orangeWave from '../res/orange-wave.svg';
 import lightPurpleWave from '../res/light-purple-wave.svg';
+import toothLogo from '../res/lincoln-favicon.png';
 
 export function useDocumentTitle(title) {
   useEffect(() => {
@@ -41,8 +42,6 @@ export function Header() {
   const showNav = Boolean(user) && !inOnboarding();
   const showAccount = Boolean(user) && pathname !== ROUTES.signIn && pathname !== '/';
 
-  console.log("inOnboarding: " + inOnboarding());
-
   async function handleSignOut() {
     await signOut();
     navigate(ROUTES.signIn);
@@ -61,7 +60,7 @@ export function Header() {
     <header className="topbar">
       <div className="topbar-inner">
         <Link className="topbar-brand" to={showNav ? ROUTES.chat : ROUTES.signIn}>
-          <img className="brand-logo" src="./res/lincoln-favicon.png" alt="Tooth30 logo" />
+          <img className="brand-logo" src={toothLogo} alt="Tooth30 logo" />
           <span className="brand-name">Tooth30</span>
         </Link>
         {showAccount && (

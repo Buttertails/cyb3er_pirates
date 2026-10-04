@@ -598,7 +598,7 @@ body:has(.chat) {
   padding-bottom: var(--space);
 }
 .chat {
-  --chat-offset: 6.25rem; /* topbar height plus the gap under the card */
+  --chat-offset: 12.5rem; /* header and space above the card */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -819,7 +819,7 @@ body:has(.chat) {
     grid-template-columns: 1fr;
   }
   .chat {
-    --chat-offset: 9.5rem; /* the topbar wraps onto two lines */
+    --chat-offset: 15rem; /* the topbar wraps onto two lines */
     padding: 0;
   }
   .chat-scroll {
