@@ -3,5 +3,11 @@ node_modules
 # Firebase emulator logs
 *-debug.log
 
+# Firebase service-account keys — SECRET, never commit
+*-firebase-adminsdk-*.json
+*serviceAccount*.json
+*-sa.json
+cyb3r-pirates-firebase-adminsdk-fbsvc-5b5663e0e1.json
+
 #agents
 .claude

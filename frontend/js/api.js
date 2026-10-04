@@ -23,7 +23,10 @@
 const API_CONFIG = {
   // 'local_demo': nothing leaves the browser; messages are logged and acknowledged locally.
   // 'live': POST each message to `endpoint` on the same origin.
-  mode: 'live',
+  // The intake messages go to POST /api/chat, which the backend does not
+  // implement yet, so keep this on 'local_demo'. Profile routes (/api/me) and
+  // the estimate (/api/estimate) are live regardless of this flag.
+  mode: 'local_demo',
   endpoint: '/api/chat',
   profileEndpoint: '/api/me',
   timeoutMs: 18000, // the docs set an 18-second frontend deadline
