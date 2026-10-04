@@ -38,19 +38,33 @@ def saved_store(monkeypatch):
     records: dict = {}
 
     def save(uid, employee_id, record):
-        row = {**record, "saved_at": "2026-10-04T00:00:00+00:00"}
+        row = {**record, "uid": uid, "employee_id": employee_id,
+               "saved_at": "2026-10-04T00:00:00+00:00"}
         records.setdefault((uid, employee_id), {})[record["id"]] = row
         return row
 
     def listing(uid, employee_id):
         return list(records.get((uid, employee_id), {}).values())
 
+    def list_all(uid):
+        out = []
+        for (ruid, _emp), bucket in records.items():
+            if ruid == uid:
+                out.extend(bucket.values())
+        return out
+
     def delete(uid, employee_id, record_id):
-        records.get((uid, employee_id), {}).pop(record_id, None)
+        if employee_id:
+            records.get((uid, employee_id), {}).pop(record_id, None)
+            return
+        for (ruid, _emp), bucket in records.items():
+            if ruid == uid:
+                bucket.pop(record_id, None)
 
     monkeypatch.setattr(firebase_admin.auth, "verify_id_token", fake_verify)
     monkeypatch.setattr(store, "save_plan_record", save)
     monkeypatch.setattr(store, "list_plan_records", listing)
+    monkeypatch.setattr(store, "list_all_plan_records", list_all)
     monkeypatch.setattr(store, "delete_plan_record", delete)
     return records
 
@@ -114,6 +128,33 @@ def test_save_comparison_kind(client):
     assert client.post("/api/me/saved", headers=bearer(), json=body).status_code == 200
     items = client.get(f"/api/me/saved?employee_id={EMPLOYEE_ID}", headers=bearer()).get_json()["saved"]
     assert any(item["kind"] == "comparison" for item in items)
+
+
+def test_listing_without_employee_returns_all_buckets(client, saved_store):
+    # Save one item under the real employee bucket.
+    client.post("/api/me/saved", headers=bearer(), json=_estimate_body("est-aaaaaaaa"))
+    # Simulate a second item saved under a DIFFERENT employee bucket (e.g. an
+    # older mapping), which the user-wide list must still surface.
+    saved_store[(UID, "demo-c-lee")] = {
+        "seq-bbbbbbbb": {"id": "seq-bbbbbbbb", "kind": "sequence", "uid": UID,
+                         "employee_id": "demo-c-lee", "result": {"schedule": []},
+                         "saved_at": "2026-10-03T00:00:00+00:00"},
+    }
+    got = client.get("/api/me/saved", headers=bearer())  # no employee_id
+    assert got.status_code == 200
+    ids = {item["id"] for item in got.get_json()["saved"]}
+    assert {"est-aaaaaaaa", "seq-bbbbbbbb"} <= ids
+
+
+def test_delete_without_employee_finds_the_bucket(client, saved_store):
+    saved_store[(UID, "demo-c-lee")] = {
+        "seq-cccccccc": {"id": "seq-cccccccc", "kind": "sequence", "uid": UID,
+                         "employee_id": "demo-c-lee", "result": {},
+                         "saved_at": "2026-10-03T00:00:00+00:00"},
+    }
+    deleted = client.delete("/api/me/saved/seq-cccccccc", headers=bearer())  # no employee_id
+    assert deleted.status_code == 200
+    assert "seq-cccccccc" not in saved_store[(UID, "demo-c-lee")]
 
 
 def test_delete_removes_item(client):

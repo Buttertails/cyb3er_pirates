@@ -67,15 +67,16 @@ export function ProfilePage() {
     setLoadError('');
     setLoading(Boolean(employeeId));
     fetchAppointments().then((value) => { if (active) setAppointments(value); }).catch(() => {});
+    // Saved items are listed user-wide (across every demo-employee bucket), so
+    // they show regardless of which employee the profile currently resolves to.
+    fetchSavedPlans().then((savedItems) => { if (active) setSavedPlans(savedItems); }).catch(() => {});
     if (employeeId) Promise.all([
       fetchProcedures(employeeId),
       fetchBenefits(employeeId),
-      fetchSavedPlans(employeeId),
-    ]).then(([reports, summary, savedItems]) => {
+    ]).then(([reports, summary]) => {
       if (!active) return;
       setProcedures(reports);
       setBenefits(summary.benefits);
-      setSavedPlans(savedItems);
     }).catch((error) => { if (active) setLoadError(submitErrorMessage(error)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -83,9 +84,12 @@ export function ProfilePage() {
 
   async function removeSaved(id) {
     const previous = savedPlans;
-    setSavedPlans((items) => items.filter((item) => item.id !== id));
+    const item = savedPlans.find((entry) => entry.id === id);
+    setSavedPlans((items) => items.filter((entry) => entry.id !== id));
     try {
-      await deleteSavedPlan(id, employeeId);
+      // Pass the item's own employee bucket when known; the backend otherwise
+      // locates it across buckets.
+      await deleteSavedPlan(id, item?.employee_id);
     } catch (error) {
       setSavedPlans(previous); // restore on failure
       setLoadError(submitErrorMessage(error));
@@ -136,8 +140,7 @@ export function ProfilePage() {
       <p className="note">Confirmed care is included in the usage shown above. Estimates may differ from a final claim.</p>
 
       <h2 className="subhead">Saved estimates &amp; plans</h2>
-      {!employeeId && <p className="lead">Select a supported company plan to view saved items.</p>}
-      {employeeId && !loading && savedPlans.length === 0 && (
+      {savedPlans.length === 0 && (
         <p className="lead">Nothing saved yet. Save an estimate or a care plan from the assistant to see it here.</p>
       )}
       {savedPlans.map((item) => (

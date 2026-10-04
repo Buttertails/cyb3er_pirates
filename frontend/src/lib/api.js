@@ -384,15 +384,17 @@ export async function saveSavedPlan({ employeeId, kind, result, label, id }) {
   return response.saved;
 }
 
+// List the user's saved items. With no employeeId, returns everything across
+// all demo-employee buckets, so a plan saved under one employee still shows if
+// the profile now resolves to a different one.
 export async function fetchSavedPlans(employeeId) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
-  const response = await apiFetch(`/api/me/saved?employee_id=${encodeURIComponent(employeeId)}`, 'GET');
+  const query = employeeId ? `?employee_id=${encodeURIComponent(employeeId)}` : '';
+  const response = await apiFetch(`/api/me/saved${query}`, 'GET');
   return response.saved || [];
 }
 
 export async function deleteSavedPlan(id, employeeId) {
-  if (!employeeId) throw new RejectedError('Select a fictional employee first.');
-  const response = await apiFetch(
-    `/api/me/saved/${encodeURIComponent(id)}?employee_id=${encodeURIComponent(employeeId)}`, 'DELETE');
+  const query = employeeId ? `?employee_id=${encodeURIComponent(employeeId)}` : '';
+  const response = await apiFetch(`/api/me/saved/${encodeURIComponent(id)}${query}`, 'DELETE');
   return response.deleted;
 }

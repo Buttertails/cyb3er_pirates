@@ -1,13 +1,44 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DentistResults, EstimateCard, LincolnLoader, useDocumentTitle, useFlowGuard } from '../components.jsx';
-import { sendLiveChat, SignedOutError, submitErrorMessage, uploadProcedurePdf } from '../lib/api.js';
+import { saveSavedPlan, sendLiveChat, SignedOutError, submitErrorMessage, uploadProcedurePdf } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { waitForBotReply } from '../lib/botTiming.js';
 import { botMessagesFromReply } from '../lib/chatMessages.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
 import { shouldStartLiveSession } from '../lib/liveChatState.js';
 import { readStep, ROUTES, saveStep } from '../lib/storage.js';
+
+// A "Save this estimate" control shown under each estimate in the live chat,
+// so the user can keep it on their profile. Keyed by the same employee the
+// profile reads from.
+function SaveEstimateButton({ estimate, employeeId }) {
+  const [state, setState] = useState('idle'); // idle | saving | saved | error
+  async function save() {
+    if (state === 'saving' || state === 'saved') return;
+    setState('saving');
+    try {
+      await saveSavedPlan({
+        employeeId,
+        kind: 'estimate',
+        result: estimate,
+        label: estimate?.lines?.[0]?.label,
+      });
+      setState('saved');
+    } catch {
+      setState('error');
+    }
+  }
+  if (state === 'saved') return <p className="saved-confirm" role="status">Saved to your profile.</p>;
+  return (
+    <p className="estimate-save">
+      <button type="button" className="link-btn" onClick={save} disabled={state === 'saving' || !employeeId}>
+        {state === 'saving' ? 'Saving…' : 'Save this estimate'}
+      </button>
+      {state === 'error' && <span className="error"> Couldn’t save. Try again.</span>}
+    </p>
+  );
+}
 
 const RESTART = /^(start over|restart|reset|start again)[.!]?$/i;
 
@@ -118,6 +149,7 @@ export function LiveBenefitsChat({ chatSession, setChatSession }) {
             <li key={`${index}-${message.from}`} className={`bubble bubble-${message.from}${message.estimate || message.dentists ? ' bubble-wide' : ''}`}>
               {message.text && <p className="bubble-text">{message.text}</p>}
               {message.estimate && <EstimateCard estimate={message.estimate} />}
+              {message.estimate && <SaveEstimateButton estimate={message.estimate} employeeId={employeeId} />}
               {message.dentists && <DentistResults result={message.dentists} />}
             </li>
           ))}
