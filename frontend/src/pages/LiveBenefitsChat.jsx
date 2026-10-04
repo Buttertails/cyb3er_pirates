@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EstimateCard, LincolnLoader, useDocumentTitle, useFlowGuard } from '../components.jsx';
+import { EstimateCard, useDocumentTitle, useFlowGuard } from '../components.jsx';
 import { sendLiveChat, SignedOutError, submitErrorMessage } from '../lib/api.js';
 import { signOut } from '../lib/auth.js';
 import { employeeIdForCompany } from '../lib/demoEmployees.js';
@@ -48,6 +48,32 @@ export function LiveBenefitsChat() {
     }
   }
 
+  async function findDentists() {
+    if (busy) return;
+    const requestId = ++latest.current;
+    setBusy(true);
+    setError('');
+    setMessages((previous) => previous.filter((message) => !message.dentists)
+      .concat({ from: 'user', text: 'Find in-network dentists near me' }));
+    try {
+      const result = await fetchNearbyDentists();
+      if (requestId !== latest.current) return;
+      setMessages((previous) => previous.concat({ from: 'bot', dentists: result }));
+    } catch (cause) {
+      if (requestId !== latest.current) return;
+      if (cause instanceof SignedOutError) {
+        await signOut();
+        navigate(`${ROUTES.signIn}?signed-out=1`);
+        return;
+      }
+      setMessages((previous) => previous.concat({ from: 'bot', dentists: {
+        status: 'error', offices: [], message: `${submitErrorMessage(cause)} Please try again.`,
+      } }));
+    } finally {
+      if (requestId === latest.current) setBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (blocked || !employeeId) return;
     saveStep('demo_employee_id', employeeId);
@@ -86,9 +112,10 @@ export function LiveBenefitsChat() {
       <div className="chat-scroll" ref={scrollRef}>
         <ol className="chat-log" role="log" aria-live="polite" aria-label="Conversation">
           {messages.map((message, index) => (
-            <li key={`${index}-${message.from}`} className={`bubble bubble-${message.from}${message.estimate ? ' bubble-wide' : ''}`}>
+            <li key={`${index}-${message.from}`} className={`bubble bubble-${message.from}${message.estimate || message.dentists ? ' bubble-wide' : ''}`}>
               {message.text && <p className="bubble-text">{message.text}</p>}
               {message.estimate && <EstimateCard estimate={message.estimate} />}
+              {message.dentists && <DentistResults result={message.dentists} />}
             </li>
           ))}
           {busy && (
@@ -103,6 +130,11 @@ export function LiveBenefitsChat() {
         </div>}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
+      <div className="chat-actions">
+        <button className="chip" type="button" disabled={busy} onClick={findDentists}>
+          {busy ? 'Please wait…' : 'Find in-network dentists'}
+        </button>
+      </div>
       <form className="chat-form" onSubmit={(event) => { event.preventDefault(); answer(draft); }}>
         <label className="visually-hidden" htmlFor="live-chat-input">Your message</label>
         <input id="live-chat-input" type="text" value={draft} onChange={(event) => setDraft(event.target.value)}

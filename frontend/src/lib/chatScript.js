@@ -549,10 +549,14 @@ export const STEPS = {
       }));
       return offices.concat(chip('change-location', 'Change location', ['change location', 'different location', 'moved']));
     },
-    ask() {
+    async ask() {
       const place = formatLocation(readStep('location'));
+      const location = readStep('location');
+      if (savedOffices().length === 0 && location?.zip && !readStep('office_directory_message')) {
+        await sendStep('location', location);
+      }
       if (savedOffices().length === 0) {
-        return [{ text: `I couldn’t find any dental offices near ${place}. Try a different state or ZIP code.` }];
+        return [{ text: readStep('office_directory_message') || `I couldn’t find any sample dental offices near ${place}. Try a different state or ZIP code.` }];
       }
       if (inOnboarding() || inUpdate()) return [{ text: `Here are dental offices near ${place}. Which one do you go to?` }];
       return [{ text: `Here are dental offices near ${place}. Which one would you like?` }];

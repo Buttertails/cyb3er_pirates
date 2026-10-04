@@ -1,0 +1,25 @@
+{
+  "company_plans": {
+    "acme-co": "C0",
+    "demo-company-2": "C2",
+    "demo-company-3": "C0",
+    "demo-company-a": "C0",
+    "demo-company-c": "C2"
+  },
+  "zip_centers": [
+    {"zip": "27519", "state": "NC", "latitude": 35.808392, "longitude": -78.886546},
+    {"zip": "27577", "state": "NC", "latitude": 35.491873, "longitude": -78.344659},
+    {"zip": "27858", "state": "NC", "latitude": 35.530792, "longitude": -77.298948},
+    {"zip": "27863", "state": "NC", "latitude": 35.491574, "longitude": -77.966938}
+  ],
+  "offices": [
+    {"id": "cary-c0", "name": "Sample Cary Family Dental", "address": "100 Demo Way, Cary, NC 27519", "latitude": 35.8102, "longitude": -78.8832, "rating": 4.7, "phone": "919-555-0101", "plan_ids": ["C0"]},
+    {"id": "cary-c2", "name": "Sample Cary Dental Studio", "address": "200 Example Lane, Cary, NC 27519", "latitude": 35.8061, "longitude": -78.8911, "rating": 4.5, "phone": "919-555-0102", "plan_ids": ["C2"]},
+    {"id": "smithfield-c0", "name": "Sample Smithfield Smiles", "address": "300 Demo Street, Smithfield, NC 27577", "latitude": 35.4952, "longitude": -78.3413, "rating": 4.6, "phone": "919-555-0103", "plan_ids": ["C0"]},
+    {"id": "smithfield-c2", "name": "Sample Johnston Dental", "address": "400 Example Road, Smithfield, NC 27577", "latitude": 35.4884, "longitude": -78.3481, "rating": 4.8, "phone": "919-555-0104", "plan_ids": ["C2"]},
+    {"id": "greenville-c0", "name": "Sample Greenville Family Dental", "address": "500 Demo Avenue, Greenville, NC 27858", "latitude": 35.5341, "longitude": -77.2961, "rating": 4.4, "phone": "252-555-0105", "plan_ids": ["C0"]},
+    {"id": "greenville-c2", "name": "Sample Pitt Dental Studio", "address": "600 Example Street, Greenville, NC 27858", "latitude": 35.5276, "longitude": -77.3022, "rating": 4.9, "phone": "252-555-0106", "plan_ids": ["C2"]},
+    {"id": "pikeville-c0", "name": "Sample Pikeville Dental", "address": "700 Demo Road, Pikeville, NC 27863", "latitude": 35.4945, "longitude": -77.9634, "rating": 4.3, "phone": "919-555-0107", "plan_ids": ["C0"]},
+    {"id": "pikeville-c2", "name": "Sample Wayne Family Dental", "address": "800 Example Way, Pikeville, NC 27863", "latitude": 35.4885, "longitude": -77.9702, "rating": 4.6, "phone": "919-555-0108", "plan_ids": ["C2"]}
+  ]
+}

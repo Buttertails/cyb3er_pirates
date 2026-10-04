@@ -5,7 +5,8 @@ vi.mock('./auth.js', () => ({
   idToken: async () => 'signed-in-token',
 }));
 
-import { fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat } from './api.js';
+import { AppServiceError, fetchNearbyDentists, fetchProfile, fetchProcedures, requestEstimate, saveProcedures, sendLiveChat, sendStep, SignedOutError } from './api.js';
+import { readStep, saveStep } from './storage.js';
 
 beforeEach(() => {
   vi.stubGlobal('window', { crypto: { randomUUID: () => 'care-12345678' } });
@@ -40,5 +41,49 @@ describe('cloud-backed React API', () => {
     await sendLiveChat('demo-a-sam', null, { event: 'start' });
     expect(fetch.mock.calls[1][0]).toBe('/api/chat');
     expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ employee_id: 'demo-a-sam', event: 'start' });
+  });
+
+  it('requests nearby dentists with only the signed-in account context', async () => {
+    fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({
+      status: 'ok', offices: [{ id: 'cary-c0' }], message: 'Sample offices',
+    }) });
+    const result = await fetchNearbyDentists();
+    expect(result.offices).toEqual([{ id: 'cary-c0' }]);
+    expect(fetch.mock.calls[0][0]).toBe('/api/me/dentists');
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'GET',
+      headers: { Authorization: 'Bearer signed-in-token' } });
+    expect(fetch.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it('does not fabricate offices when directory request fails', async () => {
+    fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(AppServiceError);
+    fetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    await expect(fetchNearbyDentists()).rejects.toBeInstanceOf(SignedOutError);
+  });
+
+  it('retains a saved office when a directory refresh still includes it', async () => {
+    const values = new Map();
+    vi.stubGlobal('sessionStorage', { getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) });
+    window.dispatchEvent = vi.fn();
+    saveStep('office', 'cary-c0');
+    fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({
+      status: 'ok', message: 'Sample offices', offices: [{ id: 'cary-c0', name: 'Sample Cary Family Dental' }],
+    }) });
+    await sendStep('location', { state: 'NC', zip: '27519' });
+    expect(readStep('office')).toBe('cary-c0');
+  });
+
+  it('keeps a saved office and returns a retry message if the directory is unavailable', async () => {
+    const values = new Map();
+    vi.stubGlobal('sessionStorage', { getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) });
+    window.dispatchEvent = vi.fn();
+    saveStep('office', 'cary-c0');
+    fetch.mockResolvedValueOnce({ ok: false, status: 503 });
+    await expect(sendStep('location', { state: 'NC', zip: '27519' })).resolves.toBeUndefined();
+    expect(readStep('office')).toBe('cary-c0');
+    expect(readStep('office_directory_message')).toMatch(/try again/i);
   });
 });

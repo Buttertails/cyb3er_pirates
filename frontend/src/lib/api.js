@@ -1,14 +1,10 @@
-import {
-  LOCAL_DEMO_OFFICES,
-  SAMPLE_APPOINTMENTS,
-} from '../../js/options.js';
+import { SAMPLE_APPOINTMENTS } from '../../js/options.js';
 import { demoLoginActive, idToken } from './auth.js';
 import {
   inUpdate,
   officeLabel,
   readStep,
   saveStep,
-  stateName,
 } from './storage.js';
 
 export const API_CONFIG = {
@@ -119,6 +115,10 @@ export async function fetchProfile() {
   return { name: null, company: null, office: null, ...profile, ...localDetails(profile.email) };
 }
 
+export function fetchNearbyDentists() {
+  return apiFetch('/api/me/dentists', 'GET');
+}
+
 export async function saveProfileLocation(state, zip) {
   if (demoLoginActive()) return saveDemoLocation(state, zip);
   return apiFetch(`${API_CONFIG.profileEndpoint}/location`, 'PUT', { state, zip });
@@ -208,24 +208,11 @@ export async function finishFlow() {
   ].forEach((key) => saveStep(key, null));
 }
 
-function placeholderOffices(location) {
-  const place = `${stateName(location.state)}${location.zip ? ` ${location.zip}` : ''}`;
-  return LOCAL_DEMO_OFFICES.map((office) => ({
-    id: office.id,
-    name: office.name,
-    address: `${office.street}, ${place}`,
-    distance_miles: office.distance_miles,
-  }));
-}
-
 function acknowledgeLocally(message) {
   const id = window.crypto?.randomUUID?.() || `${Date.now()}${Math.random().toString(16).slice(2)}`;
   // The scripted intake asks for location and office; these events are not part
   // of the Dialogflow contract. Only the verified profile and care routes write.
   const response = { session_id: message.session_id || id };
-  if (message.event.name === STEP_EVENTS.location) {
-    response.offices = placeholderOffices(message.event.parameters);
-  }
   return response;
 }
 
@@ -234,10 +221,21 @@ export async function sendStep(step, parameters, autoSet = false) {
   const response = acknowledgeLocally(message);
   if (response?.session_id) saveStep('session_id', response.session_id);
   if (step === 'location') {
-    const offices = Array.isArray(response?.offices) ? response.offices : [];
-    saveStep('offices', offices);
-    const chosen = readStep('office');
-    if (chosen && !offices.some((office) => office.id === chosen)) saveStep('office', null);
+    saveStep('offices', []);
+    saveStep('office_directory_message', null);
+    try {
+      const directory = await fetchNearbyDentists();
+      const offices = Array.isArray(directory?.offices) ? directory.offices : [];
+      saveStep('office_directory_message', directory.message || null);
+      saveStep('offices', offices);
+      const selected = readStep('office');
+      if (selected && !offices.some((office) => office.id === selected)) saveStep('office', null);
+      response.offices = offices;
+    } catch (error) {
+      if (error instanceof SignedOutError) throw error;
+      saveStep('office_directory_message', 'Sample offices are unavailable. Please try again by changing your location.');
+      response.offices = [];
+    }
   }
   const log = readStep('sent_log') || [];
   saveStep('sent_log', log.concat({ mode: API_CONFIG.mode, request: message }));

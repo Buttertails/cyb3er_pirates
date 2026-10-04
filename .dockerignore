@@ -10,6 +10,7 @@
 !backend/dental/*.py
 !backend/fixtures/
 !backend/fixtures/demo.json
+!backend/fixtures/dentists.json
 !Data/
 !Data/*.json
 !frontend/
