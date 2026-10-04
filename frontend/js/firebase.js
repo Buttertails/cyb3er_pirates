@@ -3,6 +3,8 @@
 // the ID token the backend checks (backend/auth.py). They only use it inside
 // handlers, by which time this module has run.
 
+import { loadFirebaseConfig } from './firebase-config.mjs';
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import {
   createUserWithEmailAndPassword,
@@ -11,16 +13,9 @@ import {
   signOut,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 
-async function loadConfig() {
-  const configUrl = new URL('./firebaseConfig.json', import.meta.url);
-  const response = await fetch(configUrl);
-  if (!response.ok) throw new Error('Could not load the Firebase config (' + response.status + ')');
-  return response.json();
-}
-
 // Resolves once Firebase knows whether someone is already signed in.
 const ready = (async function () {
-  const app = initializeApp(await loadConfig());
+  const app = initializeApp(await loadFirebaseConfig());
   const auth = getAuth(app);
   await auth.authStateReady();
   return auth;
