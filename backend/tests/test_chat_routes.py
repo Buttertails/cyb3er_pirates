@@ -310,3 +310,33 @@ def test_webhook_reprompt_clears_the_current_chat_estimate(client, monkeypatch):
     assert response.status_code == 200
     assert response.get_json()["estimate"] is None
     assert len(response.get_json()["choices"]) == 2
+
+
+def test_last_webhook_reprompt_removes_earlier_financial_payload_and_text(client, monkeypatch):
+    import dialogflow_client
+    old = webhook(client, webhook_body()).get_json()["payload"]
+    latest = webhook(client, webhook_body(network="unknown")).get_json()["payload"]
+    monkeypatch.setattr(dialogflow_client, "detect_intent", lambda *args: {
+        "queryResult":{"responseMessages":[{"text":{"text":["Old estimate $999", "Choose a network"]}}],
+                        "webhookPayloads":[old, latest]}})
+    response = turn(client, "hello")
+    assert response.status_code == 200
+    result = response.get_json()
+    assert result["estimate"] is None
+    assert "160.00" not in " ".join(result["messages"])
+    assert "999" not in " ".join(result["messages"])
+    assert "network" in " ".join(result["messages"]).lower()
+
+
+def test_summary_chat_messages_use_current_backend_balance(client, monkeypatch):
+    import dialogflow_client
+    request_body = webhook_body()
+    request_body["fulfillmentInfo"]["tag"] = "benefits.summary"
+    payload = webhook(client, request_body).get_json()["payload"]
+    monkeypatch.setattr(dialogflow_client, "detect_intent", lambda *args: {
+        "queryResult":{"responseMessages":[{"text":{"text":["Remaining $999"]}}],
+                        "webhookPayloads":[payload]}})
+    response = turn(client, "hello")
+    assert response.status_code == 200
+    assert "999" not in " ".join(response.get_json()["messages"])
+    assert "7,250.00" in " ".join(response.get_json()["messages"])

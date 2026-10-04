@@ -15,6 +15,10 @@ Reference data:
     GET  /api/mock-plans
     GET  /api/health
 
+Guided chat (fictional employee context; no login dependency):
+    POST /api/chat                              -> messages, benefits, estimate
+    POST /api/dialogflow/webhook                -> authenticated CX fulfillment
+
 Generic CRUD (Firestore-backed):
     POST /api/employers                         body: {id, name, active_plan_id?}
     GET  /api/employers/<eid>

@@ -102,7 +102,8 @@ def _fulfillment(employee, config, text, *, estimate=None, choices=None,
                  status="ok", parameters=None, inputs=None):
     payload = {"type": "dental_benefits", "status": status,
                "benefits": employee.benefits(config.reference_date),
-               "estimate": estimate, "choices": choices or [], "inputs": inputs or {}}
+               "estimate": estimate, "choices": choices or [], "inputs": inputs or {},
+               "prompt": text}
     response = {"fulfillmentResponse": {"mergeBehavior": "REPLACE",
                                         "messages": [{"text": {"text": [text]}}]},
                 "payload": payload}
@@ -216,9 +217,10 @@ def post_chat():
     state = result.get("currentPage", {}).get("displayName", "")
     choices = NETWORK_CHOICES if state == "Network" else _procedure_choices() if state == "Procedure" else []
     estimate = None
-    for payload in result.get("webhookPayloads", []):
-        if not isinstance(payload, dict) or payload.get("type") != "dental_benefits":
-            continue
+    payloads = [payload for payload in result.get("webhookPayloads", [])
+                if isinstance(payload, dict) and payload.get("type") == "dental_benefits"]
+    # Only the final fulfillment controls the displayed result and message.
+    for payload in payloads[-1:]:
         if payload.get("status") not in ("ok", "needs_input"):
             raise _dialogflow_error()
         choices = payload.get("choices", [])
@@ -238,6 +240,16 @@ def post_chat():
             estimate = expected
             # Financial prose is always regenerated from the verified engine result.
             messages = [_estimate_text(estimate)]
+        elif payload.get("status") == "ok":
+            benefits = employee.benefits(config.reference_date)
+            messages = [f"For {employee.company_name}, your fictional plan has "
+                        f"${benefits['remaining']:,.2f} remaining this plan year. "
+                        "What procedure are you planning?"]
+        else:
+            prompt = payload.get("prompt")
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise _dialogflow_error()
+            messages = [prompt]
     if not messages:
         raise _dialogflow_error()
     return jsonify({"session_id": token, "messages": messages, "choices": choices,

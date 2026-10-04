@@ -39,11 +39,14 @@ Network values in_network/out_of_network and in-network/out-of-network are
 normalized. Unknown values reprompt; never default.
 
 Return fulfillmentResponse.messages and payload:
-`{type:"dental_benefits",status:"ok"|"needs_input",benefits,estimate,choices}`.
+`{type:"dental_benefits",status:"ok"|"needs_input",benefits,estimate,choices,prompt}`.
 Successful estimates include validated procedure/network/treatment_date choices.
 Reprompts contain estimate:null. Invalid choices clear the offending sessionInfo
 parameter. Use REPLACE message mode. Chat treats webhook failure status as 503
 and never surfaces earlier estimates. Unsupported tags return a scope message.
+Only the final dental fulfillment payload controls the current result. Backend
+prompts replace earlier response text; financial summaries and estimate messages
+are regenerated from current backend calculations.
 
 ## Setup boundary
 
