@@ -13,5 +13,8 @@ frontend/dist
 *-sa.json
 cyb3r-pirates-firebase-adminsdk-fbsvc-5b5663e0e1.json
 backend/package-lock.json
+
+#secrets
+.env
 #agents
 .claude
