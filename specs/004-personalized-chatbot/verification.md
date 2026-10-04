@@ -92,3 +92,24 @@ unreviewed. This paragraph records the state before the cloud changes below.
 - Treat an immediate no-match after an intent patch as a possible training
   delay and retry after training before changing routes. T008 remains open;
   new pages should accompany working backend behavior, not empty prompts.
+
+## Network Unsure page increment — 2026-10-03
+
+- Sanitized pre-change snapshots:
+  `chat/agent-config/live-before-network-unsure-2026-10-03.json` and
+  `live-before-network-copy-2026-10-03.json`. Added the `network.unsure`
+  intent (10 phrases), a Network Unsure guidance page, and a route from the
+  existing Network page. The new page explains how to check network status,
+  then returns to the existing network form so the employee can choose a
+  hypothetical network and change it later. Existing Network form and
+  completion route were preserved.
+- First live test reached the guidance page and the final Pat filling estimate,
+  but asked the network question twice. A scoped copy-only patch removed the
+  duplicate question. The final live website conversation was Start →
+  Procedure → Network → uncertain-network guidance → Network → Estimate;
+  its result was $160.00 plan / $40.00 employee and no recorded usage change.
+  The final response contained one network question. The new page and route
+  were verified by live configuration readback.
+- `python -m unittest discover -s tools/dialogflow/tests -p 'test_*.py'`
+  passed (8 tests) before the page update. T008 remains open for the other
+  navigation paths, fuller no-match handling and restore tooling.

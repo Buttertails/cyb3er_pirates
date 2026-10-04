@@ -1,0 +1,1709 @@
+{
+  "agent": {
+    "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65",
+    "displayName": "Dental Benefits Assistant",
+    "defaultLanguageCode": "en",
+    "timeZone": "America/New_York",
+    "startFlow": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000",
+    "advancedSettings": {
+      "loggingSettings": {}
+    },
+    "satisfiesPzi": true
+  },
+  "flow": {
+    "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000",
+    "displayName": "Default Start Flow",
+    "description": "A start flow created along with the agent",
+    "transitionRoutes": [
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/00000000-0000-0000-0000-000000000000",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "Hi! How are you doing?",
+                  "Hello! How can I help you?",
+                  "Good day! What can I do for you today?",
+                  "Greetings! How can I assist?"
+                ]
+              }
+            }
+          ]
+        },
+        "name": "8815f00a-3f72-49c6-996c-20338852a6e4"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/c8ccc54d-8c83-425d-bbc1-40c98569bf2c",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "I can estimate a planned procedure, review benefits already used, or compare dentist networks. You can change a procedure or network choice after an estimate."
+                ]
+              }
+            }
+          ]
+        },
+        "name": "d027a854-0b01-4cf7-9ecd-49c7ed41c638"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/43188a49-9a8f-4df5-ade8-10bcb790c3a8",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "A deductible is the amount you pay before some coverage applies. An annual maximum limits what the plan pays in a plan year. In-network and out-of-network dentist costs can differ. I can explain your specific estimate after you choose a procedure."
+                ]
+              }
+            }
+          ]
+        },
+        "name": "488c0c6a-8dc9-4d04-ad08-2e044337287c"
+      },
+      {
+        "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/a7d950a4-b87c-430d-a207-40a6609b5e0c",
+        "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+        "name": "fced472e-9570-4bb9-ad03-8ed7682009c4"
+      },
+      {
+        "condition": "true",
+        "triggerFulfillment": {},
+        "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+        "name": "1d8cae26-ba2a-4fbd-8b63-9561d61baec6"
+      }
+    ],
+    "eventHandlers": [
+      {
+        "event": "sys.no-match-default",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "I didn't get that. Can you say it again?",
+                  "I missed what you said. What was that?",
+                  "Sorry, could you say that again?",
+                  "Sorry, can you say that again?",
+                  "Can you say that again?",
+                  "Sorry, I didn't get that. Can you rephrase?",
+                  "Sorry, what was that?",
+                  "One more time?",
+                  "What was that?",
+                  "Say that one more time?",
+                  "I didn't get that. Can you repeat?",
+                  "I missed that, say that again?"
+                ]
+              }
+            }
+          ]
+        },
+        "name": "f430e2f9-89d7-411e-a7f6-c9d56fbd826e"
+      },
+      {
+        "event": "sys.no-input-default",
+        "triggerFulfillment": {
+          "messages": [
+            {
+              "text": {
+                "text": [
+                  "I didn't get that. Can you say it again?",
+                  "I missed what you said. What was that?",
+                  "Sorry, could you say that again?",
+                  "Sorry, can you say that again?",
+                  "Can you say that again?",
+                  "Sorry, I didn't get that. Can you rephrase?",
+                  "Sorry, what was that?",
+                  "One more time?",
+                  "What was that?",
+                  "Say that one more time?",
+                  "I didn't get that. Can you repeat?",
+                  "I missed that, say that again?"
+                ]
+              }
+            }
+          ]
+        },
+        "name": "650604dc-2aef-464e-9e12-a80ad2762285"
+      }
+    ],
+    "nluSettings": {
+      "modelType": "MODEL_TYPE_ADVANCED",
+      "classificationThreshold": 0.3
+    }
+  },
+  "pages": [
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/48e24c3c-b131-47d0-a8e7-e61a5154b31b",
+      "displayName": "Network",
+      "form": {
+        "parameters": [
+          {
+            "displayName": "network",
+            "required": true,
+            "entityType": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/entityTypes/ff3938a6-e251-458f-a1ed-160e5d87bb8e",
+            "fillBehavior": {
+              "initialPromptFulfillment": {
+                "messages": [
+                  {
+                    "text": {
+                      "text": [
+                        "Will you use an in-network or out-of-network dentist?"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "repromptEventHandlers": [
+                {
+                  "event": "sys.no-match-default",
+                  "triggerFulfillment": {
+                    "messages": [
+                      {
+                        "text": {
+                          "text": [
+                            "I'm not sure which network option you mean. Will your dentist be in-network or out-of-network?"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "name": "88fbe44c-aaea-4fdd-b73d-804bc00c0ce7"
+                },
+                {
+                  "event": "sys.no-input-default",
+                  "triggerFulfillment": {
+                    "messages": [
+                      {
+                        "text": {
+                          "text": [
+                            "Whenever you're ready, tell me in-network or out-of-network."
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "name": "5a29a304-5bdd-4695-80eb-260bab3c2a3d"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "transitionRoutes": [
+        {
+          "condition": "$page.params.status = \"FINAL\"",
+          "triggerFulfillment": {},
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/55764857-3af1-4412-ac19-c0f6de1c569b",
+          "name": "81a4faad-8491-4b67-8a80-f02d5d2d8f82"
+        }
+      ]
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/55764857-3af1-4412-ac19-c0f6de1c569b",
+      "displayName": "Estimate",
+      "entryFulfillment": {
+        "webhook": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/webhooks/fa8f6321-2e7e-4655-b533-60fcd1fd793c",
+        "tag": "benefits.estimate",
+        "setParameterActions": [
+          {
+            "parameter": "procedure",
+            "value": "$session.params.procedure_id"
+          }
+        ]
+      },
+      "transitionRoutes": [
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/81525770-6216-41ff-9e68-3b3873abffb2",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "Sure, let's look at another procedure."
+                  ]
+                }
+              }
+            ],
+            "setParameterActions": [
+              {
+                "parameter": "procedure_id",
+                "value": null
+              },
+              {
+                "parameter": "network",
+                "value": null
+              }
+            ]
+          },
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+          "name": "9c2c769a-df5a-48ca-b128-d2a4cfc424d9"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/39cb5ea3-f410-4663-8f0c-00ceace4991f",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "Sure, let's change your network choice."
+                  ]
+                }
+              }
+            ],
+            "setParameterActions": [
+              {
+                "parameter": "network",
+                "value": null
+              }
+            ]
+          },
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/48e24c3c-b131-47d0-a8e7-e61a5154b31b",
+          "name": "9dc51f56-9a3c-4716-b7ed-9040783fc9f0"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/619067f2-1223-498c-a2ea-152824290eb0",
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/69073741-e174-49d9-aa7c-c2e05de20703",
+          "name": "9ff33a9c-f226-4dd3-8344-a64cff946ff6"
+        }
+      ],
+      "eventHandlers": [
+        {
+          "event": "sys.no-match-default",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "I can help you change your procedure or network choice. You can say 'another procedure' or 'change network'."
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "d001e978-e903-43e7-991b-7e19fe83c7d0"
+        },
+        {
+          "event": "sys.no-input-default",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "Take your time. You can say 'another procedure' or 'change network'."
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "386ab74e-351c-434d-83d2-b4711ecf711a"
+        }
+      ]
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/69073741-e174-49d9-aa7c-c2e05de20703",
+      "displayName": "Benefits",
+      "entryFulfillment": {
+        "webhook": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/webhooks/fa8f6321-2e7e-4655-b533-60fcd1fd793c",
+        "tag": "benefits.summary"
+      },
+      "transitionRoutes": [
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/ccd6a15e-92e2-4638-b182-701b72684c20",
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+          "name": "af15db99-3ea5-4619-b811-aba5afdf8c32"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/886b7182-c187-4f40-a2b3-172d883b509c",
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+          "name": "e123959c-d5d9-4b81-b263-6afbab6ec100"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/619067f2-1223-498c-a2ea-152824290eb0",
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+          "name": "978311f3-5719-4dc3-ac4f-3761dcc51a37"
+        }
+      ]
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+      "displayName": "Procedure",
+      "form": {
+        "parameters": [
+          {
+            "displayName": "procedure_id",
+            "required": true,
+            "entityType": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/entityTypes/9948996e-0ffd-4dcf-b684-7c9189fdac58",
+            "fillBehavior": {
+              "initialPromptFulfillment": {
+                "messages": [
+                  {
+                    "text": {
+                      "text": [
+                        "What dental procedure are you planning?"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "repromptEventHandlers": [
+                {
+                  "event": "sys.no-match-default",
+                  "triggerFulfillment": {
+                    "messages": [
+                      {
+                        "text": {
+                          "text": [
+                            "I couldn't match that to a supported procedure. Try a name such as cleaning, filling, crown, or root canal."
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "name": "6dcaf913-a13e-49a5-a017-bc4eb14ffb6d"
+                },
+                {
+                  "event": "sys.no-input-default",
+                  "triggerFulfillment": {
+                    "messages": [
+                      {
+                        "text": {
+                          "text": [
+                            "Take your time. What dental procedure are you planning?"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "name": "3c0b04d8-1a97-41ff-ab2d-078813fc422d"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "transitionRoutes": [
+        {
+          "condition": "$page.params.status = \"FINAL\"",
+          "triggerFulfillment": {},
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/48e24c3c-b131-47d0-a8e7-e61a5154b31b",
+          "name": "feb770aa-f56f-4aa2-839d-44a98094b316"
+        }
+      ]
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/fc593ee2-c51e-4d68-bda7-f1e1eb183780",
+      "displayName": "Menu",
+      "entryFulfillment": {
+        "messages": [
+          {
+            "text": {
+              "text": [
+                "I can estimate a planned procedure, review your benefits used, or start a dentist network comparison. What would you like to do?"
+              ]
+            }
+          }
+        ]
+      },
+      "transitionRoutes": [
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/619067f2-1223-498c-a2ea-152824290eb0",
+          "triggerFulfillment": {},
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/69073741-e174-49d9-aa7c-c2e05de20703",
+          "name": "dfa72f94-f282-4085-b2cf-d35a5143965a"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/ccd6a15e-92e2-4638-b182-701b72684c20",
+          "triggerFulfillment": {},
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+          "name": "247f5d07-df23-4411-bbab-05a4b0a2079b"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/886b7182-c187-4f40-a2b3-172d883b509c",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "First, tell me the dental procedure you are planning."
+                  ]
+                }
+              }
+            ]
+          },
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/d36318b8-084d-40ef-a727-c039342b4df5",
+          "name": "dbfc3acd-7edc-4480-bec0-8e7f908b28ed"
+        },
+        {
+          "intent": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/e3b77f09-6e7c-4d32-99cb-56be48723a70",
+          "targetPage": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/flows/00000000-0000-0000-0000-000000000000/pages/48e24c3c-b131-47d0-a8e7-e61a5154b31b",
+          "name": "b0cc4c6f-8fa6-4d7d-bbb5-aaf74d6bb202"
+        }
+      ],
+      "eventHandlers": [
+        {
+          "event": "sys.no-match-default",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "I can estimate a procedure, review benefits used, or compare networks. Which would you like?"
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "3765fde1-f1fd-4255-a759-596f733538fc"
+        },
+        {
+          "event": "sys.no-input-default",
+          "triggerFulfillment": {
+            "messages": [
+              {
+                "text": {
+                  "text": [
+                    "When you are ready, say estimate, benefits, or compare networks."
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "5c775ec9-4a25-4fc4-a9c6-ebe5b1b32e51"
+        }
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/00000000-0000-0000-0000-000000000000",
+      "displayName": "Default Welcome Intent",
+      "trainingPhrases": [
+        {
+          "id": "f5b0136f-8d6c-419a-90c8-230f3d128f5c",
+          "parts": [
+            {
+              "text": "just going to say hi"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "82bbb61b-afe0-42ea-a9c0-fe65b469331b",
+          "parts": [
+            {
+              "text": "heya"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "677bcd08-a97b-4824-b44b-11f372b36765",
+          "parts": [
+            {
+              "text": "hello hi"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "5e986662-f1f8-436b-9756-52af2819dc45",
+          "parts": [
+            {
+              "text": "howdy"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "8c88f97f-1203-4ced-ab73-95000eff35e5",
+          "parts": [
+            {
+              "text": "hey there"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "6c9ed08f-a773-4a42-a7ef-2cbfe3565810",
+          "parts": [
+            {
+              "text": "hi there"
+            }
+          ],
+          "repeatCount": 2
+        },
+        {
+          "id": "5d971b22-1ace-4fef-afde-6d5ebeb50e60",
+          "parts": [
+            {
+              "text": "greetings"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "4290d3cd-1f49-4fc3-a0d9-49d9e27dee57",
+          "parts": [
+            {
+              "text": "hey"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "fb6b1d8a-cb5c-4037-8ba2-f44c8c04741a",
+          "parts": [
+            {
+              "text": "long time no see"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "26fc071c-f556-4088-899f-25a077524132",
+          "parts": [
+            {
+              "text": "hello"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "6c5a8452-105b-4c02-8e6a-26efcad07bd6",
+          "parts": [
+            {
+              "text": "lovely day isn't it"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "45e6b39e-6ccd-44ba-b815-7ba706f91159",
+          "parts": [
+            {
+              "text": "I greet you"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "bcf4bef8-01e1-4fc0-a405-9130ea8ff093",
+          "parts": [
+            {
+              "text": "hello again"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "fe55aee3-18e9-4fcb-80d8-0b71d8408eb8",
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "b9fb71dc-7e91-4eaf-a791-cb58b128b8ba",
+          "parts": [
+            {
+              "text": "hello there"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "id": "65852dde-f202-490f-b85d-d282e428cc0d",
+          "parts": [
+            {
+              "text": "a good day"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/00000000-0000-0000-0000-000000000001",
+      "displayName": "Default Negative Intent",
+      "priority": 500000,
+      "isFallback": true
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/39cb5ea3-f410-4663-8f0c-00ceace4991f",
+      "displayName": "network.change",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "change network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "change my network choice"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "switch network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "use a different network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I chose the wrong network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "choose a different dentist network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "change dentist network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "let me change the network"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000,
+      "description": "Change this choice from the Estimate page without changing employee context."
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/43188a49-9a8f-4df5-ade8-10bcb790c3a8",
+      "displayName": "benefits.terms",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "what is a deductible"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "what does annual maximum mean"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "explain insurance terms"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "what does in network mean"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "explain my dental benefits terms"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/619067f2-1223-498c-a2ea-152824290eb0",
+      "displayName": "benefits.review",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "review my benefits"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "how much of my benefits are left"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "check my annual maximum"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "what have I used this year"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "check my benefits usage"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How much of my annual benefit is left?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Show my benefits balance"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Have I used any dental benefits this year?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How much has my plan paid so far?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How much of my annual maximum remains?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can I see my recorded dental usage?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "What's left in my dental allowance?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Check my remaining annual maximum"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Show my current benefits usage"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Where do I stand with my plan limit?"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/81525770-6216-41ff-9e68-3b3873abffb2",
+      "displayName": "procedure.change",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "another procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "different procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "change procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "change my procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I need a different procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I want to check another procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "estimate another procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can we look at a different treatment?"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000,
+      "description": "Change this choice from the Estimate page without changing employee context."
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/886b7182-c187-4f40-a2b3-172d883b509c",
+      "displayName": "network.compare",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "compare dentist networks"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "in network versus out of network"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "compare network costs"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "should I use an in network dentist"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Compare in network and out of network costs"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Is it cheaper to stay in network?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "What happens if my dentist is out of network?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can you compare dentist network options?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Should I see an in network dentist?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Show the difference between network choices"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How does being out of network affect my cost?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Compare network coverage"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Help me choose a network option"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Would an outside dentist cost more?"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/a7d950a4-b87c-430d-a207-40a6609b5e0c",
+      "displayName": "menu.return",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "main menu"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "go back to the menu"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "return to menu"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "show the menu"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/c8ccc54d-8c83-425d-bbc1-40c98569bf2c",
+      "displayName": "conversation.help",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "help"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "what can you help me with"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "what can I ask"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I am confused"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "show me what I can do"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/ccd6a15e-92e2-4638-b182-701b72684c20",
+      "displayName": "estimate.start",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "estimate a procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "how much will my dental work cost"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "get a cost estimate"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I have a procedure planned"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "check coverage for dental work"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Help me estimate dental care"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I want a cost estimate for dental treatment"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can we price a procedure?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "What might I owe for dental work?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Estimate my out of pocket cost"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How much would a treatment cost me?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Help me check the cost of a procedure"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can you estimate my dental bill?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I have dental work coming up"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Let's look at a treatment cost"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "priority": 500000
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/intents/e3b77f09-6e7c-4d32-99cb-56be48723a70",
+      "displayName": "procedure.direct",
+      "trainingPhrases": [
+        {
+          "parts": [
+            {
+              "text": "I need "
+            },
+            {
+              "text": "braces",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I need a "
+            },
+            {
+              "text": "filling",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I need a "
+            },
+            {
+              "text": "crown",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I need a "
+            },
+            {
+              "text": "root canal",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "my dentist recommended a "
+            },
+            {
+              "text": "cleaning",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "can you estimate "
+            },
+            {
+              "text": "braces",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "My dentist says I need a "
+            },
+            {
+              "text": "filling",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "My dentist recommended a "
+            },
+            {
+              "text": "root canal",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I am getting a "
+            },
+            {
+              "text": "crown",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": " soon"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I need to have a "
+            },
+            {
+              "text": "tooth pulled",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Could you estimate an "
+            },
+            {
+              "text": "implant",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": " for me?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "How much would "
+            },
+            {
+              "text": "braces",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": " cost with my plan?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I am planning to get "
+            },
+            {
+              "text": "clear aligners",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can you check my coverage for "
+            },
+            {
+              "text": "dentures",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": "?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "My dentist proposed a "
+            },
+            {
+              "text": "bridge",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "What would I pay for a "
+            },
+            {
+              "text": "cleaning",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": "?"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "I may need "
+            },
+            {
+              "text": "veneers",
+              "parameterId": "procedure_id"
+            }
+          ],
+          "repeatCount": 1
+        },
+        {
+          "parts": [
+            {
+              "text": "Can you help me with a "
+            },
+            {
+              "text": "dental exam",
+              "parameterId": "procedure_id"
+            },
+            {
+              "text": "?"
+            }
+          ],
+          "repeatCount": 1
+        }
+      ],
+      "parameters": [
+        {
+          "id": "procedure_id",
+          "entityType": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/entityTypes/9948996e-0ffd-4dcf-b684-7c9189fdac58"
+        }
+      ],
+      "priority": 600000
+    }
+  ],
+  "entities": [
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/entityTypes/9948996e-0ffd-4dcf-b684-7c9189fdac58",
+      "displayName": "dental_procedure",
+      "kind": "KIND_MAP",
+      "entities": [
+        {
+          "value": "cleaning",
+          "synonyms": [
+            "cleaning",
+            "Routine cleaning",
+            "routine cleaning",
+            "teeth cleaning",
+            "dental cleaning",
+            "regular cleaning",
+            "routine teeth cleaning"
+          ]
+        },
+        {
+          "value": "exam-xrays",
+          "synonyms": [
+            "exam-xrays",
+            "Exam and X-rays",
+            "checkup",
+            "dental checkup",
+            "exam",
+            "x-rays",
+            "x rays",
+            "xrays",
+            "exam and x-rays",
+            "dental exam",
+            "dental x rays"
+          ]
+        },
+        {
+          "value": "filling",
+          "synonyms": [
+            "filling",
+            "Filling",
+            "cavity filling",
+            "dental filling",
+            "fill a cavity",
+            "fill my cavity",
+            "tooth filling"
+          ]
+        },
+        {
+          "value": "extraction",
+          "synonyms": [
+            "extraction",
+            "Extraction",
+            "tooth extraction",
+            "tooth removal",
+            "remove a tooth",
+            "tooth pulled",
+            "pull a tooth"
+          ]
+        },
+        {
+          "value": "root-canal",
+          "synonyms": [
+            "root-canal",
+            "Root canal",
+            "root canal",
+            "root canal treatment",
+            "endodontic treatment"
+          ]
+        },
+        {
+          "value": "crown-bridge",
+          "synonyms": [
+            "crown-bridge",
+            "Crown or bridge",
+            "crown",
+            "bridge",
+            "dental crown",
+            "dental bridge",
+            "crown or bridge",
+            "tooth crown",
+            "fixed dental bridge"
+          ]
+        },
+        {
+          "value": "implant",
+          "synonyms": [
+            "implant",
+            "Implant",
+            "dental implant",
+            "tooth implant",
+            "tooth replacement implant"
+          ]
+        },
+        {
+          "value": "dentures",
+          "synonyms": [
+            "dentures",
+            "Dentures or partials",
+            "partial dentures",
+            "partials",
+            "dentures or partials",
+            "full dentures",
+            "partial denture"
+          ]
+        },
+        {
+          "value": "orthodontics",
+          "synonyms": [
+            "orthodontics",
+            "Orthodontics",
+            "braces",
+            "aligners",
+            "clear aligners",
+            "metal braces",
+            "traditional braces"
+          ]
+        },
+        {
+          "value": "cosmetic",
+          "synonyms": [
+            "cosmetic",
+            "Cosmetic",
+            "cosmetic work",
+            "teeth whitening",
+            "whitening",
+            "veneers",
+            "bonding"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/entityTypes/ff3938a6-e251-458f-a1ed-160e5d87bb8e",
+      "displayName": "dentist_network",
+      "kind": "KIND_MAP",
+      "entities": [
+        {
+          "value": "out_of_network",
+          "synonyms": [
+            "out of network",
+            "out_of_network",
+            "out-of-network",
+            "outside my network",
+            "not in my network",
+            "nonparticipating dentist"
+          ]
+        },
+        {
+          "value": "in_network",
+          "synonyms": [
+            "in network",
+            "in_network",
+            "in-network",
+            "in my network",
+            "within my network",
+            "participating dentist"
+          ]
+        }
+      ]
+    }
+  ],
+  "webhooks": [
+    {
+      "name": "projects/cyb3r-pirates/locations/us-east1/agents/ea6d5b47-1426-4edd-b895-7d4f275f0a65/webhooks/fa8f6321-2e7e-4655-b533-60fcd1fd793c",
+      "displayName": "Dental Benefits Flask Fulfillment",
+      "genericWebService": {
+        "uri": "https://dental-api-nrl7quagra-uc.a.run.app/api/dialogflow/webhook",
+        "requestHeaders": {
+          "Authorization": "[redacted]"
+        },
+        "serviceAgentAuth": "NONE"
+      },
+      "timeout": "15s"
+    }
+  ]
+}
