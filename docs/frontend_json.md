@@ -30,6 +30,9 @@ the location step also call the profile routes, which are not `intake.*`
 messages; see [Authentication](#authentication) and
 [Profile and location](#profile-and-location).
 
+Returning users whose last sign-in was more than 90 days ago, or who pick
+"Update info" in the header, answer the [update-info questions](#updating-info).
+
 New users answer the [sign-up questions](#new-user-sign-up) first. Two of them
 are steps 1 and 2 above, so the intake picks up at step 3 once sign-up is done.
 
@@ -325,6 +328,10 @@ backend seeds (`backend/dental/catalog.py`); the others are placeholders.
 | `demo-company-3` | Example Health Partners |
 | `other` | My company isn't listed |
 
+**History `procedure`** (the [update-info](#updating-info) questions). The
+procedures from the `checkup` and `general` categories above. Emergency
+entries are symptoms, not procedures, so they aren't offered.
+
 **`timing`:**
 
 | `timing` | Label |
@@ -376,6 +383,8 @@ their messages again, so the same event can arrive more than once in a session.
 - [ ] `PATCH /api/me` for `name`, `company` and `office`, with partial updates and the validation above
 - [ ] `name`, `company` and `office` in the `GET /api/me` response
 - [ ] Merge, not overwrite, when saving `users/{uid}`, so the location and the new fields don't erase each other
+- [ ] `last_sign_in_at` in the `GET /api/me` response, and `POST /api/me/sign-in` to record it
+- [ ] `GET` and `POST /api/me/procedures`, stored in `users/{uid}/procedures`, with the validation above
 
 ## Authentication
 
@@ -446,13 +455,49 @@ fields are a proposal. Until they exist, `API_CONFIG.profileDetailsLive` in
 per email in the browser's localStorage (`profile_details`), with the same
 merge rules. Set it to `true` once the route is live.
 
+## Updating info
+
+A short flow that keeps the user's dental history and location current. It
+reuses the location and office pages, which follow these steps while the update
+is under way (`UPDATE` in `frontend/js/shared.js`).
+
+**When it runs**
+
+- **At sign-in**, when `last_sign_in_at` from `GET /api/me` is more than 90 days
+  ago. An unfinished sign-up is resumed first instead. No `last_sign_in_at` on
+  record counts as recent.
+- **Manually**, from "Update info" in the page header on any signed-in page.
+  Finishing returns to that page.
+
+| # | Question | Page | Sends |
+| --- | --- | --- | --- |
+| 1 | "Have you had any dental work since …?" Yes or No. On Yes, the user adds each procedure. | `procedures.html` | `POST /api/me/procedures` (**new**). An empty list means "nothing new". |
+| 2 | "Are you still in Texas 78701?" Yes or No | `location-check.html` | Nothing. Yes ends the update. |
+| 3 | New location (only after No) | `location.html` | `PUT /api/me/location`, then `intake.location` (unchanged) |
+| 4 | Their dental office near the new location (only after No) | `office.html` | `PATCH /api/me` `{ "office": ... }`, then `intake.office` |
+
+When the update ends, the frontend sends `POST /api/me/sign-in` (**new**) to
+record the sign-in. After a stale sign-in, this is the only time it's recorded,
+so an abandoned update is asked for again at the next sign-in. Otherwise every
+sign-in records itself right away.
+
+The procedures page also lists what's already on file, from
+`GET /api/me/procedures` (**new**), so people don't enter something twice.
+
+**Not built on the backend yet.** The routes below marked proposed are covered
+by the same `API_CONFIG.profileDetailsLive` switch as `PATCH /api/me`. While
+it's `false`, procedures and the last sign-in are kept per email in the
+browser's localStorage (`profile_details`). To try the 90-day branch there, set
+that email's `last_sign_in_at` to an older date.
+
 ## Profile and location
 
 The backend remembers each user's location in Firestore at `users/{uid}`, so it
 is asked for once. `GET /api/me` and `PUT /api/me/location` are always live, even
 in local demo mode (but not with the demo sign-in). `PATCH /api/me` is a proposal
-for the other [sign-up](#new-user-sign-up) answers. All of them need the
-`Authorization` header.
+for the other [sign-up](#new-user-sign-up) answers, and the sign-in and
+procedures routes are proposals for [updating info](#updating-info). All of them
+need the `Authorization` header.
 
 ### `GET /api/me`
 
@@ -463,20 +508,26 @@ for the other [sign-up](#new-user-sign-up) answers. All of them need the
   "name": "Pat Lee",
   "company": "acme-co",
   "office": "office-1042",
-  "location": { "state": "TX", "zip": "78701" }
+  "location": { "state": "TX", "zip": "78701" },
+  "last_sign_in_at": "2026-06-25T14:03:00Z"
 }
 ```
 
 `location` is `null` until the user has saved one. **Proposed, not built yet:**
 `name`, `company` and `office`, each `null` until saved through
-[`PATCH /api/me`](#patch-apime-proposed).
+[`PATCH /api/me`](#patch-apime-proposed), and `last_sign_in_at`, the ISO time
+recorded by the last [`POST /api/me/sign-in`](#post-apimesign-in-proposed), or
+`null` if none was.
 
 After signing in, the frontend calls this route:
 
 - With a location, it sends the location as `intake.location` to get the offices.
 - If name, location, office or company is missing, it resumes
   [sign-up](#new-user-sign-up) at the first missing one.
-- Otherwise it goes to the office step, with the saved office preselected.
+- Else, if `last_sign_in_at` is more than 90 days ago, it starts the
+  [update-info questions](#updating-info).
+- Otherwise it records the sign-in and goes to the office step, with the saved
+  office preselected.
 
 ### `PUT /api/me/location`
 
@@ -513,11 +564,74 @@ sends one field at a time, as each question is answered.
 - On success it returns the same shape as `GET /api/me`.
 - Last write wins, as with the location.
 
+### `POST /api/me/sign-in` (proposed)
+
+Records that the user signed in now, as `last_sign_in_at`. The body is `{}`.
+It returns the same shape as `GET /api/me`. Read `last_sign_in_at` before
+recording, since this replaces it.
+
+### `GET /api/me/procedures` (proposed)
+
+Every procedure the user has recorded, oldest first:
+
+```json
+{
+  "procedures": [
+    {
+      "id": "p-81f2",
+      "procedure": "filling",
+      "category": "general",
+      "date": "2026-08",
+      "cost": 200.0,
+      "you_paid": 40.0,
+      "insurance_paid": 160.0,
+      "recorded_at": "2026-10-04T01:07:07Z"
+    }
+  ]
+}
+```
+
+### `POST /api/me/procedures` (proposed)
+
+Adds the procedures the user entered on one visit to the update page:
+
+```json
+{
+  "procedures": [
+    { "procedure": "filling", "category": "general", "date": "2026-08",
+      "cost": 200.0, "you_paid": 40.0, "insurance_paid": 160.0 },
+    { "procedure": "cleaning", "category": "checkup", "date": "2026-09",
+      "cost": null, "you_paid": null, "insurance_paid": null }
+  ]
+}
+```
+
+An empty `procedures` list is valid: it means the user said they've had no
+dental work since then.
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `procedure` | string | One of the history `procedure` IDs under [Allowed values](#allowed-values). |
+| `category` | string | `checkup` or `general`, and the procedure must belong to it. |
+| `date` | string | `YYYY-MM`, the month it was done. Not in the future. |
+| `cost` | number or `null` | Total cost in dollars, 0 or more, at most 2 decimals. |
+| `you_paid` | number or `null` | What the user paid. Same rules as `cost`. |
+| `insurance_paid` | number or `null` | What insurance paid. Same rules. When `cost` is given, `you_paid + insurance_paid` can't exceed it. |
+
+- Append; don't replace earlier entries. Give each an `id` and `recorded_at`.
+- Invalid input returns `422` with a readable `error`. Nothing is saved then.
+- Return the full list, in the same shape as `GET /api/me/procedures`.
+- These fields line up with `Data/procedure.json`: `dentalID` is `procedure`,
+  `individualPaid` is `you_paid`, `insurancePaid` is `insurance_paid`, `cost` is
+  `cost`, and `date` is `date`. The amounts are what the engine needs to work out
+  deductible and annual-maximum use.
+
 ### Stored in Firestore
 
 `users/{uid}` holds `email`, `state` and `zip` today. The proposal adds `name`,
-`company` and `office`. Only the backend writes this document; `firestore.rules`
-blocks clients.
+`company`, `office` and `last_sign_in_at`, plus a `users/{uid}/procedures/{id}`
+subcollection with one document per recorded procedure. Only the backend writes
+these; `firestore.rules` blocks clients.
 
 **Watch out:** `store.save_user_profile` writes the whole document with `.set()`,
 and `UserProfile.from_dict` drops fields it doesn't know. Once `name`, `company`
