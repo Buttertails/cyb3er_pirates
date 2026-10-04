@@ -1,6 +1,6 @@
 # Personalized dental chatbot expansion
 
-Status: Proposed for written-design approval. Source: user requests more steps,
+Status: Approved by the user on 2026-10-03. Source: user requests more steps,
 more rounded conversation, personalized input, alternative procedure costs,
 and useful care scheduling across policy resets. The user selected the package
 with interactive what-if cards and a benefits timeline.
