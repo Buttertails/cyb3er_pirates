@@ -34,6 +34,17 @@ Build React with `npm --prefix frontend run build`, deploy Flask to the existing
 `dental-api` Cloud Run service, then deploy Firebase Hosting. Hosting rewrites
 `/api/**` to Cloud Run and serves the React build for other paths.
 
+### Reminder emails
+
+The backend sends two privacy-minimal reminder emails through Resend:
+
+- **90 days inactive**: please sign in and review your dental history.
+- **Early October, unused benefits**: at least 90% of the annual maximum is left.
+
+A daily Cloud Scheduler job calls the scheduler-only
+`POST /api/internal/reminders/run`. See `specs/009-email-reminders/quickstart.md`
+for configuration, the dry-run-first rollout, and local previews.
+
 ### Planned features
 
 - **Provider finder:** Let an employee find fictional dental offices by location,

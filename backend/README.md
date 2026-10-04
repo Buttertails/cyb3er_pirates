@@ -166,12 +166,50 @@ PUT /api/me/location
 
 See `docs/frontend_json.md` for how the frontend uses these routes.
 
+`POST /api/me/sign-in` (body `{}`) records the sign-in as a Firestore timestamp
+and starts a new `inactivity_cycle_id`, which the reminder emails below use.
+
+## Reminder emails
+
+A daily Cloud Scheduler job calls `POST /api/internal/reminders/run` with a
+Google OIDC token (`auth.require_scheduler`). It runs two campaigns
+(`reminder_campaigns.py`) through one runner (`reminders.py`):
+
+- **inactivity**: 90 full days since the last recorded sign-in; one email per
+  inactivity cycle, asking the user to sign in and review their dental history.
+- **benefits**: from 3 months before the plan year ends (Oct 1 for these
+  calendar-year plans), users with at least 90% of the annual maximum left;
+  one email per plan year. Usage comes from the shared engine.
+
+Emails (`email_delivery.py`, sent with Resend) contain no amounts, history, or
+identifiers. Each user/campaign/period has one delivery record at
+`users/{uid}/reminder_deliveries/{campaign}-{key}`, claimed in a transaction
+that rechecks eligibility, so retries and overlapping runs never double-send.
+
+Configuration: `RESEND_API_KEY` (Secret Manager), `REMINDER_FROM_EMAIL`,
+`APP_SIGN_IN_URL`, `REMINDER_JOB_AUDIENCE`, `REMINDER_JOB_SERVICE_ACCOUNT`,
+optional `REMINDER_ALLOW_UNVERIFIED`, `REMINDER_BENEFITS_LEAD_MONTHS`,
+`REMINDER_BENEFITS_REMAINING_PERCENT`. Without the delivery values, live runs
+return 503 and send nothing.
+
+```bash
+# from backend/: render both emails and the demo benefits standing (no data access)
+python run_reminders.py preview --as-of 2026-10-04
+# against the emulators only (refuses production unless --allow-production)
+python run_reminders.py run --dry-run
+python run_reminders.py backfill-sign-ins            # add --apply to write
+```
+
+Setup and rollout steps: `specs/009-email-reminders/quickstart.md`.
+
 ## API summary
 
 | Method | Path                                           | Purpose                                |
 | ------ | ---------------------------------------------- | -------------------------------------- |
 | GET    | `/api/me`                                      | signed-in user's profile + location    |
 | PUT    | `/api/me/location`                             | save the signed-in user's location     |
+| POST   | `/api/me/sign-in`                              | record a sign-in (new inactivity cycle)|
+| POST   | `/api/internal/reminders/run`                  | scheduler-only reminder email job      |
 | GET    | `/api/health`                                  | health check                           |
 | GET    | `/api/catalog`                                 | procedure catalog                      |
 | GET    | `/api/mock-plans`                              | fictional plans from `Data/plans.json` |

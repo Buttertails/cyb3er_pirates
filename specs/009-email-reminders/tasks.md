@@ -47,9 +47,9 @@ Port source with `git show react-wip:<path>` / `git show stash@{0}:<path>`; neve
 
 ## Phase 6: Polish and operations
 
-- [ ] T017 `backend/run_reminders.py` (`preview`, `run --dry-run | --sender log`, `backfill-sign-ins [--apply]`) with a production guard, tested in `backend/tests/test_reminder_cli.py`. Add the opt-in `backend/tests/test_reminder_emulator.py`.
-- [ ] T018 Document configuration, Secret Manager, Resend domain, the dry-run-first Cloud Scheduler job and the backfill in `specs/009-email-reminders/quickstart.md`, `backend/README.md` and `README.md`.
-- [ ] T019 Run the full backend and frontend suites, the frontend build, the email preview and the secret scan. Record evidence in `specs/009-email-reminders/verification.md`.
+- [x] T017 `backend/run_reminders.py` (`preview`, `run --dry-run | --sender log`, `backfill-sign-ins [--apply]`) with a production guard, tested in `backend/tests/test_reminder_cli.py`. Add the opt-in `backend/tests/test_reminder_emulator.py`.
+- [x] T018 Document configuration, Secret Manager, Resend domain, the dry-run-first Cloud Scheduler job and the backfill in `specs/009-email-reminders/quickstart.md`, `backend/README.md` and `README.md`.
+- [x] T019 Run the full backend and frontend suites, the frontend build, the email preview and the secret scan. Record evidence in `specs/009-email-reminders/verification.md`.
 
 ## Dependencies and independent checks
 

@@ -38,7 +38,7 @@ class ReminderConfigError(Exception):
     pass
 
 
-def _env_flag(name: str) -> bool:
+def env_flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
 
 
@@ -55,7 +55,7 @@ def _env_int(name: str, default: int, low: int, high: int) -> int:
     return value
 
 
-def _auth_lookup(uid: str):
+def auth_lookup(uid: str):
     try:
         return firebase_auth.get_user(uid)
     except firebase_auth.UserNotFoundError:
@@ -79,10 +79,10 @@ def _run_reminder_job(campaigns: list[str], batch_size: int, dry_run: bool) -> d
     sender = None if dry_run else ResendEmailSender.from_environment()
     built = build_campaigns(campaigns)
     runner = ReminderRunner(
-        store.FirestoreReminderRepository(), _auth_lookup, sender,
+        store.FirestoreReminderRepository(), auth_lookup, sender,
         clock=lambda: datetime.now(timezone.utc),
         sign_in_url=sender.sign_in_url if sender else "",
-        allow_unverified=_env_flag("REMINDER_ALLOW_UNVERIFIED"))
+        allow_unverified=env_flag("REMINDER_ALLOW_UNVERIFIED"))
     return runner.run(built, batch_size=batch_size, dry_run=dry_run)
 
 
